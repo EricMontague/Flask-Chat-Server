@@ -1,25 +1,26 @@
-import logo from './logo.svg';
-import './App.css';
+import SearchTags from "./components/searchTags";
+import ResetStyle from "./resetStyles";
+import ThemeProvider from "styled-components";
+import { StylesProvider } from "@material-ui/core/styles";
+import theme from "./theme";
 
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <StylesProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <ResetStyle />
+          {/* <SearchTags
+        searchEndPoint="https://api.bytehub.dev/api/v1/tags/search.json?q="
+        onSelect={() => { }}
+      /> */}
+          <h1>Hi There!</h1>
+        </ThemeProvider>
+      </StylesProvider>
+    </>
   );
 }
 
 export default App;
+
+
