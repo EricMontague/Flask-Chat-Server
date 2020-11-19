@@ -1,5 +1,5 @@
 import styled, { css } from "styled-components";
-import theme from "../../theme";
+import theme from "src/theme";
 
 
 export const convertHexToRGBA = (hex, alpha) => {
@@ -74,6 +74,7 @@ export const H3 = styled.h3`
     padding: 0;
 `;
 
+
 export const H4 = styled.h4`
     ${fontStack};
     color: ${theme.text.default};
@@ -94,6 +95,7 @@ export const H5 = styled.h5`
   margin: 0;
   padding: 0;
 `;
+
 
 export const H6 = styled.h6`
   ${fontStack};
@@ -133,10 +135,23 @@ export const Span = styled.span`
 export class ZIndex {
     constructor() {
         this.base = 100; // Base Z-index level
-        this.background = this.base - 1; // Content that should always be behind the base
+        this.background = this.base - 100; // Content that should always be behind the base
+        this.hidden = this.base - 200; // Content that should be hidden completely
+
+        this.card = this.base + 100; // Cards should default to one layer above base content
+        this.loading = this.card + 100; // Loading should appear above cards
+        this.avatar = this.card + 100; // Avatars should appear above cards
+        this.form = this.card + 100; // Form elements should appear above cards
+
+        this.navBar = 3000;
+        this.dropDowns = this.navBar + 100; // dropdowns shouldn't appear below the navbar
+        this.fullScreen = 4000; // For fullscreen elements should cover all content except for modals and tooltips
+        this.modal = 5000; // modals should show about fullscreen elements
+        this.tooltip = 6000; // tooltips should always be on top of every element
     }
 
 };
+
 
 export const FlexRow = styled.div`
     display: flex;
@@ -145,9 +160,17 @@ export const FlexRow = styled.div`
     align-items: center;
 `;
 
+
 export const FlexCol = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
+`;
+
+
+export const GridCol = style.div`
+    display: grid;
+    grid-template-column: repeat(${props => props.cols});
+    gap: ${props => props.gap};
 `;
