@@ -73,22 +73,30 @@ class PrivateChat(Chat):
     def __init__(self, id, name, description):
         super().__init__(id, name, description)
 
-    def get_other_user(self, member_id):
-        """Return the other user in the private chat."""
+    def get_other_member(self, member_id):
+        """Return the other member in the private chat."""
         for id in self._members:
             if id != member_id:
                 return self._members[id]
 
+    def __repr__(self):
+        """Return a representatino of a private chat."""
+        return "PrivateChat(id=%r, name=%r, description=%r)" % (
+            self._id, self.name, self.description
+        )
+
 
 class GroupChat(Chat):
-    """Class to represent a group chat between one or more users."""
+    """Class to represent a group chat between one or more users
+    in a specific community
+    """
 
     def __init__(self, id, name, description, capacity, private):
         super().__init__(id, name, description)
         self._capacity = capacity
         self._private = private
         self._num_members = 0
-        self._pending_chat_requests = {}
+        self._pending_requests = {}
 
     @property
     def num_members(self):
@@ -96,34 +104,72 @@ class GroupChat(Chat):
         return self._num_members
 
     def num_members_online(self):
-        pass
+        """Return the number of members who are currently online."""
+        total = 0
+        for id in self._members:
+            if self._members[id].is_online:
+                total += 1
+        return total
 
     def add_member(self, member):
-        pass
+        """Add a member to the group chat."""
+        if self.is_full():
+            raise GroupChatFullException("The group chat is full")
+        self._members[member.id] = member
 
     def remove_member(self, member_id):
-        pass
+        """Remove a member with the given id from the group chat."""
+        if not self.is_member(member_id):
+            raise ChatMemberNotFoundException(
+                "The given user is not a member of this chat"
+            )
+        self._members.pop(member_id)
 
     def is_member(self, user_id):
-        pass
+        """Return True if there is a user with the given id
+        in the group chat, otherwise return False.
+        """
+        return user_id in self._members
     
     def add_request(self, request):
-        pass
+        """Add a request to the group chat's dictionary of
+        pending requests.
+        """
+        self._pending_requests[request.user_id] = request
 
     def remove_request(self, user_id):
-        pass
+        """Remove a request from the group chat's dictionary
+        of pending requests.
+        """
+        if not self.has_pending_request(user_id):
+            raise ChatRequestNotFoundException(
+                "A request by the given user could not be found"
+            )
+        self._pending_requests.pop(user_id)
     
     def has_pending_request(self, user_id):
-        pass
+        """Return True if a user with the given id has a pending
+        request to join the group chat, otherwise return False.
+        """
+        return user_id in self._pending_requests
 
     def is_full(self):
-        pass
+        """Return True if the group chat is full, otherwise
+        return False.
+        """
+        return self._capacity == self._num_members
 
     def is_private(self):
         """Return True if this group chat is private,
         otherwise return False.
         """
         return self._private
+
+    def __repr__(self):
+        """Return a representation of a group chat."""
+        return "GroupChat(id=%r, name=%r, description=%r, capacity=%r, private=%r)" % (
+            self._id, self.name, self.description, self._capacity, self._private
+        )
 
 
 
@@ -133,3 +179,27 @@ class ChatMessageNotFoundException(Exception):
     """
 
     pass
+
+class GroupChatFullException(Exception):
+    """Exception to be raised when a group chat
+    is at its capacity and cannot accept any
+    more members.
+    """
+
+    pass
+
+
+class ChatMemberNotFoundException(Exception):
+    """Exception to be raised when a given user
+    cannot be identified as a member of a chat.
+    """
+
+    pass
+
+class ChatRequestNotFoundException(Exception):
+    """Exception to be raised when a request to 
+    join a chat cannot be found for a given user.
+    """
+
+    pass
+

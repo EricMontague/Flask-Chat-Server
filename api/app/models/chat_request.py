@@ -23,11 +23,16 @@ class ChatRequest:
     def timestamp(self):
         """Return the timestamp of the request."""
         return self._created_at
-    
+
     @property
     def status(self):
         """Return the request's status."""
         return self._status
+
+    @property
+    def user_id(self):
+        """Return the id of the user who made the request."""
+        return self._user.id
 
     def was_seen(self):
         """Return True if the request has been seen, otherwise

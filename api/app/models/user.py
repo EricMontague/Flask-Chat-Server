@@ -4,7 +4,14 @@ from app import flask_bcrypt
 from datetime import datetime, timedelta
 
 
-# Too many arguments in constructor, need to look for a solution for this
+# TODO - Too many arguments in constructor, need to look for a solution for this
+# Maybe the Builder pattern?
+
+# Maybe split the class up into separate classes? - NotificationManager,  RequestManager, ChatManager
+# and CommunityManager?
+
+# These classes would maintain hash tables that map user id's to their domain object and all operations
+# performed would go through them. e.g. noticiation_manager.mark_as_read(user_id=1)
 class User:
     """Class to represent a user."""
 
@@ -94,9 +101,10 @@ class User:
         """
         return self.role.has_permissions(permissions)
 
-    # TODO - notifications will only maintain the last 20 or so notifications
-    # What happens if this notification id is for a notification that hasn't
-    # been read, but isn't in the dictionary? The same goes for mark as seen
+    def add_notification(self, notification):
+        """Add a new notification for the user."""
+        self._notifications[notification.id] = notification
+
     def mark_notification_as_read(self, notification_id):
         """Mark the notification with the given id as read."""
         if not self.has_notification(notification_id):
@@ -119,37 +127,100 @@ class User:
         """Add a request to the dictionary containing the user's
         pending group chat requests for a particular group chat
         """
-        if not self.has_group_chat(group_chat_id):
-            raise UserGroupChatNotFoundException(
-                "A group chat with the given id could not be found for the user"
-            )
         self._pending_chat_requests[group_chat_id] = request
 
     def remove_group_chat_request(self, group_chat_id):
         """Remove a request from the dictionary containing the user's
         pending group chat requests for a particular group chat
         """
-        if not self.has_group_chat(group_chat_id):
-            raise UserGroupChatNotFoundException(
-                "A group chat with the given id could not be found for the user"
-            )
         if not self.has_pending_request(group_chat_id):
             raise ChatRequestNotFoundException(
                 "A pending chat request could not be found for the given group chat"
             )
         self._pending_chat_requests.pop(group_chat_id)
 
-    def has_group_chat(self, group_chat_id):
-        """Return True if the user is a part of a group chat with
-        the given id, otherwise return False.
-        """
-        return group_chat_id in self._group_chats
-
     def has_pending_request(self, group_chat_id):
         """Return True if the user has a pending group chat request
         for the given chat, otherwise return False.
         """
         return group_chat_id in self._pending_chat_requests
+
+    def join_private_chat(self, private_chat):
+        """Add a private chat to the user's dictionary of private chats."""
+        other_user = private_chat.get_other_member(self)
+        self._private_chats[other_user.id] = private_chat
+
+    def leave_private_chat(self, other_user_id):
+        """Remove a private chat to the user's dictionary of private chats."""
+        if not self.in_private_chat(other_user_id):
+            raise ChatNotFoundException(
+                "The current user is not in a private chat with the given user"
+            )
+        self._private_chats.pop(other_user_id)
+
+    def join_group_chat(self, group_chat):
+        """Add a group chat to the user's dictionary of group chats."""
+        self._group_chats[group_chat.id] = group_chat
+
+    def leave_group_chat(self, group_chat_id):
+        """Remove a group chat with the given id from the user's dictionary
+        of group chats.
+        """
+        if not self.in_group_chat(group_chat_id):
+            raise ChatNotFoundException(
+                "The user is not a member of the given group chat"
+            )
+        self._group_chats.pop(group_chat_id)
+
+    def in_group_chat(self, group_chat_id):
+        """Return True if the user is a part of a group chat with
+        the given id, otherwise return False.
+        """
+        return group_chat_id in self._group_chats
+
+    def in_private_chat(self, other_user_id):
+        """Return True if the user is a part of a private chat with
+        another user with the given id, otherwise return False.
+        """
+        return other_user_id in self._private_chats
+
+    # TODO - Add methods to edit and delete a message from a private chat
+    def message_user(self, user_id, message):
+        """Send a message to a private chat."""
+        if not self.in_private_chat(user_id):
+            raise ChatNotFoundException(
+                "The current user is not in a private chat with the given user"
+            )
+        self._private_chats[user_id].post_message(message)
+
+    # TODO - Add methods to edit and delete a message from a group chat
+    def message_group(self, group_chat_id, message):
+        """Send a message to a group chat that the user is a
+        part of.
+        """
+        if not self.in_group_chat(group_chat_id):
+            raise ChatNotFoundException(
+                "The user is not a member of the given group chat"
+            )
+        self._group_chats[group_chat_id].post_message(message)
+
+    def join_community(self, community):
+        """Add the community to the user's mapping of communities."""
+        self._communities[community.id] = community
+
+    def leave_community(self, community_id):
+        """Remove the community from the user's mapping of communities."""
+        if not self.is_member_of(community_id):
+            raise CommunityNotFoundException(
+                "The user is not a member of the given community"
+            )
+        self._communities.pop(community_id)
+
+    def is_member_of(self, community_id):
+        """Return True if the user is a member of the given
+        community, otherwise return False.
+        """
+        return community_id in self._communities
 
     def __str__(self):
         """Return a more readable string representation 
@@ -205,7 +276,7 @@ class NotificationNotFoundException(Exception):
     pass
 
 
-class UserGroupChatNotFoundException(Exception):
+class ChatNotFoundException(Exception):
     """Exception to be raised when a particular group
     chat cannot be found for the given user.
     """
@@ -215,6 +286,14 @@ class UserGroupChatNotFoundException(Exception):
 
 class ChatRequestNotFoundException(Exception):
     """Exception to be raised when a chat request
+    for the given user cannot be found.
+    """
+
+    pass
+
+
+class CommunityNotFoundException(Exception):
+    """Exception to be raised when a community
     for the given user cannot be found.
     """
 

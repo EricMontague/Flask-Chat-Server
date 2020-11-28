@@ -54,7 +54,7 @@ class RolePermission(Enum):
 class RoleName:
     """Class thats holds constants of role names."""
 
-    REGULAR_USER = "regular user"
+    REGULAR_USER = "regular_user"
     MODERATOR = "moderator"
     ADMIN = "admin"
 
