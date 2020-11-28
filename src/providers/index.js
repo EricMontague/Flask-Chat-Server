@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useContext } from "react";
 import PropTypes from "prop-types";
 
+const users = [
+    {
+        username: "@ericmont",
+        name: "Eric Montague",
+        email: "eric@gmail.com",
+        communites: [],
+        notifications: [],
+        incomingInvites: [],
+        outgoingInvites: [],
+        imageUrl: "https://avatars0.githubusercontent.com/u/53024034?s=460&v=4"
+    }
+]
 
 const UserContext = React.createContext(null);
 
@@ -14,15 +26,7 @@ const UserProvider = props => {
     const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
-        (async () => {
-            const response = await fetch("src/data/user.json");
-            if (!response.ok) {
-                throw new Error("Failed with status code " + response.status)
-            }
-            const results = await response.json();
-            setCurrentUser(results["@ericmont"]);
-
-        })();
+        setCurrentUser(users[0]);
     }, [])
 
 
