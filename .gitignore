@@ -34,3 +34,4 @@ venv/
 .flaskenv
 .docker-env
 .vscode
+.pytest_cache
