@@ -3,23 +3,24 @@
 
 from datetime import datetime
 from dataclasses import dataclass
+from app.exceptions import CommunityMemberNotFoundException
 
 
 class Community:
     """Class to represent a community."""
 
     def __init__(
-        self, 
-        id, 
-        name, 
-        description, 
-        topic, 
+        self,
+        id,
+        name,
+        description,
+        topic,
         avatar,
-        over_photo, 
+        cover_photo,
         location,
         members,
         group_chats,
-        founders
+        founders,
     ):
         self._id = id
         self.name = name
@@ -32,7 +33,7 @@ class Community:
         self._members = members
         self._group_chats = group_chats
         self._founders = founders
-    
+
     @property
     def id(self):
         """Return the community's id."""
@@ -68,7 +69,7 @@ class Community:
     def remove_member(self, member_id):
         """Remove a member from the community."""
         if not self.is_member(member_id):
-            raise MemberNotFoundException(
+            raise CommunityMemberNotFoundException(
                 "User is not a member of this community"
             )
         self._members.pop(member_id)
@@ -84,7 +85,7 @@ class Community:
         shown in order to reduce verbosity.
         """
         return (
-            "Community(id=%r, name=%r, description=%r, topic=%r," 
+            "Community(id=%r, name=%r, description=%r, topic=%r,"
             + "avatar=%r, cover_photo=%r, location=%r)"
         ) % (
             self._id,
@@ -93,7 +94,7 @@ class Community:
             self.topic,
             self.avatar,
             self.cover_photo,
-            self.location
+            self.location,
         )
 
 

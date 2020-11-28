@@ -2,6 +2,12 @@
 
 from app import flask_bcrypt
 from datetime import datetime, timedelta
+from app.exceptions import (
+    NotificationNotFoundException,
+    ChatNotFoundException,
+    ChatRequestNotFoundException,
+    CommunityNotFoundException
+)
 
 
 # TODO - Too many arguments in constructor, need to look for a solution for this
@@ -267,35 +273,4 @@ class User:
             self._communities,
         )
 
-
-class NotificationNotFoundException(Exception):
-    """Exception to be raised when a user notification
-    cannot be found.
-    """
-
-    pass
-
-
-class ChatNotFoundException(Exception):
-    """Exception to be raised when a particular group
-    chat cannot be found for the given user.
-    """
-
-    pass
-
-
-class ChatRequestNotFoundException(Exception):
-    """Exception to be raised when a chat request
-    for the given user cannot be found.
-    """
-
-    pass
-
-
-class CommunityNotFoundException(Exception):
-    """Exception to be raised when a community
-    for the given user cannot be found.
-    """
-
-    pass
 

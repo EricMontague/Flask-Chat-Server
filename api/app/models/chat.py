@@ -4,6 +4,12 @@ chats in the application.
 
 
 from abc import ABC
+from app.exceptions import (
+    ChatCapacityReachedException,
+    ChatMemberNotFoundException,
+    ChatMessageNotFoundException,
+    ChatRequestNotFoundException
+)
 
 
 class Chat(ABC):
@@ -114,7 +120,7 @@ class GroupChat(Chat):
     def add_member(self, member):
         """Add a member to the group chat."""
         if self.is_full():
-            raise GroupChatFullException("The group chat is full")
+            raise ChatCapacityReachedException("The group chat is full")
         self._members[member.id] = member
 
     def remove_member(self, member_id):
@@ -172,34 +178,4 @@ class GroupChat(Chat):
         )
 
 
-
-class ChatMessageNotFoundException(Exception):
-    """Exception to be raised when a chat message
-    cannot be found.
-    """
-
-    pass
-
-class GroupChatFullException(Exception):
-    """Exception to be raised when a group chat
-    is at its capacity and cannot accept any
-    more members.
-    """
-
-    pass
-
-
-class ChatMemberNotFoundException(Exception):
-    """Exception to be raised when a given user
-    cannot be identified as a member of a chat.
-    """
-
-    pass
-
-class ChatRequestNotFoundException(Exception):
-    """Exception to be raised when a request to 
-    join a chat cannot be found for a given user.
-    """
-
-    pass
 
