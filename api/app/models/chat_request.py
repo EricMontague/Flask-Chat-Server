@@ -7,10 +7,10 @@ from datetime import datetime
 class ChatRequest:
     """Class to represent a request to join a group chat."""
 
-    def __init__(self, id, user, chat):
+    def __init__(self, id, user_id, chat_id):
         self._id = id
-        self.user = user
-        self.chat = chat
+        self._user_id = user_id
+        self._chat_id = chat_id
         self._created_at = datetime.now()
         self._status = ChatRequestStatus.PENDING
         self._seen = False
