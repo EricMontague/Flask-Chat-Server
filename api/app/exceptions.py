@@ -1,6 +1,16 @@
 """Temporary module to house custom exceptions for the api."""
 
 
+# User exceptions
+class UserNotFoundException(Exception):
+    """Exception to be raised when a user
+    cannot be found.
+    """
+
+    pass
+
+
+# Notification exceptions
 class NotificationNotFoundException(Exception):
     """Exception to be raised when a user notification
     cannot be found.
@@ -9,6 +19,7 @@ class NotificationNotFoundException(Exception):
     pass
 
 
+# Chat Exceptions
 class ChatNotFoundException(Exception):
     """Exception to be raised when a particular chat
     cannot be found.
@@ -20,14 +31,6 @@ class ChatNotFoundException(Exception):
 class ChatRequestNotFoundException(Exception):
     """Exception to be raised when a chat request
     cannot be found.
-    """
-
-    pass
-
-
-class CommunityNotFoundException(Exception):
-    """Exception to be raised when a community cannot
-    be found.
     """
 
     pass
@@ -58,9 +61,34 @@ class ChatMemberNotFoundException(Exception):
     pass
 
 
+class DuplicateChatRequestException(Exception):
+    """Exception to be raised when a user has made
+    a duplicate request to join a chat.
+    """
+
+    pass
+
+
+# Community exceptions
 class CommunityMemberNotFoundException(Exception):
     """Exception to be raised when a given user 
     cannot be identified as a member of a community.
+    """
+
+    pass
+
+
+class CommunityNotFoundException(Exception):
+    """Exception to be raised when a community cannot
+    be found.
+    """
+
+    pass
+
+
+class CommunityNameAlreadyExistsException(Exception):
+    """Exception to be raised when a community already
+    exists the the provided name.
     """
 
     pass
