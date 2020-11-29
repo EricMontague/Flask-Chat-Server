@@ -20,7 +20,7 @@ class Community:
         location,
         members,
         group_chats,
-        founders,
+        founder,
     ):
         self._id = id
         self.name = name
@@ -32,7 +32,7 @@ class Community:
         self._created_at = datetime.now()
         self._members = members
         self._group_chats = group_chats
-        self._founders = founders
+        self._founder = founder
 
     @property
     def id(self):
@@ -98,13 +98,6 @@ class Community:
         )
 
 
-@dataclass(frozen=True)
-class Location:
-    """Class to represent a location."""
-
-    city: str
-    state: str
-    country: str
 
 
 class Topic:
