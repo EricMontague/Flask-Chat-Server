@@ -29,6 +29,7 @@ class User:
         password_hash,
         email,
         bio,
+        location,
         created_at,
         last_seen_at,
         avatar,
@@ -46,6 +47,7 @@ class User:
         self.password_hash = password_hash
         self.email = email
         self.bio = bio
+        self.location = location
         self._created_at = created_at
         self.last_seen_at = last_seen_at
         self.avatar = avatar
@@ -166,8 +168,9 @@ class User:
 
     def join_group_chat(self, group_chat):
         """Add a group chat to the user's dictionary of group chats."""
+        self.remove_group_chat_request(group_chat.id)
         self._group_chats[group_chat.id] = group_chat
-
+        
     def leave_group_chat(self, group_chat_id):
         """Remove a group chat with the given id from the user's dictionary
         of group chats.
