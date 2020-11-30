@@ -12,11 +12,11 @@ table_functions = {"Users": create_users_table}
 
 
 @click.group()
-def db():
+def dynamo_db():
     pass
 
 
-@db.command()
+@dynamo_db.command()
 @click.argument("table_names", nargs=-1)
 def create_tables(table_names):
     """Create Dynamodb tables."""
@@ -43,7 +43,7 @@ def create_tables(table_names):
         handle_invalid_table_names(invalid_names)
 
 
-@db.command()
+@dynamo_db.command()
 @click.argument("table_name")
 def delete_tables(table_name):
     """Delete Dynamodb tables."""
@@ -72,4 +72,4 @@ def handle_invalid_table_names(invalid_names):
 
 
 if __name__ == "__main__":
-    db()
+    dynamo_db()
