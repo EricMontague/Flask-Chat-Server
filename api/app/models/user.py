@@ -1,6 +1,6 @@
 """This module contains the user model."""
 
-from app import flask_bcrypt
+from app import bcrypt
 from datetime import datetime, timedelta
 from app.exceptions import (
     NotificationNotFoundException,
@@ -87,13 +87,13 @@ class User:
     @password.setter
     def password(self, password):
         """Hash and set the user's password."""
-        self.password_hash = flask_bcrypt.generate_password_hash(password)
+        self.password_hash = bcrypt.generate_password_hash(password)
 
     def verify_password(self, password):
         """Return True if the given password matches the user's password,
         otherwise return False.
         """
-        return flask_bcrypt.check_password_hash(self.password_hash, password)
+        return bcrypt.check_password_hash(self.password_hash, password)
 
     def ping(self):
         """Mark the user as recently seen and online."""
