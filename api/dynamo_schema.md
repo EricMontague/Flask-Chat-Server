@@ -1,6 +1,6 @@
 # DynamoDB Table Schemas
 
-Below are the schemas for the various tables in DynamoDB.
+Below are the schemas for the various tables in DynamoDB for this application.
 
 <br>
 
@@ -8,13 +8,13 @@ Below are the schemas for the various tables in DynamoDB.
 
 - This table stores only user items
 
-**User item attributes**: id, username, name, password_hash, email, bio, location, created_at, last_seen_at, avatar_url, cover_photo_url, role
+**User item attributes**: Id, Username, Name, PasswordHash, Email, Bio, Location, CreatedAt, LastSeenAt, AvatarURL, CoverPhotoURL, Role
 **Items stored in table**: User items
 
 
 | Partition Key  | Sort Key     | 
 | :------------- | :----------: | 
-| USER#<user_id> | N/A  | 
+| USER#<user_id> | N/A          | 
 
 
 
@@ -22,38 +22,40 @@ Below are the schemas for the various tables in DynamoDB.
 ## Communities Table
 
 - This table stores data about communites, as well as data about the members and group chats that belong to a specific community
-**Community item attributes**: id, name, description, topic, avatar_url, cover_photo_url, location, created_at, founder
+**Community item attributes**: Id, Name, Description, Topic, AvatarURL, CoverPhotoURL, Location, CreatedAt, Founder
 **Items stored in table**: Community items, user items, group chat items
 
 
-| Partition Key  | Sort Key     | 
-| :------------- | :----------: | 
-| COMMUNITY#<community_id> |COMMUNITY#<community_id>   | 
-| COMMUNITY#<community_id> | USER#<user_id> | 
-| COMMUNITY#<community_id>  | GROUPCHAT#<group_chat_id> | 
+| Partition Key            | Sort Key                   | 
+| :----------------------  | :------------------------: | 
+| COMMUNITY#<community_id> | COMMUNITY#<community_id>   | 
+| COMMUNITY#<community_id> | USER#<user_id>             | 
+| COMMUNITY#<community_id> | GROUPCHAT#<group_chat_id>  | 
 
 
 
 
 
-### Communities Global Secondary Index: 
+### Communities Global Secondary Indexes: 
 
-- This GSI uses the inverted index pattern as well as the overloaded index pattern to facilitate queries such as "Get all of a user's communities", "Get the community that this group chat belongs to", and "Get all communities within a certain city."
-**Items stored in table**: Community items
+- The CommunityMembers and CommunityGroupChats indexes use the inverted index pattern to facilitate queries such as "Get all of a user's communities", "Get the community that this group chat belongs to"
+- The CommunityLocations index is used to facilitate queries such as "Get all communities within a certain city."
+**Items stored in indexes**: Community items
 
 
-| Partition Key  | Sort Key     | 
-| :------------- | :----------: | 
-| COUNTRY#<country_name> |STATE#<state_name>#CITY<city_name>   | 
-| USER#<user_id>  | COMMUNITY#<community_id> | 
-| GROUPCHAT#<group_chat_id>  | COMMUNITY#<community_id> | 
+| Index                    | Partition Key               | Sort Key                             | 
+| :----------------------- | :-------------------------: | :----------------------------------: | 
+| CommunityLocationIndex   | COUNTRY#<country_name>      | STATE#<state_name>#CITY<city_name>   | 
+| CommunityMembersIndex    | USER#<user_id>              | COMMUNITY#<community_id>             | 
+| CommunityGroupChatsIndex | GROUPCHAT#<group_chat_id>   | COMMUNITY#<community_id>             | 
+
 
 
 ## Notifications Table
 
 - This table stores data about user notifications. Notifications are stored in their own separate table rather than in the Users table, because in a real chat application, notifications will be updated much more frequently than user data. You could potentially run up against the Users table's limit for RCU's and WCU's if notifications were stored there along with the user data.
 
-**Notification item attributes**: id, notification_type, message, target, read, seen
+**Notification item attributes**: Id, NotificationType, Message, Target, Read, Seen
 **Items stored in table**: Notification items
 
 
@@ -70,8 +72,8 @@ Below are the schemas for the various tables in DynamoDB.
 
 - This table stores data about group chats as well as the messages and members in each chat
 
-**Group chat item attributes**: id, name, description, capacity, private, num_members
-**Message item attributes**: id, content, created_at, reactions, read, editted
+**Group chat item attributes**: Id, Name, Description, Capacity, Private, NumMembers
+**Message item attributes**: Id, Content, CreatedAt, Reactions, Read, Editted
 **Items stored in table**: Group chat items, message items, user items
 
 
@@ -89,8 +91,8 @@ Below are the schemas for the various tables in DynamoDB.
 
 - This table stores data about private chats as well as the messages and members in each chat
 
-**Group chat item attributes**: id, name, description
-**Message item attributes**: id, content, created_at, reactions, read, editted
+**Private chat item attributes**: Id, Name, Description
+**Message item attributes**: Id, Content, CreatedAt, Reactions, Read, Editted
 **Items stored in table**: Private chat items, message items, user items
 
 
@@ -101,3 +103,29 @@ Below are the schemas for the various tables in DynamoDB.
 | PRIVATECHAT#<private_chat_id>  | USER#<user_id>                           | 
 | PRIVATECHAT#<private_chat_id>  | MESSAGE#<ISO-8601-timestamp>#<message_id>| 
 
+
+## Chat Requests Table
+
+- This table stores data about group chat requests
+
+**Chat request attributes**: Id, UserId, ChatId, CreatedAt, Status, Seen, PendingId
+
+
+| Partition Key                  | Sort Key                                      | 
+| :----------------------------- | :-------------------------------------------: | 
+| USER#<user_id>                 | CHATREQUEST#<ISO-8601-timestamp>#<request_id> | 
+| GROUPCHAT#<group_chat_id>      | CHATREQUEST#<ISO-8601-timestamp>#<request_id> | 
+
+
+### Chat Requests Global Secondary Index
+
+- The Chat Requests GSI uses the sparse index pattern to store pending chat requests in order to serve queries such as "Get all of a user's pending chat requests", or "Get all of a group chat's pending chat requests." 
+- Each item in the Chat Requests Table that is in pending status will have an additional attribute named PendingId, which will be a randomly generated string value. 
+- Since this GSI's sort key is based on that attribute only requests that are in pending status will be replicated to the GSI. 
+- Whenever a request's status is changed, the PendingId attribute will be removed and DynamoDB will subsequently remove that item from the GSI
+
+
+| Partition Key                  | Sort Key     |                                  
+| :----------------------------- | :----------: | 
+| USER#<user_id>                 | <pending_id> | 
+| GROUPCHAT#<group_chat_id>      | <pending_id> |
