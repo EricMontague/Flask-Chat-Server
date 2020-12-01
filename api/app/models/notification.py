@@ -60,8 +60,8 @@ class Notification:
 class NotificationType:
     """Class that holds constants of notification types."""
 
-    NEW_PRIVATE_MESSAGE = "new_private_message"
-    NEW_GROUP_MESSAGE = "new_group_message"
+    NEW_PRIVATE_CHAT_MESSAGE = "new_private_chat_message"
+    NEW_GROUP_CHAT_MESSAGE = "new_group_chat_message"
     NEW_CHAT_REQUEST = "new_chat_request"
     CHAT_REQUEST_ACCEPTED = "chat_request_accepted"
     CHAT_REQUEST_REJECTED = "chat_request_rejected"

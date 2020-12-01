@@ -4,6 +4,12 @@ chats in the application.
 
 
 from abc import ABC
+from app.exceptions import (
+    ChatCapacityReachedException,
+    ChatMemberNotFoundException,
+    ChatMessageNotFoundException,
+    ChatRequestNotFoundException,
+)
 
 
 class Chat(ABC):
@@ -15,6 +21,11 @@ class Chat(ABC):
         self.description = description
         self._messages = {}
         self._members = {}
+
+    @property
+    def members(self):
+        """Return a list of the chat's members."""
+        return [member for member in self._members.values()]
 
     def post_message(self, message):
         """Add a message to the chat's list of messages."""
@@ -64,7 +75,6 @@ class Chat(ABC):
         return sorted(self._messages, key=lambda m: m.timestamp)
 
 
-
 class PrivateChat(Chat):
     """Class to represent a private chat between two users"""
 
@@ -82,7 +92,9 @@ class PrivateChat(Chat):
     def __repr__(self):
         """Return a representatino of a private chat."""
         return "PrivateChat(id=%r, name=%r, description=%r)" % (
-            self._id, self.name, self.description
+            self._id,
+            self.name,
+            self.description,
         )
 
 
@@ -113,8 +125,7 @@ class GroupChat(Chat):
 
     def add_member(self, member):
         """Add a member to the group chat."""
-        if self.is_full():
-            raise GroupChatFullException("The group chat is full")
+        self.remove_request(member.id)
         self._members[member.id] = member
 
     def remove_member(self, member_id):
@@ -130,7 +141,7 @@ class GroupChat(Chat):
         in the group chat, otherwise return False.
         """
         return user_id in self._members
-    
+
     def add_request(self, request):
         """Add a request to the group chat's dictionary of
         pending requests.
@@ -146,7 +157,7 @@ class GroupChat(Chat):
                 "A request by the given user could not be found"
             )
         self._pending_requests.pop(user_id)
-    
+
     def has_pending_request(self, user_id):
         """Return True if a user with the given id has a pending
         request to join the group chat, otherwise return False.
@@ -168,38 +179,10 @@ class GroupChat(Chat):
     def __repr__(self):
         """Return a representation of a group chat."""
         return "GroupChat(id=%r, name=%r, description=%r, capacity=%r, private=%r)" % (
-            self._id, self.name, self.description, self._capacity, self._private
+            self._id,
+            self.name,
+            self.description,
+            self._capacity,
+            self._private,
         )
-
-
-
-class ChatMessageNotFoundException(Exception):
-    """Exception to be raised when a chat message
-    cannot be found.
-    """
-
-    pass
-
-class GroupChatFullException(Exception):
-    """Exception to be raised when a group chat
-    is at its capacity and cannot accept any
-    more members.
-    """
-
-    pass
-
-
-class ChatMemberNotFoundException(Exception):
-    """Exception to be raised when a given user
-    cannot be identified as a member of a chat.
-    """
-
-    pass
-
-class ChatRequestNotFoundException(Exception):
-    """Exception to be raised when a request to 
-    join a chat cannot be found for a given user.
-    """
-
-    pass
 

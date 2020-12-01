@@ -1,7 +1,13 @@
 """This module contains the user model."""
 
-from app import flask_bcrypt
+from app import bcrypt
 from datetime import datetime, timedelta
+from app.exceptions import (
+    NotificationNotFoundException,
+    ChatNotFoundException,
+    ChatRequestNotFoundException,
+    CommunityNotFoundException
+)
 
 
 # TODO - Too many arguments in constructor, need to look for a solution for this
@@ -23,6 +29,7 @@ class User:
         password_hash,
         email,
         bio,
+        location,
         created_at,
         last_seen_at,
         avatar,
@@ -40,6 +47,7 @@ class User:
         self.password_hash = password_hash
         self.email = email
         self.bio = bio
+        self.location = location
         self._created_at = created_at
         self.last_seen_at = last_seen_at
         self.avatar = avatar
@@ -79,13 +87,13 @@ class User:
     @password.setter
     def password(self, password):
         """Hash and set the user's password."""
-        self.password_hash = flask_bcrypt.generate_password_hash(password)
+        self.password_hash = bcrypt.generate_password_hash(password)
 
     def verify_password(self, password):
         """Return True if the given password matches the user's password,
         otherwise return False.
         """
-        return flask_bcrypt.check_password_hash(self.password_hash, password)
+        return bcrypt.check_password_hash(self.password_hash, password)
 
     def ping(self):
         """Mark the user as recently seen and online."""
@@ -160,8 +168,9 @@ class User:
 
     def join_group_chat(self, group_chat):
         """Add a group chat to the user's dictionary of group chats."""
+        self.remove_group_chat_request(group_chat.id)
         self._group_chats[group_chat.id] = group_chat
-
+        
     def leave_group_chat(self, group_chat_id):
         """Remove a group chat with the given id from the user's dictionary
         of group chats.
@@ -267,35 +276,4 @@ class User:
             self._communities,
         )
 
-
-class NotificationNotFoundException(Exception):
-    """Exception to be raised when a user notification
-    cannot be found.
-    """
-
-    pass
-
-
-class ChatNotFoundException(Exception):
-    """Exception to be raised when a particular group
-    chat cannot be found for the given user.
-    """
-
-    pass
-
-
-class ChatRequestNotFoundException(Exception):
-    """Exception to be raised when a chat request
-    for the given user cannot be found.
-    """
-
-    pass
-
-
-class CommunityNotFoundException(Exception):
-    """Exception to be raised when a community
-    for the given user cannot be found.
-    """
-
-    pass
 
