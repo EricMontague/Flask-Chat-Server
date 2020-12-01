@@ -8,7 +8,7 @@ from dynamo_utils import create_users_table, delete_table
 from botocore.exceptions import ClientError
 
 
-table_functions = {"Users": create_users_table}
+table_functions = {"users": create_users_table}
 
 
 @click.group()
@@ -31,11 +31,11 @@ def create_tables(table_names):
     else:
         invalid_names = []
         for name in table_names:
-            if name.title() not in table_functions:
+            if name.lower() not in table_functions:
                 invalid_names.append(name)
             else:
                 try:
-                    func = table_functions[name.title()]
+                    func = table_functions[name.lower()]
                     table = func()
                     print(f"Created table: {name}, Status: {table.table_status}")
                 except ClientError as err:
@@ -49,11 +49,11 @@ def delete_tables(table_name):
     """Delete Dynamodb tables."""
     if not table_name:
         print("Please provide a table name")
-    elif table_name.title() not in table_functions:
+    elif table_name.lower() not in table_functions:
         print("Please provide a valid table name")
     else:
         try:
-            response = delete_table(table_name.title())
+            response = delete_table(table_name.lower())
             name = response["TableDescription"]["TableName"]
             status = response["TableDescription"]["TableStatus"]
             print(f"Successfully deleted table - {name}")
