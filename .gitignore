@@ -36,3 +36,4 @@ venv/
 .vscode
 .pytest_cache
 .aws/
+fake_data.py
