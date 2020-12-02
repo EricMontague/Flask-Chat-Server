@@ -4,11 +4,26 @@ such as database table creation, running tests and more.
 
 
 import click
-from dynamo_utils import create_users_table, delete_table
+from dynamo_utils import (
+    create_users_table,
+    create_communities_table,
+    create_group_chats_table,
+    create_private_chats_table,
+    create_notifications_table,
+    create_chat_requests_table,
+    delete_table
+)
 from botocore.exceptions import ClientError
 
 
-table_functions = {"users": create_users_table}
+create_table_functions = {
+    "users": create_users_table,
+    "communities": create_communities_table,
+    "group_chats": create_group_chats_table,
+    "private_chats": create_private_chats_table,
+    "notifications": create_notifications_table,
+    "chat_requests": create_chat_requests_table
+}
 
 
 @click.group()
@@ -21,7 +36,7 @@ def dynamo_db():
 def create_tables(table_names):
     """Create Dynamodb tables."""
     if not table_names:
-        for name, func in table_functions.items():
+        for name, func in create_table_functions.items():
             try:
                 table = func()
                 print(f"Successfully created table - {name}")
@@ -31,36 +46,53 @@ def create_tables(table_names):
     else:
         invalid_names = []
         for name in table_names:
-            if name.lower() not in table_functions:
+            snaked_cased_name = name.lower().replace(" ", "_")
+            if snaked_cased_name not in create_table_functions:
                 invalid_names.append(name)
             else:
                 try:
-                    func = table_functions[name.lower()]
+                    func = create_table_functions[snaked_cased_name]
                     table = func()
-                    print(f"Created table: {name}, Status: {table.table_status}")
+                    print(f"Created table: {table.table_name}, Status: {table.table_status}")
                 except ClientError as err:
+                    print(f"\nTableName: {name}")
                     print(err, "\n")
         handle_invalid_table_names(invalid_names)
 
 
 @dynamo_db.command()
-@click.argument("table_name")
-def delete_tables(table_name):
+@click.argument("table_names", nargs=-1)
+def delete_tables(table_names):
     """Delete Dynamodb tables."""
-    if not table_name:
-        print("Please provide a table name")
-    elif table_name.lower() not in table_functions:
-        print("Please provide a valid table name")
+    if not table_names:
+        for name in create_table_functions:
+            camel_cased_name = name.title().replace("_", "")
+            try:
+                response = delete_table(camel_cased_name)
+                name = response["TableDescription"]["TableName"]
+                status = response["TableDescription"]["TableStatus"]
+                print(f"Successfully deleted table - {name}")
+                print(f"Status - {status}\n")
+            except ClientError as err:
+                print(err)
     else:
-        try:
-            response = delete_table(table_name.lower())
-            name = response["TableDescription"]["TableName"]
-            status = response["TableDescription"]["TableStatus"]
-            print(f"Successfully deleted table - {name}")
-            print(f"Status - {status}\n")
-        except ClientError as err:
-            print(err)
-
+        invalid_names = []
+        for name in table_names:
+            snaked_cased_name = name.lower().replace(" ", "_")
+            if snaked_cased_name not in create_table_functions:
+                invalid_names.append(name)
+            else:
+                camel_cased_name = name.title().replace(" ", "")
+                try:
+                    response = delete_table(camel_cased_name)
+                    name = response["TableDescription"]["TableName"]
+                    status = response["TableDescription"]["TableStatus"]
+                    print(f"Successfully deleted table - {name}")
+                    print(f"Status - {status}\n")
+                except ClientError as err:
+                    print(err)
+        handle_invalid_table_names(invalid_names)
+        
 
 def handle_invalid_table_names(invalid_names):
     """Print invalid table names to the console."""
