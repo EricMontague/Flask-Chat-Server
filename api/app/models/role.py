@@ -9,29 +9,36 @@ class Role:
 
     def __init__(self, name, permissions):
         self.name = name
-        self.permissions = permissions
+        self._permissions = permissions
 
     def has_permissions(self, permissions):
         """Return True if this role grants a user
         the given permissions, else return False.
         """
-        return permissions in self.permissions
+        return permissions in self._permissions
 
-    def add_persmissions(self, permissions):
+    def add_permissions(self, permissions):
         """Add the given permissions to the set of
         permissions that the role has.
         """
-        self.permissions.add(permissions)
+        self._permissions.add(permissions)
 
     def remove_permissions(self, permissions):
         """Remove the given permissions from the set
         of permissions that the role has.
         """
-        self.permissions.remove(permissions)
+        self._permissions.remove(permissions)
+
+    def to_dict(self):
+        """Return a dictionary representation of a role."""
+        return {
+            "name": self.name.name, 
+            "permissions": {perm.name for perm in self._permissions}
+        }
 
     def __repr__(self):
         """Return a representation of a role model."""
-        return "Role(name=%r, permissions=%r)" % (self.name, self.permissions)
+        return "Role(name=%r, permissions=%r)" % (self.name, self._permissions)
 
 
 class RolePermission(Enum):
@@ -51,10 +58,10 @@ class RolePermission(Enum):
     DELETE_COMMUNITY = 9
 
 
-class RoleName:
+class RoleName(Enum):
     """Class thats holds constants of role names."""
 
-    REGULAR_USER = "regular_user"
-    MODERATOR = "moderator"
-    ADMIN = "admin"
+    REGULAR_USER = 0
+    MODERATOR = 1
+    ADMIN = 2
 

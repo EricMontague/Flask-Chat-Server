@@ -3,6 +3,7 @@
 
 from datetime import datetime
 from dataclasses import dataclass
+from enum import Enum
 from app.exceptions import CommunityMemberNotFoundException
 
 
@@ -100,12 +101,12 @@ class Community:
 
 
 
-class Topic:
+class Topic(Enum):
     """Class to represent a topic for a community."""
 
-    ANXIETY = "anxiety"
-    DEPRESSION = "depression"
-    ADDICTION = "addiction"
-    PTSD = "post_traumatic_stress_disorder"
-    OBSESSIVE_COMPULSIVE_DISORDER = "obsessive_compulsive_disorder"
+    ANXIETY = 0
+    DEPRESSION = 1
+    ADDICTION = 2
+    PTSD = 3
+    OBSESSIVE_COMPULSIVE_DISORDER = 4
 

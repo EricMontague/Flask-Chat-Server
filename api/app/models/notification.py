@@ -1,6 +1,7 @@
 """This module contains the notification model and related classes/functions."""
 
 
+from enum import Enum
 from datetime import datetime
 
 
@@ -52,18 +53,22 @@ class Notification:
         """Mark the notification as seen by the user."""
         self._seen = True
 
+    def __lt__(self):
+        """Comparator dunder method for sorting notifications."""
+        pass
+
     def __repr__(self):
         """Return the representation of the Notification."""
         return "Notification(id=%r, notification_type=%r, message=%r, target=%r)"
 
 
-class NotificationType:
-    """Class that holds constants of notification types."""
+class NotificationType(Enum):
+    """Enum that holds constants of notification types."""
 
-    NEW_PRIVATE_CHAT_MESSAGE = "new_private_chat_message"
-    NEW_GROUP_CHAT_MESSAGE = "new_group_chat_message"
-    NEW_CHAT_REQUEST = "new_chat_request"
-    CHAT_REQUEST_ACCEPTED = "chat_request_accepted"
-    CHAT_REQUEST_REJECTED = "chat_request_rejected"
-    NEW_COMMUNITY_NEAR_YOU = "new_community_near_you"
+    NEW_PRIVATE_CHAT_MESSAGE = 0
+    NEW_GROUP_CHAT_MESSAGE = 1
+    NEW_CHAT_REQUEST = 2
+    CHAT_REQUEST_ACCEPTED = 3
+    CHAT_REQUEST_REJECTED = 4
+    NEW_COMMUNITY_NEAR_YOU = 5
 

@@ -1,6 +1,7 @@
 """This module contains the chat request model."""
 
 
+from enum import Enum
 from datetime import datetime
 
 
@@ -53,8 +54,8 @@ class ChatRequest:
         return "ChatRequest(id=%r, user_id=%r, chat_id=%r)" % (self._id, self._user_id, self._chat_id)
 
 
-class ChatRequestStatus:
-    """Class to represent the status of a chat request."""
+class ChatRequestStatus(Enum):
+    """Enum to represent the status of a chat request."""
 
     PENDING = 0
     ACCEPTED = 1

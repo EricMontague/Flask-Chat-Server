@@ -1,6 +1,7 @@
 """This module contains the image model."""
 
 
+from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -16,13 +17,11 @@ class Image:
     width: int
 
 
+class ImageType(Enum):
+    """Enum to represent image types."""
 
-class ImageType:
-    """Class to represent image types."""
+    USER_PROFILE_PHOTO = 0
+    USER_COVER_PHOTO = 1
+    COMMUNITY_PROFILE_PHOTO = 2
+    COMMUNITY_COVER_PHOTO = 3
 
-    USER_PROFILE_IMAGE = "user_profile_image"
-    USER_COVER_IMAGE = "user_cover_image"
-    COMMUNITY_PROFILE_IMAGE = "community_profile_image"
-    COMMUNITY_COVER_IMAGE = "community_cover_image"
-
-    

@@ -1,6 +1,7 @@
 """This module contains the chat message model."""
 
 
+from enum import Enum
 from datetime import datetime
 
 
@@ -57,16 +58,16 @@ class Message:
         return "Message(id=%r, content=%r)" % (self._id, self._content)
 
 
-class Reaction:
-    """Class to represent reactions that a user can
+class Reaction(Enum):
+    """Enum to represent reactions that a user can
     have to a message.
     """
 
-    LIKE = "like"
-    LAUGH = "laugh"
-    HEART = "heart"
-    SAD = "sad"
-    EYES = "eyes"
-    WOW = "wow"
-    ANGRY = "angry"
+    LIKE = 0
+    LAUGH = 1
+    HEART = 2
+    SAD = 3
+    EYES = 4
+    WOW = 5
+    ANGRY = 6
 
