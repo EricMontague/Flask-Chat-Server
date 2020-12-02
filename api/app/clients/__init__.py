@@ -1,0 +1,1 @@
+from app.clients.dynamodb_client import dynamodb_client
