@@ -1,6 +1,22 @@
 """Temporary module to house custom exceptions for the api."""
 
 
+class InternalException(Exception):
+    """Base exception for all developer exceptions, 
+    not shown to the client
+    """
+    
+    pass
+
+
+class ClientException(Exception):
+    """Base exception for all exceptions that will be trapped 
+    and converted into HTTP responses for the client
+    """
+
+    pass
+
+
 # User exceptions
 class UserNotFoundException(Exception):
     """Exception to be raised when a user
