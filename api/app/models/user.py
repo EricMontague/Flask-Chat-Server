@@ -28,18 +28,18 @@ class User:
         name,
         password_hash,
         email,
-        bio,
-        location,
         created_at,
         last_seen_at,
-        avatar,
-        cover_photo,
         role,
         notifications,
         pending_chat_requests,
         private_chats,
         group_chats,
         communities,
+        bio="",
+        location=None,
+        avatar=None,
+        cover_photo=None
     ):
         self._id = id
         self.username = username
@@ -231,6 +231,24 @@ class User:
         """
         return community_id in self._communities
 
+    def to_dict(self):
+        """Return a dictionary representation of a user."""
+        return {
+            "id": self._id,
+            "username": self.username,
+            "name": self.name,
+            "password_hash": self.password_hash,
+            "email": self.email,
+            "bio": self.bio,
+            "location": self.location.to_dict(),
+            "created_at": self._created_at.isoformat(),
+            "last_seen_at": self.last_seen_at.isoformat(),
+            "avatar_url": self.avatar.url,
+            "cover_photo_url": self.cover_photo.url,
+            "role": self.role.to_dict(),
+            "is_online": self.is_online
+        }
+        
     def __str__(self):
         """Return a more readable string representation 
         of a user than __repr__ with far less fields.
