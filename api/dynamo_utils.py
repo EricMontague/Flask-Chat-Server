@@ -14,8 +14,8 @@ def create_users_table():
     """Create the Users table in DynamoDB."""
     table = dynamodb.create_table(
         TableName="Users",
-        KeySchema=[{"AttributeName": "user_id", "KeyType": "HASH"}],
-        AttributeDefinitions=[{"AttributeName": "user_id", "AttributeType": "S"},],
+        KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"},],
         ProvisionedThroughput={
             "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_RCU", 5),
             "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_WCU", 5),
@@ -29,61 +29,67 @@ def create_communities_table():
     table = dynamodb.create_table(
         TableName="Communities",
         KeySchema=[
-            {"AttributeName": "PK", "KeyType": "HASH"}, 
-            {"AttributeName": "SK", "KeyType": "RANGE"}
+            {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+            {"AttributeName": "SortKey", "KeyType": "RANGE"},
         ],
-        AttributeDefitions=[
-            {"AttributeName": "PK", "AttributeType": "S"},
-            {"AttributeName": "SK", "AttributeType": "S"}
+        AttributeDefinitions=[
+            {"AttributeName": "PartitionKey", "AttributeType": "S"},
+            {"AttributeName": "SortKey", "AttributeType": "S"},
         ],
         GlobalSecondaryIndexes=[
             {
                 "IndexName": "CommunityMembersIndex",
                 "KeySchema": [
-                    {"AttributeName": "PK", "KeyType": "HASH"}, 
-                    {"AttributeName": "SK", "KeyType": "RANGE"}
+                    {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+                    {"AttributeName": "SortKey", "KeyType": "RANGE"},
                 ],
-                "Projection": {
-                    "ProjectionType": "ALL"
-                },
-                "ProvisionedThroughPut": {
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
                     "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
                     "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-                }
+                },
             },
             {
                 "IndexName": "CommunityGroupChatsIndex",
                 "KeySchema": [
-                    {"AttributeName": "PK", "KeyType": "HASH"}, 
-                    {"AttributeName": "SK", "KeyType": "RANGE"}
+                    {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+                    {"AttributeName": "SortKey", "KeyType": "RANGE"},
                 ],
-                "Projection": {
-                    "ProjectionType": "ALL"
-                },
-                "ProvisionedThroughPut": {
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
                     "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
                     "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-                }
+                },
             },
             {
-                "IndexName": "CommunityLocationsIndex",
+                "IndexName": "CommunitiesByLocationIndex",
                 "KeySchema": [
-                    {"AttributeName": "PK", "KeyType": "HASH"}, 
-                    {"AttributeName": "SK", "KeyType": "RANGE"}
+                    {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+                    {"AttributeName": "SortKey", "KeyType": "RANGE"},
                 ],
-                "Projection": {
-                    "ProjectionType": "ALL"
-                },
-                "ProvisionedThroughPut": {
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
                     "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
                     "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-                }
-            }
+                },
+            },
+            {
+                "IndexName": "CommunitiesByTopicIndex",
+                "KeySchema": [
+                    {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+                    {"AttributeName": "SortKey", "KeyType": "RANGE"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
+                    "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
+                },
+            },
         ],
         ProvisionedThroughput={
             "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_RCU", 5),
             "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_WCU", 5),
-        }
+        },
     )
     return table
 
@@ -91,35 +97,33 @@ def create_communities_table():
 def create_group_chats_table():
     """Create the Group Chats table in DynamoDB."""
     table = dynamodb.create_table(
-        TableName="Group Chats",
+        TableName="GroupChats",
         KeySchema=[
-            {"AttributeName": "PK", "KeyType": "HASH"}, 
-            {"AttributeName": "SK", "KeyType": "RANGE"}
+            {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+            {"AttributeName": "SortKey", "KeyType": "RANGE"},
         ],
-        AttributeDefitions=[
-            {"AttributeName": "PK", "AttributeType": "S"},
-            {"AttributeName": "SK", "AttributeType": "S"}
+        AttributeDefinitions=[
+            {"AttributeName": "PartitionKey", "AttributeType": "S"},
+            {"AttributeName": "SortKey", "AttributeType": "S"},
         ],
         GlobalSecondaryIndexes=[
             {
                 "IndexName": "UserGroupChatsIndex",
                 "KeySchema": [
-                    {"AttributeName": "PK", "KeyType": "HASH"}, 
-                    {"AttributeName": "SK", "KeyType": "RANGE"}
+                    {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+                    {"AttributeName": "SortKey", "KeyType": "RANGE"},
                 ],
-                "Projection": {
-                    "ProjectionType": "ALL"
-                },
-                "ProvisionedThroughPut": {
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
                     "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
                     "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-                }
+                },
             }
         ],
         ProvisionedThroughput={
             "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_RCU", 5),
             "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_WCU", 5),
-        }
+        },
     )
     return table
 
@@ -127,35 +131,33 @@ def create_group_chats_table():
 def create_private_chats_table():
     """Create the Private Chats table in DynamoDB."""
     table = dynamodb.create_table(
-        TableName="Private Chats",
+        TableName="PrivateChats",
         KeySchema=[
-            {"AttributeName": "PK", "KeyType": "HASH"}, 
-            {"AttributeName": "SK", "KeyType": "RANGE"}
+            {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+            {"AttributeName": "SortKey", "KeyType": "RANGE"},
         ],
-        AttributeDefitions=[
-            {"AttributeName": "PK", "AttributeType": "S"},
-            {"AttributeName": "SK", "AttributeType": "S"}
+        AttributeDefinitions=[
+            {"AttributeName": "PartitionKey", "AttributeType": "S"},
+            {"AttributeName": "SortKey", "AttributeType": "S"},
         ],
         GlobalSecondaryIndexes=[
             {
                 "IndexName": "UserPrivateChatsIndex",
                 "KeySchema": [
-                    {"AttributeName": "PK", "KeyType": "HASH"}, 
-                    {"AttributeName": "SK", "KeyType": "RANGE"}
+                    {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+                    {"AttributeName": "SortKey", "KeyType": "RANGE"},
                 ],
-                "Projection": {
-                    "ProjectionType": "ALL"
-                },
-                "ProvisionedThroughPut": {
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
                     "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
                     "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-                }
+                },
             }
         ],
         ProvisionedThroughput={
             "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_RCU", 5),
             "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_WCU", 5),
-        }
+        },
     )
     return table
 
@@ -165,36 +167,19 @@ def create_notifications_table():
     table = dynamodb.create_table(
         TableName="Notifications",
         KeySchema=[
-            {"AttributeName": "PK", "KeyType": "HASH"}, 
-            {"AttributeName": "SK", "KeyType": "RANGE"}
+            {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+            {"AttributeName": "SortKey", "KeyType": "RANGE"},
         ],
-        AttributeDefitions=[
-            {"AttributeName": "PK", "AttributeType": "S"},
-            {"AttributeName": "SK", "AttributeType": "S"}
-        ],
-        GlobalSecondaryIndexes=[
-            {
-                "IndexName": "PendingChatRequestsIndex",
-                "KeySchema": [
-                    {"AttributeName": "PK", "KeyType": "HASH"}, 
-                    {"AttributeName": "SK", "KeyType": "RANGE"}
-                ],
-                "Projection": {
-                    "ProjectionType": "ALL"
-                },
-                "ProvisionedThroughPut": {
-                    "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
-                    "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-                }
-            }
+        AttributeDefinitions=[
+            {"AttributeName": "PartitionKey", "AttributeType": "S"},
+            {"AttributeName": "SortKey", "AttributeType": "S"},
         ],
         ProvisionedThroughput={
             "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_RCU", 5),
             "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_WCU", 5),
-        }
+        },
     )
     return table
-
 
 
 def create_chat_requests_table():
@@ -202,17 +187,32 @@ def create_chat_requests_table():
     table = dynamodb.create_table(
         TableName="ChatRequests",
         KeySchema=[
-            {"AttributeName": "PK", "KeyType": "HASH"}, 
-            {"AttributeName": "SK", "KeyType": "RANGE"}
+            {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+            {"AttributeName": "SortKey", "KeyType": "RANGE"},
         ],
-        AttributeDefitions=[
-            {"AttributeName": "PK", "AttributeType": "S"},
-            {"AttributeName": "SK", "AttributeType": "S"}
+        AttributeDefinitions=[
+            {"AttributeName": "PartitionKey", "AttributeType": "S"},
+            {"AttributeName": "SortKey", "AttributeType": "S"},
+            {"AttributeName": "PendingId", "AttributeType": "S"},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "PendingChatRequestsIndex",
+                "KeySchema": [
+                    {"AttributeName": "PartitionKey", "KeyType": "HASH"},
+                    {"AttributeName": "PendingId", "KeyType": "RANGE"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
+                    "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
+                },
+            }
         ],
         ProvisionedThroughput={
             "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_RCU", 5),
             "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_TABLE_WCU", 5),
-        }
+        },
     )
     return table
 
