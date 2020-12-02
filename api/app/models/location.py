@@ -11,3 +11,12 @@ class Location:
     city: str
     state: str
     country: str
+
+    def to_dict(self):
+        """Return a dictionary representation of a location."""
+        return {
+            "city": self.city,
+            "state": self.state,
+            "country": self.country
+        }
+        
