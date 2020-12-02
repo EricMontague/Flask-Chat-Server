@@ -39,15 +39,17 @@ Below are the schemas for the various tables in DynamoDB for this application.
 ### Communities Global Secondary Indexes: 
 
 - The CommunityMembers and CommunityGroupChats indexes use the inverted index pattern to facilitate queries such as "Get all of a user's communities", "Get the community that this group chat belongs to"
-- The CommunityLocations index is used to facilitate queries such as "Get all communities within a certain city."
+- The CommunitiesByLocation index is used to facilitate queries such as "Get all communities within a certain city."
+- The CommunitiesByTopic index is used to facilitate queries such as "Get all communities that are labelled by a specific topic."
 **Items stored in indexes**: Community items
 
 
-| Index                    | Partition Key               | Sort Key                             | 
-| :----------------------- | :-------------------------: | :----------------------------------: | 
-| CommunityLocationIndex   | COUNTRY#<country_name>      | STATE#<state_name>#CITY<city_name>   | 
-| CommunityMembersIndex    | USER#<user_id>              | COMMUNITY#<community_id>             | 
-| CommunityGroupChatsIndex | GROUPCHAT#<group_chat_id>   | COMMUNITY#<community_id>             | 
+| Index                        | Partition Key               | Sort Key                             | 
+| :-------------------------   | :-------------------------: | :----------------------------------: | 
+| CommunitiesByLocationIndex   | COUNTRY#<country_name>      | STATE#<state_name>#CITY<city_name>   |
+| CommunitiesTopicIndex        | TOPIC#<topic_name>          | COMMUNITY#<community_id>             | 
+| CommunityMembersIndex        | USER#<user_id>              | COMMUNITY#<community_id>             | 
+| CommunityGroupChatsIndex     | GROUPCHAT#<group_chat_id>   | COMMUNITY#<community_id>             | 
 
 
 
@@ -61,11 +63,10 @@ Below are the schemas for the various tables in DynamoDB for this application.
 
 | Partition Key                  | Sort Key                                                   | 
 | :----------------------------- | :--------------------------------------------------------: | 
-| USER#<user_id>                 | NOTIFICATION#UNREAD#<ISO-8601-timestamp>#<notification_id> | 
-| USER#<user_id>                 | NOTIFICATIONREAD#<ISO-8601-timestamp>#<notification_id>    | 
+| USER#<user_id>                 | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>        | 
+| USER#<user_id>                 | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>        | 
 
 
-- The extra hashtag before 'UNREAD' is so that unread notifications appear earlier in the sort order than 'READ' notifications
 
 
 ## Group Chats Table
