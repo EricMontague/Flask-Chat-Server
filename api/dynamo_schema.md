@@ -15,7 +15,7 @@ Below are the schemas for the various tables in DynamoDB for this application.
 
 | Partition Key    | Sort Key                                               | 
 | :--------------- | :--------------------------------------------------:   | 
-| USER#<user_id>   | PROFILE#<user_id>                                      | 
+| USER#<user_id>   | USER#<user_id>                                      | 
 | USER#<user_id>   | COMMUNITY#<community_id>                               |
 | USER#<user_id>   | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>    |
 | USER#<user_id>   | CHATREQUEST#<ISO-8601-timestamp>#<request_id>          |
@@ -34,7 +34,7 @@ Below are the schemas for the various tables in DynamoDB for this application.
 
 | Partition Key            | Sort Key                   | 
 | :----------------------  | :------------------------: | 
-| COMMUNITY#<community_id> | PROFILE#<community_id>   | 
+| COMMUNITY#<community_id> | COMMUNITY#<community_id>   | 
 | COMMUNITY#<community_id> | USER#<user_id>             | 
 | COMMUNITY#<community_id> | GROUPCHAT#<group_chat_id>  | 
 | COUNTRY#<country_name>   | STATE#<state_name>#CITY<city_name>   |
