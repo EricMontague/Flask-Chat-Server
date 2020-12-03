@@ -26,16 +26,10 @@ class User:
         id,
         username,
         name,
-        password_hash,
         email,
         created_at,
         last_seen_at,
         role,
-        notifications,
-        pending_chat_requests,
-        private_chats,
-        group_chats,
-        communities,
         bio="",
         location=None,
         avatar=None,
@@ -44,7 +38,7 @@ class User:
         self._id = id
         self.username = username
         self.name = name
-        self.password_hash = password_hash
+        self._password_hash = None
         self.email = email
         self.bio = bio
         self.location = location
@@ -54,11 +48,11 @@ class User:
         self.cover_photo = cover_photo
         self.role = role
         self.is_online = True
-        self._notifications = notifications
-        self._pending_chat_requests = pending_chat_requests
-        self._private_chats = private_chats
-        self._group_chats = group_chats
-        self._communities = communities
+        self._notifications = {}
+        self._pending_chat_requests = {}
+        self._private_chats = {}
+        self._group_chats = {}
+        self._communities = {}
 
     @property
     def id(self):
@@ -87,13 +81,13 @@ class User:
     @password.setter
     def password(self, password):
         """Hash and set the user's password."""
-        self.password_hash = bcrypt.generate_password_hash(password)
+        self._password_hash = bcrypt.generate_password_hash(password)
 
     def verify_password(self, password):
         """Return True if the given password matches the user's password,
         otherwise return False.
         """
-        return bcrypt.check_password_hash(self.password_hash, password)
+        return bcrypt.check_password_hash(self._password_hash, password)
 
     def ping(self):
         """Mark the user as recently seen and online."""
@@ -230,24 +224,6 @@ class User:
         community, otherwise return False.
         """
         return community_id in self._communities
-
-    def to_dict(self):
-        """Return a dictionary representation of a user."""
-        return {
-            "id": self._id,
-            "username": self.username,
-            "name": self.name,
-            "password_hash": self.password_hash,
-            "email": self.email,
-            "bio": self.bio,
-            "location": self.location.to_dict(),
-            "created_at": self._created_at.isoformat(),
-            "last_seen_at": self.last_seen_at.isoformat(),
-            "avatar_url": self.avatar.url,
-            "cover_photo_url": self.cover_photo.url,
-            "role": self.role.to_dict(),
-            "is_online": self.is_online
-        }
         
     def __str__(self):
         """Return a more readable string representation 
@@ -270,28 +246,20 @@ class User:
     def __repr__(self):
         """Return a verbose representation of the user."""
         return (
-            "User(id=%r, username=%r, name=%r, password_hash=%r,"
+            "User(id=%r, username=%r, name=%r,"
             + "email=%r, bio=%r,created_at=%r, last_seen_at=%r,"
-            + "avatar=%r, cover_photo=%r, role=%r, notifications=%r,"
-            + "pending_chat_requests=%r, private_chats=%r, group_chats=%r,"
-            + "communities=%r"
+            + "avatar=%r, cover_photo=%r, role=%r
         ) % (
             self._id,
             self.username,
             self.name,
-            self.password_hash,
             self.email,
             self.bio,
             self._created_at,
             self.last_seen_at,
             self.avatar,
             self.cover_photo,
-            self.role,
-            self._notifications,
-            self._pending_chat_requests,
-            self._private_chats,
-            self._group_chats,
-            self._communities,
+            self.role
         )
 
 
