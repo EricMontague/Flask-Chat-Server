@@ -3,6 +3,7 @@ the boto3 library's DynamoDB resource.
 """
 
 import boto3
+from boto3.dynamodb.conditions import Key
 
 
 class _DynamoDBClient:
@@ -21,16 +22,19 @@ class _DynamoDBClient:
         self._users_table = self._dynamodb.Table(self._USERS_TABLE)
 
     def get_user(self, partition_key):
-        response = self._users_table.get_item(
-            Key={"id": partition_key}, ReturnConsumedCapacity="INDEXES"
+        response = self._users_table.query(
+            Select="ALL_ATTRIBUTES",
+            KeyConditionExpression=Key("PartitionKey").eq(partition_key),
+            ReturnConsumedCapacity="INDEXES",
+            ReturnItemCollectionMetrics="SIZE"
         )
-        return response, response["ResponseMetadata"]["HTTPStatusCode"]
+     
+        return response
 
     def put_user(self, user):
         response = self._users_table.put_item(
             Item=user.to_dict(),
-            ReturnConsumedCapacity="INDEXES",
-            ReturnItemCollectionMetrics="SIZE",
+            
         )
         return response, response["ResponseMetadata"]["HTTPStatusCode"]
 
@@ -39,9 +43,9 @@ class _DynamoDBClient:
             Key={"id": partition_key},
             ReturnConsumedCapacity="INDEXES",
             ReturnItemCollectionMetrics="SIZE",
-            UpdateExpression=expression.update_expression,
+            UpdateExpression=expression.expression,
             ExpressionAttributeNames=expression.attribute_names,
-            ExpressionAttributeValues=expression.attribute_values
+            ExpressionAttributeValues=expression.attribute_values,
         )
         return response, response["ResponseMetadata"]["HTTPStatusCode"]
 
