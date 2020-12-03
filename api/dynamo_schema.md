@@ -9,88 +9,63 @@ Below are the schemas for the various tables in DynamoDB for this application.
 - This table stores only user items
 
 **User item attributes**: Id, Username, Name, PasswordHash, Email, Bio, Location, CreatedAt, LastSeenAt, AvatarURL, CoverPhotoURL, Role
+**Notification item attributes**: Id, NotificationType, Message, Target, Read, Seen
 **Items stored in table**: User items
 
 
-| Partition Key  | Sort Key     | 
-| :------------- | :----------: | 
-| USER#<user_id> | N/A          | 
+| Partition Key    | Sort Key                                               | 
+| :--------------- | :--------------------------------------------------:   | 
+| USER#<user_id>   | PROFILE#<user_id>                                      | 
+| USER#<user_id>   | COMMUNITY#<community_id>                               |
+| USER#<user_id>   | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>    |
+| USER#<user_id>   | CHATREQUEST#<ISO-8601-timestamp>#<request_id>          |
+| USER#<user_id>   | PRIVATECHAT#<private_chat_id>                          |                            
+| USER#<user_id>   | GROUPCHAT#<group_chat_id>                              |
+| USER#<user_id>   | MESSAGE#<ISO-8601-timestamp>#<message_id>|
 
 
+## Communities Global Secondary Index
 
-
-## Communities Table
-
-- This table stores data about communites, as well as data about the members and group chats that belong to a specific community
+- This GSI stores data about communites, as well as data about the members and group chats that belong to a specific community
+- It is used to facilitate queries such as "Get all members of a community", "Get all group chats in a community", and "Get all data about a specific community"
 **Community item attributes**: Id, Name, Description, Topic, AvatarURL, CoverPhotoURL, Location, CreatedAt, Founder
 **Items stored in table**: Community items, user items, group chat items
 
 
 | Partition Key            | Sort Key                   | 
 | :----------------------  | :------------------------: | 
-| COMMUNITY#<community_id> | COMMUNITY#<community_id>   | 
+| COMMUNITY#<community_id> | PROFILE#<community_id>   | 
 | COMMUNITY#<community_id> | USER#<user_id>             | 
 | COMMUNITY#<community_id> | GROUPCHAT#<group_chat_id>  | 
+| COUNTRY#<country_name>   | STATE#<state_name>#CITY<city_name>   |
+| TOPIC#<topic_name>          | COMMUNITY#<community_id>             |
 
 
 
 
+## Group Chats Global Secondary Index
 
-### Communities Global Secondary Indexes: 
-
-- The CommunityMembers and CommunityGroupChats indexes use the inverted index pattern to facilitate queries such as "Get all of a user's communities", "Get the community that this group chat belongs to"
-- The CommunitiesByLocation index is used to facilitate queries such as "Get all communities within a certain city."
-- The CommunitiesByTopic index is used to facilitate queries such as "Get all communities that are labelled by a specific topic."
-**Items stored in indexes**: Community items
-
-
-| Index                        | Partition Key               | Sort Key                             | 
-| :-------------------------   | :-------------------------: | :----------------------------------: | 
-| CommunitiesByLocationIndex   | COUNTRY#<country_name>      | STATE#<state_name>#CITY<city_name>   |
-| CommunitiesTopicIndex        | TOPIC#<topic_name>          | COMMUNITY#<community_id>             | 
-| CommunityMembersIndex        | USER#<user_id>              | COMMUNITY#<community_id>             | 
-| CommunityGroupChatsIndex     | GROUPCHAT#<group_chat_id>   | COMMUNITY#<community_id>             | 
-
-
-
-## Notifications Table
-
-- This table stores data about user notifications. Notifications are stored in their own separate table rather than in the Users table, because in a real chat application, notifications will be updated much more frequently than user data. You could potentially run up against the Users table's limit for RCU's and WCU's if notifications were stored there along with the user data.
-
-**Notification item attributes**: Id, NotificationType, Message, Target, Read, Seen
-**Items stored in table**: Notification items
-
-
-| Partition Key                  | Sort Key                                                   | 
-| :----------------------------- | :--------------------------------------------------------: | 
-| USER#<user_id>                 | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>        | 
-| USER#<user_id>                 | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>        | 
-
-
-
-
-## Group Chats Table
-
-- This table stores data about group chats as well as the messages and members in each chat
+- This GSI stores data about group chats as well as the messages and members in each chat
 
 **Group chat item attributes**: Id, Name, Description, Capacity, Private, NumMembers
 **Message item attributes**: Id, Content, CreatedAt, Reactions, Read, Editted
-**Items stored in table**: Group chat items, message items, user items
+**Chat request attributes**: Id, UserId, ChatId, CreatedAt, Status, Seen, PendingId
+**Items stored in table**: Group chat items, message items, chat request items
 
 
 
 | Partition Key                  | Sort Key                                 | 
 | :----------------------------- | :--------------------------------------: |
 | GROUPCHAT#<group_chat_id>      | GROUPCHAT#<group_chat_id>                | 
-| GROUPCHAT#<group_chat_id>      | USER#<user_id>                           | 
 | GROUPCHAT#<group_chat_id>      | MESSAGE#<ISO-8601-timestamp>#<message_id>| 
+| GROUPCHAT#<group_chat_id>      | CHATREQUEST#<ISO-8601-timestamp>#<request_id> |
+| GROUPCHAT#<group_chat_id>      | COMMUNITY#<community_id>             | 
 
 
 
+## Private Chats Global Secondary Index
 
-## Private Chats Table
-
-- This table stores data about private chats as well as the messages and members in each chat
+- This GSI stores data about private chats as well as the messages and members in each chat
 
 **Private chat item attributes**: Id, Name, Description
 **Message item attributes**: Id, Content, CreatedAt, Reactions, Read, Editted
@@ -101,23 +76,12 @@ Below are the schemas for the various tables in DynamoDB for this application.
 | Partition Key                  | Sort Key                                 | 
 | :----------------------------- | :--------------------------------------: | 
 | PRIVATECHAT#<private_chat_id>  | PRIVATECHAT#<private_chat_id>            | 
-| PRIVATECHAT#<private_chat_id>  | USER#<user_id>                           | 
-| PRIVATECHAT#<private_chat_id>  | MESSAGE#<ISO-8601-timestamp>#<message_id>| 
+| PRIVATECHAT#<private_chat_id>  | MESSAGE#<ISO-8601-timestamp>#<message_id>|
+| PRIVATECHAT#<private_chat_id>  | USER#<user_id>                           |                         
 
 
-## Chat Requests Table
 
-- This table stores data about group chat requests
-
-**Chat request attributes**: Id, UserId, ChatId, CreatedAt, Status, Seen, PendingId
-
-
-| Partition Key                  | Sort Key                                      | 
-| :----------------------------- | :-------------------------------------------: | 
-| USER#<user_id>                 | CHATREQUEST#<ISO-8601-timestamp>#<request_id> | 
-| GROUPCHAT#<group_chat_id>      | CHATREQUEST#<ISO-8601-timestamp>#<request_id> | 
-
-
+ 
 ### Chat Requests Global Secondary Index
 
 - The Chat Requests GSI uses the sparse index pattern to store pending chat requests in order to serve queries such as "Get all of a user's pending chat requests", or "Get all of a group chat's pending chat requests." 
