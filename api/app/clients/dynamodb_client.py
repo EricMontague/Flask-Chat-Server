@@ -21,26 +21,21 @@ class _DynamoDBClient:
             self._dynamodb = boto3.resource("dynamodb")
         self._users_table = self._dynamodb.Table(self._USERS_TABLE)
 
-    def get_user(self, partition_key):
+    def query(self, partition_key, sort_key):
         response = self._users_table.query(
             Select="ALL_ATTRIBUTES",
-            KeyConditionExpression=Key("PartitionKey").eq(partition_key),
-            ReturnConsumedCapacity="INDEXES",
-            ReturnItemCollectionMetrics="SIZE"
-        )
-     
-        return response
-
-    def put_user(self, user):
-        response = self._users_table.put_item(
-            Item=user.to_dict(),
-            
+            KeyConditionExpression=Key("PartitionKey").eq(partition_key) & Key("SortKey").eq(sort_key),
+            ReturnConsumedCapacity="INDEXES"
         )
         return response, response["ResponseMetadata"]["HTTPStatusCode"]
 
-    def update_user(self, partition_key, expression):
+    def put_item(self, user):
+        response = self._users_table.put_item(Item=user)
+        return response, response["ResponseMetadata"]["HTTPStatusCode"]
+
+    def update_item(self, partition_key, sort_key, expression):
         response = self._users_table.update_item(
-            Key={"id": partition_key},
+            Key={"PartitionKey": partition_key, "SortKey": sort_key},
             ReturnConsumedCapacity="INDEXES",
             ReturnItemCollectionMetrics="SIZE",
             UpdateExpression=expression.expression,
@@ -49,9 +44,9 @@ class _DynamoDBClient:
         )
         return response, response["ResponseMetadata"]["HTTPStatusCode"]
 
-    def delete_user(self, partition_key):
+    def delete_item(self, partition_key, sort_key):
         response = self._users_table.delete_item(
-            Key={"id": partition_key},
+            Key={"PartitionKey": partition_key, "SortKey": sort_key},
             ReturnConsumedCapacity="INDEXES",
             ReturnItemCollectionMetrics="SIZE",
         )
