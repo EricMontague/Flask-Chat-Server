@@ -1,12 +1,13 @@
 """This module contains the user model."""
 
 from app import bcrypt
+from app.dynamodb import KeyPrefix
 from datetime import datetime, timedelta
 from app.exceptions import (
     NotificationNotFoundException,
     ChatNotFoundException,
     ChatRequestNotFoundException,
-    CommunityNotFoundException
+    CommunityNotFoundException,
 )
 
 
@@ -33,7 +34,7 @@ class User:
         bio="",
         location=None,
         avatar=None,
-        cover_photo=None
+        cover_photo=None,
     ):
         self._id = id
         self.username = username
@@ -164,7 +165,7 @@ class User:
         """Add a group chat to the user's dictionary of group chats."""
         self.remove_group_chat_request(group_chat.id)
         self._group_chats[group_chat.id] = group_chat
-        
+
     def leave_group_chat(self, group_chat_id):
         """Remove a group chat with the given id from the user's dictionary
         of group chats.
@@ -224,7 +225,26 @@ class User:
         community, otherwise return False.
         """
         return community_id in self._communities
-        
+
+    def to_dynamo(self):
+        """Return a representation of a user as stored in DynamoDB."""
+        return {
+            "PartitionKey": KeyPrefix.USER + self._id,
+            "SortKey": KeyPrefix.USER + self._id,
+            "username": self.username,
+            "name": self.name,
+            "password_hash": self._password_hash,
+            "email": self.email,
+            "bio": self.bio,
+            "location": self.location.to_dynamo(),
+            "created_at": self._created_at.isoformat(),
+            "last_seen_at": self.last_seen_at.isoformat(),
+            "avatar": self.avatar.to_dynamo(),
+            "cover_photo": self.cover_photo.to_dynamo(),
+            "role": self.role.to_dynamo(),
+            "is_online": self.is_online
+        }
+
     def __str__(self):
         """Return a more readable string representation 
         of a user than __repr__ with far less fields.
@@ -248,7 +268,7 @@ class User:
         return (
             "User(id=%r, username=%r, name=%r,"
             + "email=%r, bio=%r,created_at=%r, last_seen_at=%r,"
-            + "avatar=%r, cover_photo=%r, role=%r
+            + "avatar=%r, cover_photo=%r, role=%r"
         ) % (
             self._id,
             self.username,
@@ -259,7 +279,6 @@ class User:
             self.last_seen_at,
             self.avatar,
             self.cover_photo,
-            self.role
+            self.role,
         )
-
 

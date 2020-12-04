@@ -49,9 +49,24 @@ class ChatRequest:
         """Mark the request as rejected."""
         self._status = ChatRequestStatus.REJECTED
 
+    def to_dict(self):
+        """Return a dictionary representation of a notification."""
+        return {
+            "id": self._id,
+            "user_id": self._user_id,
+            "chat_id": self._chat_id,
+            "created_at": self._created_at.isoformat(),
+            "status": self._status.name,
+            "seen": self._seen,
+        }
+
     def __repr__(self):
         """Return the representation of a chat request."""
-        return "ChatRequest(id=%r, user_id=%r, chat_id=%r)" % (self._id, self._user_id, self._chat_id)
+        return "ChatRequest(id=%r, user_id=%r, chat_id=%r)" % (
+            self._id,
+            self._user_id,
+            self._chat_id,
+        )
 
 
 class ChatRequestStatus(Enum):

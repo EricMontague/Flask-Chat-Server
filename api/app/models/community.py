@@ -11,17 +11,7 @@ class Community:
     """Class to represent a community."""
 
     def __init__(
-        self,
-        id,
-        name,
-        description,
-        topic,
-        avatar,
-        cover_photo,
-        location,
-        members,
-        group_chats,
-        founder,
+        self, id, name, description, topic, avatar, cover_photo, location, founder,
     ):
         self._id = id
         self.name = name
@@ -31,8 +21,8 @@ class Community:
         self.cover_photo = cover_photo
         self.location = location
         self._created_at = datetime.now()
-        self._members = members
-        self._group_chats = group_chats
+        self._members = {}
+        self._group_chats = {}
         self._founder = founder
 
     @property
@@ -81,6 +71,20 @@ class Community:
         """
         return member_id in self._members
 
+    def to_dynamo(self):
+        """Return a representation of a community as stored in DynamoDB."""
+        return {
+            "id": self._id,
+            "name": self.name,
+            "description": self.description,
+            "topic": self.topic.name,
+            "avatar": self.avatar.to_dynamo(),
+            "cover_photo": self.cover_photo.to_dynamo(),
+            "location": self.location.to_dynamo(),
+            "created_at": self._created_at.isoformat(),
+            "founder": self._founder.to_dynamo(),
+        }
+
     def __repr__(self):
         """Return a representation of a community. Some attributes are not
         shown in order to reduce verbosity.
@@ -99,9 +103,7 @@ class Community:
         )
 
 
-
-
-class Topic(Enum):
+class CommunityTopic(Enum):
     """Class to represent a topic for a community."""
 
     ANXIETY = 0

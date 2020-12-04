@@ -12,8 +12,8 @@ class Location:
     state: str
     country: str
 
-    def to_dict(self):
-        """Return a dictionary representation of a location."""
+    def to_dynamo(self):
+        """Return a location as represented in DynamoDB."""
         return {
             "city": self.city,
             "state": self.state,

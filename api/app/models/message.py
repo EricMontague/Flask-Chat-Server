@@ -53,6 +53,17 @@ class Message:
         """
         return self._editted
 
+    def to_dynamo(self):
+        """Return a representation of a message as stored in DynamoDB."""
+        return {
+            "id": self._id,
+            "content": self._content,
+            "created_at": self._created_at.isoformat(),
+            "reactions": {reaction.name for reaction in self._reactions},
+            "read": self._read,
+            "editted": self._editted,
+        }
+
     def __repr__(self):
         """Return a representation of a message."""
         return "Message(id=%r, content=%r)" % (self._id, self._content)

@@ -16,6 +16,7 @@ class Notification:
         self._notification_type = notification_type
         self._message = message
         self._target = target
+        self._created_at = datetime.now()
         self._read = False
         self._seen = False
 
@@ -33,6 +34,11 @@ class Notification:
     def message(self):
         """Return the noticiation message."""
         return self._message
+
+    @property
+    def timestamp(self):
+        """Return the timestamp of when the notification was created."""
+        return self._created_at
 
     def was_read(self):
         """Return True if the notification has been read,
@@ -53,7 +59,19 @@ class Notification:
         """Mark the notification as seen by the user."""
         self._seen = True
 
-    def __lt__(self):
+    def to_dynamo(self):
+        """Return a representation of a notification as stored in DynamoDB."""
+        return {
+            "id": self._id,
+            "notification_type": self._notification_type.name,
+            "message": self._message,
+            "target": self._target.to_dynamo(),
+            "created_at": self._created_at.isoformat(),
+            "read": self._read,
+            "seen": self._seen
+        }
+
+    def __lt__(self, other):
         """Comparator dunder method for sorting notifications."""
         pass
 

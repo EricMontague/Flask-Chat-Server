@@ -29,11 +29,11 @@ class Role:
         """
         self._permissions.remove(permissions)
 
-    def to_dict(self):
-        """Return a dictionary representation of a role."""
+    def to_dynamo(self):
+        """Return a representation of a role as stored in DynamoDB."""
         return {
-            "name": self.name.name, 
-            "permissions": {perm.name for perm in self._permissions}
+            "name": self.name.name,
+            "permissions": {perm.name for perm in self._permissions},
         }
 
     def __repr__(self):
