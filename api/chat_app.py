@@ -9,7 +9,7 @@ from app.models import (
     PrivateChat,
     GroupChat,
     Community,
-    Topic,
+    CommunityTopic,
     Image,
     ImageType,
     Message,
@@ -23,6 +23,7 @@ from app.models import (
     Location,
 )
 from app.clients import dynamodb_client
+from app.repositories import dynamodb_repository
 
 
 app = create_app(os.environ.get("FLASK_CONFIG", "development"))
@@ -34,13 +35,14 @@ def make_shell_context():
     accessible in the Flask shell.
     """
     return dict(
+        dynamodb_repository=dynamodb_repository,
         dynamodb_client=dynamodb_client,
         ChatRequest=ChatRequest,
         ChatRequestStatus=ChatRequestStatus,
         PrivateChat=PrivateChat,
         GroupChat=GroupChat,
         Community=Community,
-        Topic=Topic,
+        CommunityTopic=CommunityTopic,
         Image=Image,
         ImageType=ImageType,
         Message=Message,
