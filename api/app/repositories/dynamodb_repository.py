@@ -3,7 +3,7 @@
 
 from http import HTTPStatus
 from app.clients import dynamodb_client
-from app.dynamodb import UpdateExpression, KeyPrefix
+from app.dynamodb import UpdateExpression, KeyPrefix, UpdateAction
 from app.models import User
 
 
@@ -16,7 +16,7 @@ class _DynamoDBRepository:
     def get_user_by_id(self, user_id):
         """Return a user from DynamoDB by id."""
         response, status = self._dynamodb_client.query(
-            KeyPrefix.USER + user_id, KeyPrefix.USER + user_id 
+            KeyPrefix.USER + user_id, KeyPrefix.USER + user_id
         )
         if status != 200:
             # This will later be turned into a log statement
@@ -33,15 +33,11 @@ class _DynamoDBRepository:
             print(f"Non-200 status code! {status}")
         return response, status
 
-    def update_user(self, user):
+    def update_user(self, user_id, attributes_to_values):
         """Update a user item in DynamoDB."""
-        expression = UpdateExpression(
-            "SET #loc.#cit = :city, #loc.#sta = :state, #loc.#cou = :country",
-            {"#loc": "location", "#city": "city", "#sta": "state", "#cou": "country"},
-            {":city": city, ":state": state, ":country": country}
-        )
+        expression = UpdateExpression(UpdateAction.SET, attributes_to_values)
         response, status = self._dynamodb_client.update_item(
-            KeyPrefix.USER + user.id, KeyPrefix.USER + user.id, expression
+            KeyPrefix.USER + user_id, KeyPrefix.USER + user_id, expression
         )
         if status != 200:
             # This will later be turned into a log statement
