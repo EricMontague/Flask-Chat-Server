@@ -4,11 +4,11 @@
 import os
 
 
-COMMUNITIES_GSI = {
-    "IndexName": "CommunitiesIndex",
+INVERTED_GSI = {
+    "IndexName": "InvertedIndex",
     "KeySchema": [
-        {"AttributeName": "PartitionKey", "KeyType": "HASH"},
-        {"AttributeName": "SortKey", "KeyType": "RANGE"},
+        {"AttributeName": "SK", "KeyType": "HASH"},
+        {"AttributeName": "PK", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
@@ -17,43 +17,84 @@ COMMUNITIES_GSI = {
     },
 }
 
-GROUP_CHATS_GSI = {
-    "IndexName": "GroupChatsIndex",
+COMMUNITIES_BY_LOCATION_GSI = {
+    "IndexName": "CommunitiesByLocation",
     "KeySchema": [
-        {"AttributeName": "PartitionKey", "KeyType": "HASH"},
-        {"AttributeName": "SortKey", "KeyType": "RANGE"},
+        {"AttributeName": "country", "KeyType": "HASH"},
+        {"AttributeName": "state_city", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
         "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
         "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-    }
+    },
 }
 
 
-PRIVATE_CHATS_GSI = {
-    "IndexName": "PrivateChatsIndex",
+COMMUNITIES_BY_TOPIC_GSI = {
+    "IndexName": "CommunitiesByTopic",
     "KeySchema": [
-        {"AttributeName": "PartitionKey", "KeyType": "HASH"},
-        {"AttributeName": "SortKey", "KeyType": "RANGE"},
+        {"AttributeName": "topic", "KeyType": "HASH"},
+        {"AttributeName": "community_id", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
         "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
         "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-    }
+    },
+}
+
+# GROUP_CHATS_GSI = {
+#     "IndexName": "GroupChatsIndex",
+#     "KeySchema": [
+#         {"AttributeName": "PK", "KeyType": "HASH"},
+#         {"AttributeName": "SK", "KeyType": "RANGE"},
+#     ],
+#     "Projection": {"ProjectionType": "ALL"},
+#     "ProvisionedThroughput": {
+#         "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
+#         "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
+#     }
+# }
+
+
+# PRIVATE_CHATS_GSI = {
+#     "IndexName": "PrivateChatsIndex",
+#     "KeySchema": [
+#         {"AttributeName": "PK", "KeyType": "HASH"},
+#         {"AttributeName": "SK", "KeyType": "RANGE"},
+#     ],
+#     "Projection": {"ProjectionType": "ALL"},
+#     "ProvisionedThroughput": {
+#         "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
+#         "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
+#     }
+# }
+
+
+USER_PENDING_REQUESTS_GSI = {
+    "IndexName": "UserPendingRequestsIndex",
+    "KeySchema": [
+        {"AttributeName": "PK", "KeyType": "HASH"},
+        {"AttributeName": "request_status_datetime", "KeyType": "RANGE"},
+    ],
+    "Projection": {"ProjectionType": "ALL"},
+    "ProvisionedThroughput": {
+        "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
+        "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
+    },
 }
 
 
-CHAT_REQUESTS_GSI = {
-    "IndexName": "ChatRequestsIndex",
+GROUP_CHAT_PENDING_REQUESTS_GSI = {
+    "IndexName": "GroupChatPendingRequestsIndex",
     "KeySchema": [
-        {"AttributeName": "PartitionKey", "KeyType": "HASH"},
-        {"AttributeName": "SortKey", "KeyType": "RANGE"},
+        {"AttributeName": "group_chat_id", "KeyType": "HASH"},
+        {"AttributeName": "request_status_datetime", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
         "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 5),
         "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 5),
-    }
+    },
 }
