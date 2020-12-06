@@ -13,12 +13,35 @@ Below are the schemas for the various tables in DynamoDB for this application.
 
 | Partition Key    | Sort Key                                               | 
 | :--------------- | :--------------------------------------------------:   | 
-| USER#<user_id>   | USER#<user_id>                                         | 
+| USER#<user_id>           | USER#<user_id>                                         |
+| COMMUNITY#<community_id> | COMMUNITY#<community_id>   | 
+| GROUPCHAT#<group_chat_id>      | GROUPCHAT#<group_chat_id>                | 
 | USER#<user_id>   | COMMUNITY#<community_id>                               |
 | USER#<user_id>   | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>    |
 | USER#<user_id>   | CHATREQUEST#<ISO-8601-timestamp>#<request_id>          |
-| USER#<user_id>   | PRIVATECHAT#<private_chat_id>                          |                            
+| USER#<user_id>   | PRIVATECHAT#<private_chat_id>                          | (Duplicated?)                            
 | USER#<user_id>   | GROUPCHAT#<group_chat_id>                              |
+| GROUPCHAT#<group_chat_id>      | COMMUNITY#<community_id>             |
+
+
+## Inverted Global Secondary Index
+
+- This is an inverted, overloaded GSI that allows for querying the other side of the one-to-many and many-to-many relationships that exist in the main table.
+
+
+
+| Partition Key    | Sort Key                                               | 
+| :--------------- | :--------------------------------------------------:   | 
+| USER#<user_id>                 | USER#<user_id>                           |
+| COMMUNITY#<community_id>       | COMMUNITY#<community_id>   | 
+| GROUPCHAT#<group_chat_id>      | GROUPCHAT#<group_chat_id>                |
+| PRIVATECHAT#<private_chat_id>  | PRIVATECHAT#<private_chat_id>            | 
+| COMMUNITY#<community_id>       | USER#<user_id>       |
+| NOTIFICATION#<ISO-8601-timestamp>#<notification_id>    | USER#<user_id>   |
+| CHATREQUEST#<ISO-8601-timestamp>#<request_id>      USER#<user_id>   |     
+| PRIVATECHAT#<private_chat_id>         | USER#<user_id>   |                   |          
+| GROUPCHAT#<group_chat_id>                      | USER#<user_id>         |
+| COMMUNITY#<community_id>  | GROUPCHAT#<group_chat_id>            |
 
 
 ## Communities Global Secondary Index
@@ -32,9 +55,6 @@ Below are the schemas for the various tables in DynamoDB for this application.
 
 | Partition Key            | Sort Key                   | 
 | :----------------------  | :------------------------: | 
-| COMMUNITY#<community_id> | COMMUNITY#<community_id>   | 
-| COMMUNITY#<community_id> | USER#<user_id>             | 
-| COMMUNITY#<community_id> | GROUPCHAT#<group_chat_id>  | 
 | COUNTRY#<country_name>   | STATE#<state_name>#CITY<city_name>   |
 | TOPIC#<topic_name>       | COMMUNITY#<community_id>             |
 
@@ -53,30 +73,16 @@ Below are the schemas for the various tables in DynamoDB for this application.
 
 | Partition Key                  | Sort Key                                 | 
 | :----------------------------- | :--------------------------------------: |
-| GROUPCHAT#<group_chat_id>      | GROUPCHAT#<group_chat_id>                | 
-| GROUPCHAT#<group_chat_id>      | CHATREQUEST#<ISO-8601-timestamp>#<request_id> |
-| GROUPCHAT#<group_chat_id>      | COMMUNITY#<community_id>             |
-| GROUPCHAT#<group_chat_id>      | USER#<user_id>                           | 
+
+| GROUPCHAT#<group_chat_id>      | PENDING#<ISO-8601-timestamp> |
 
 
 
-## Private Chats Global Secondary Index
-
-- This GSI stores data about private chats as well as the messages and members in each chat
-
-
-**Items stored in index**: Private chat items, message items, user items
 
 
 
-| Partition Key                  | Sort Key                                 | 
-| :----------------------------- | :--------------------------------------: | 
-| PRIVATECHAT#<private_chat_id>  | PRIVATECHAT#<private_chat_id>            | 
-| PRIVATECHAT#<private_chat_id>  | USER#<user_id>                           |                         
 
 
-
- 
 ### Chat Requests Global Secondary Index
 
 - The Chat Requests GSI uses the sparse index pattern to store pending chat requests in order to serve queries such as "Get all of a user's pending chat requests", or "Get all of a group chat's pending chat requests." 
@@ -87,5 +93,4 @@ Below are the schemas for the various tables in DynamoDB for this application.
 
 | Partition Key                  | Sort Key     |                                  
 | :----------------------------- | :----------: | 
-| USER#<user_id>                 | <pending_id> | 
-| GROUPCHAT#<group_chat_id>      | <pending_id> |
+| USER#<user_id>                 | PENDING#<ISO-8601-timestamp> | 
