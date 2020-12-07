@@ -9,16 +9,19 @@ from dynamodb_setup.global_secondary_indexes import (
     INVERTED_GSI,
     COMMUNITIES_BY_LOCATION_GSI,
     COMMUNITIES_BY_TOPIC_GSI,
+    USER_PENDING_REQUESTS_GSI,
+    GROUP_CHAT_PENDING_REQUESTS_GSI
 )
 
 
+TABLE_NAME = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
 dynamodb = boto3.resource("dynamodb")
 
 
-def create_users_table():
-    """Create the Users table in DynamoDB."""
+def create_application_table():
+    """Create the application's single table in DynamoDB."""
     table = dynamodb.create_table(
-        TableName="Users",
+        TableName=TABLE_NAME,
         KeySchema=[
             {"AttributeName": "PK", "KeyType": "HASH"},
             {"AttributeName": "SK", "KeyType": "RANGE"},
@@ -37,6 +40,8 @@ def create_users_table():
             INVERTED_GSI,
             COMMUNITIES_BY_LOCATION_GSI,
             COMMUNITIES_BY_TOPIC_GSI,
+            USER_PENDING_REQUESTS_GSI,
+            GROUP_CHAT_PENDING_REQUESTS_GSI
         ],
         ProvisionedThroughput={
             "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_RCU", 5),
@@ -46,9 +51,9 @@ def create_users_table():
     return table
 
 
-def delete_users_table():
-    """Delete the Users table from DynamoDB"""
-    table = dynamodb.Table("Users")
+def delete_application_table():
+    """Delete the application's ginle table from DynamoDB"""
+    table = dynamodb.Table(TABLE_NAME)
     response = table.delete()
     return response
 
