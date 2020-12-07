@@ -4,11 +4,8 @@ functions responsible for instantiating the application.
 
 
 from flask import Flask
-from flask_bcrypt import Bcrypt
+from app.extensions import bcrypt, ma
 from config import CONFIG_MAPPER
-
-# Instantiate extensions
-bcrypt = Bcrypt()
 
 
 def create_app(config_name):
@@ -24,3 +21,5 @@ def create_app(config_name):
 def register_extensions(app):
     """Register the Flask app with various extensions."""
     bcrypt.init_app(app)
+    ma.init_app(app)
+
