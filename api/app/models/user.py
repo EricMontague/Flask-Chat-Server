@@ -1,7 +1,8 @@
 """This module contains the user model."""
 
 from app import bcrypt
-from app.dynamodb import KeyPrefix
+from app.dynamodb import PrimaryKeyPrefix, ItemType
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from app.exceptions import (
     NotificationNotFoundException,
@@ -226,23 +227,31 @@ class User:
         """
         return community_id in self._communities
 
-    def to_dynamo(self):
-        """Return a representation of a user as stored in DynamoDB."""
+    @staticmethod
+    def key(user_id):
+        """Return the primary key for a user item."""
         return {
-            "PartitionKey": KeyPrefix.USER + self._id,
-            "SortKey": KeyPrefix.USER + self._id,
-            "username": self.username,
-            "name": self.name,
-            "password_hash": self._password_hash,
-            "email": self.email,
-            "bio": self.bio,
-            "location": self.location.to_dynamo(),
-            "created_at": self._created_at.isoformat(),
-            "last_seen_at": self.last_seen_at.isoformat(),
-            "avatar": self.avatar.to_dynamo(),
-            "cover_photo": self.cover_photo.to_dynamo(),
-            "role": self.role.to_dynamo(),
-            "is_online": self.is_online
+            "PK": {"S": PrimaryKeyPrefix.USER + user_id},
+            "SK": {"S": PrimaryKeyPrefix.USER + user_id}
+        }
+
+    def to_item(self):
+        """Return a representation of a user item as stored in DynamoDB."""
+        return {
+            **User.key(self._id),
+            "type": {"S": ItemType.USER.name},
+            "username": {"S": self.username},
+            "name": {"S": self.name},
+            "password_hash": {"B": self._password_hash},
+            "email": {"S": self.email},
+            "location": self.location.to_map(),
+            "bio": {"S": self.bio},
+            "created_at": {"S": self._created_at.isoformat()},
+            "last_seen_at": {"S": self.last_seen_at.isoformat()},
+            "avatar": self.avatar.to_map(),
+            "cover_photo": self.cover_photo.to_map(),
+            "role": self.role.to_map(),
+            "is_online": {"BOOL": self.is_online},
         }
 
     def __str__(self):
@@ -281,4 +290,57 @@ class User:
             self.cover_photo,
             self.role,
         )
+
+
+@dataclass(frozen=True)
+class UserEmail:
+    """Class to be used to enforce uniqueness of a user's email
+    in DynamoDB.
+    """
+
+    user_id: str
+    email: str
+    
+
+    def key(self):
+        """Return the primary key for the UserEmail model for DynamoDB."""
+        return {
+            "PK": {"S": PrimaryKeyPrefix.USER_EMAIL + self.email},
+            "SK": {"S": PrimaryKeyPrefix.USER_EMAIL + self.email},
+        }
+
+    def to_item(self):
+        """Return a representation of the UserEmail model as stored in DynamoDB."""
+        return {
+            **self.key(),
+            "type": {"S": ItemType.USER_EMAIL.name},
+            "user_id": {"S": self.user_id},
+            "email": {"S": self.email}
+        }
+
+
+@dataclass(frozen=True)
+class Username:
+    """Class be used to enforce uniqueness of a user's username in DynamoDB."""
+
+    user_id: str
+    username: str
+    
+
+    def key(self):
+        """Return the primary key for the Username model for DynamoDB."""
+        return {
+            "PK": {"S": PrimaryKeyPrefix.USERNAME + self.username},
+            "SK": {"S": PrimaryKeyPrefix.USERNAME + self.username},
+        }
+
+    def to_item(self):
+        """Return a representation of the Username model as stored in DynamoDB."""
+        return {
+            **self.key(),
+            "type": {"S": ItemType.USERNAME.name},
+            "user_id": {"S": self.user_id},
+            "username": {"S": self.username},
+            
+        }
 

@@ -17,15 +17,17 @@ class Image:
     width: int
     uploaded_at: datetime = datetime.now()
 
-    def to_dynamo(self):
+    def to_map(self):
         """Return a representation of an image as stored in DynamoDB."""
         return {
-            "id": self.id,
-            "image_type": self.image_type.name,
-            "url": self.url,
-            "height": self.height,
-            "width": self.width,
-            "uploated_at": self.uploaded_at.isoformat()
+            "M": {
+                "id": {"S": self.id},
+                "image_type": {"S": self.image_type.name},
+                "url": {"S": self.url},
+                "height": {"N": str(self.height)},
+                "width": {"N": str(self.width)},
+                "uploated_at": {"S": self.uploaded_at.isoformat()},
+            }
         }
 
 

@@ -12,11 +12,13 @@ class Location:
     state: str
     country: str
 
-    def to_dynamo(self):
+    def to_map(self):
         """Return a location as represented in DynamoDB."""
         return {
-            "city": self.city,
-            "state": self.state,
-            "country": self.country
+            "M": {
+                "city": {"S": self.city},
+                "state": {"S": self.state},
+                "country": {"S": self.country}
+            }
         }
         
