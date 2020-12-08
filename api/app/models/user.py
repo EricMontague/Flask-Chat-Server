@@ -253,7 +253,7 @@ class User:
             "role": self.role.to_map(),
             "is_online": {"BOOL": self.is_online},
         }
-
+                
     def __str__(self):
         """Return a more readable string representation 
         of a user than __repr__ with far less fields.
@@ -302,17 +302,18 @@ class UserEmail:
     email: str
     
 
-    def key(self):
+    @staticmethod
+    def key(email):
         """Return the primary key for the UserEmail model for DynamoDB."""
         return {
-            "PK": {"S": PrimaryKeyPrefix.USER_EMAIL + self.email},
-            "SK": {"S": PrimaryKeyPrefix.USER_EMAIL + self.email},
+            "PK": {"S": PrimaryKeyPrefix.USER_EMAIL + email},
+            "SK": {"S": PrimaryKeyPrefix.USER_EMAIL + email},
         }
 
     def to_item(self):
         """Return a representation of the UserEmail model as stored in DynamoDB."""
         return {
-            **self.key(),
+            **UserEmail.key(self.email),
             "type": {"S": ItemType.USER_EMAIL.name},
             "user_id": {"S": self.user_id},
             "email": {"S": self.email}
@@ -327,17 +328,18 @@ class Username:
     username: str
     
 
-    def key(self):
+    @staticmethod
+    def key(username):
         """Return the primary key for the Username model for DynamoDB."""
         return {
-            "PK": {"S": PrimaryKeyPrefix.USERNAME + self.username},
-            "SK": {"S": PrimaryKeyPrefix.USERNAME + self.username},
+            "PK": {"S": PrimaryKeyPrefix.USERNAME + username},
+            "SK": {"S": PrimaryKeyPrefix.USERNAME + username},
         }
 
     def to_item(self):
         """Return a representation of the Username model as stored in DynamoDB."""
         return {
-            **self.key(),
+            **Username.key(self.username),
             "type": {"S": ItemType.USERNAME.name},
             "user_id": {"S": self.user_id},
             "username": {"S": self.username},
