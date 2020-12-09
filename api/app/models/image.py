@@ -26,7 +26,7 @@ class Image:
                 "url": {"S": self.url},
                 "height": {"N": str(self.height)},
                 "width": {"N": str(self.width)},
-                "uploated_at": {"S": self.uploaded_at.isoformat()},
+                "uploaded_at": {"S": self.uploaded_at.isoformat()},
             }
         }
 
