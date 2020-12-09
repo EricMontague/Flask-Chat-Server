@@ -1,7 +1,7 @@
 """This module contains the user model."""
 
 from app import bcrypt
-from app.dynamodb import PrimaryKeyPrefix, ItemType
+from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from app.exceptions import (
@@ -36,6 +36,7 @@ class User:
         location=None,
         avatar=None,
         cover_photo=None,
+        is_online=True
     ):
         self._id = id
         self.username = username
@@ -49,7 +50,7 @@ class User:
         self.avatar = avatar
         self.cover_photo = cover_photo
         self.role = role
-        self.is_online = True
+        self.is_online = is_online
         self._notifications = {}
         self._pending_chat_requests = {}
         self._private_chats = {}
@@ -232,7 +233,7 @@ class User:
         """Return the primary key for a user item."""
         return {
             "PK": {"S": PrimaryKeyPrefix.USER + user_id},
-            "SK": {"S": PrimaryKeyPrefix.USER + user_id}
+            "SK": {"S": PrimaryKeyPrefix.USER + user_id},
         }
 
     def to_item(self):
@@ -253,7 +254,7 @@ class User:
             "role": self.role.to_map(),
             "is_online": {"BOOL": self.is_online},
         }
-                
+
     def __str__(self):
         """Return a more readable string representation 
         of a user than __repr__ with far less fields.
@@ -300,7 +301,6 @@ class UserEmail:
 
     user_id: str
     email: str
-    
 
     @staticmethod
     def key(email):
@@ -316,7 +316,7 @@ class UserEmail:
             **UserEmail.key(self.email),
             "type": {"S": ItemType.USER_EMAIL.name},
             "user_id": {"S": self.user_id},
-            "email": {"S": self.email}
+            "email": {"S": self.email},
         }
 
 
@@ -326,7 +326,6 @@ class Username:
 
     user_id: str
     username: str
-    
 
     @staticmethod
     def key(username):
@@ -343,6 +342,5 @@ class Username:
             "type": {"S": ItemType.USERNAME.name},
             "user_id": {"S": self.user_id},
             "username": {"S": self.username},
-            
         }
 
