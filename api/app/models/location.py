@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass
 class Location:
     """Class to represent a location."""
 
