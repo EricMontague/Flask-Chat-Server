@@ -4,6 +4,7 @@
 from http import HTTPStatus
 from app.clients import dynamodb_client
 from app.models import User, UserEmail, Username, CommunityMembership, Community
+from app.dynamodb.mappings import create_user_from_item
 
 
 class _DynamoDBRepository:
@@ -14,10 +15,10 @@ class _DynamoDBRepository:
 
     def get_user(self, user_id):
         """Return a user from DynamoDB by id."""
-        response = self._dynamodb_client.get_item(User.key(user_id))
-        if "Item" not in response:
+        user_item = self._dynamodb_client.get_item(User.key(user_id))
+        if not user_item:
             return None
-        return response
+        return create_user_from_item(user_item)
 
     def add_user(self, user):
         """Add a new user to DynamoDB."""
@@ -36,7 +37,9 @@ class _DynamoDBRepository:
 
     def update_user(self, user, attributes_to_update):
         """Update a user item in DynamoDB."""
-        keys, attributes = self._build_attributes_and_keys(user, attributes_to_update)
+        keys, attributes = self._build_user_attributes_and_keys(
+            user, attributes_to_update
+        )
         response = self._dynamodb_client.update_user(keys, attributes)
         return response
 
@@ -50,8 +53,13 @@ class _DynamoDBRepository:
         response = self._dynamodb_client.delete_user(keys)
         return response
 
-    def _build_attributes_and_keys(self, user, attributes_to_update):
-        filtered_attributes = self._filter_attributes(user.to_item(), attributes_to_update)
+    def _build_user_attributes_and_keys(self, user, attributes_to_update):
+        """Create and return the dictionaries of user attributes to update
+        as well as the keys of the items to update in DynamoDB.
+        """
+        filtered_attributes = self._filter_attributes(
+            user.to_item(), attributes_to_update
+        )
         final_attributes = {}
         keys = {"user": User.key(user.id)}
         if "email" in filtered_attributes:
