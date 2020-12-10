@@ -5,6 +5,7 @@ functions responsible for instantiating the application.
 
 from flask import Flask
 from app.extensions import bcrypt, ma
+from app.api import api as api_blueprint
 from config import CONFIG_MAPPER
 
 
@@ -15,6 +16,7 @@ def create_app(config_name):
     app = Flask(__name__.split(".")[0])
     app.config.from_object(CONFIG_MAPPER[config_name])
     register_extensions(app)
+    register_blueprints(app)
     return app
 
 
@@ -22,4 +24,9 @@ def register_extensions(app):
     """Register the Flask app with various extensions."""
     bcrypt.init_app(app)
     ma.init_app(app)
+
+
+def register_blueprints(app):
+    """Register blueprints with the Flask app."""
+    app.register_blueprint(api_blueprint, url_prefix="/api/v1")
 
