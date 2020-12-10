@@ -249,8 +249,8 @@ class User:
             "bio": {"S": self.bio},
             "created_at": {"S": self._created_at.isoformat()},
             "last_seen_at": {"S": self.last_seen_at.isoformat()},
-            "avatar": self.avatar.to_map(),
-            "cover_photo": self.cover_photo.to_map(),
+            "avatar": {"NULL": "True"} if not self.avatar else self.avatar.to_map(),
+            "cover_photo": {"NULL": "True"} if not self.cover_photo else self.cover_photo.to_map(),
             "role": self.role.to_map(),
             "is_online": {"BOOL": self.is_online},
         }
