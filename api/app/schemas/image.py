@@ -11,12 +11,7 @@ from marshmallow import validate
 class ImageSchema(ma.Schema):
     """Class to serialize and deserialize image models."""
 
-    id = ma.UUID(required=True)
-    image_type = ma.Str(required=True, validate=validate.OneOf(
-        [image_type.name for image_type in ImageType]
-    ))
     url = ma.Url(required=True)
-    height = ma.Integer(required=True)
-    width = ma.Integer(required=True)
-    uploaded_at = ma.DateTime(required=True) # defaults to iso 8601
+    height = ma.Integer(required=True, validate=validate.Range(min=1, max=2000))
+    width = ma.Integer(required=True, validate=validate.Range(min=1, max=2000))
     
