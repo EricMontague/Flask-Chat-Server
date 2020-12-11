@@ -2,13 +2,26 @@
 """
 
 
+import json
 from abc import ABC
 from datetime import datetime, date, time
 from dataclasses import dataclass
 from enum import Enum
 from app.models import User, Role, RoleName, RolePermission, Location, Image, ImageType
 from app.dynamodb.constants import PrimaryKeyPrefix
-from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
+from app.dynamodb.exceptions import (
+    MapperInstanceResolutionException,
+    ModelNotSetException,
+    UnserialializableTypeException,
+)
+from app.dynamodb.utils import (
+    TypeValidator,
+    DateTimeParser,
+    get_enum_member,
+    get_attribute_or_dict_value,
+    set_attribute_or_dict_value,
+)
+from app.dynamodb.serializer_manager import serializer_manager
 
 
 DYNAMODB_TYPE_MAPPING = {
@@ -26,16 +39,6 @@ DYNAMODB_TYPE_MAPPING = {
     "True": "BOOL",
     "False": "BOOL",
 }
-
-
-class DynamoDBMapperException(Exception):
-    """Base class for all mapper class related exceotions."""
-
-
-class MapperInstanceResolutionException(DynamoDBMapperException, TypeError):
-    """Raised when mapper to instantiate is neither a ModelMapper class nor 
-    an instance.
-    """
 
 
 def resolve_mapper_instance(cls_or_instance):
@@ -59,14 +62,6 @@ class Key:
     prefix: str = ""
 
 
-class MapperMeta(type):
-    """Metaclass for the Mapper class. Sets the ``opts`` class attribute, which is
-    the Schema class's ``class Meta`` options.
-    """
-
-    pass
-
-
 class MapperOptions:
     """class Meta options for the :class:`ModelMapper`. Defines defaults."""
 
@@ -76,8 +71,7 @@ class MapperOptions:
     def __init__(self, meta):
         self.validate_options(meta)
         self.model = meta.model
-        self.included_fields = meta.included_fields
-        self.excluded_fields = meta.excluded_fields
+        self.fields = meta.fields
         self.enum_attribute = meta.enum_attribute
         self.partition_key = Key(meta.partition_key_name, meta.partition_key_prefix)
         self.sort_key = Key(meta.sort_key_name, meta.sort_key_prefix)
@@ -86,48 +80,39 @@ class MapperOptions:
         self.date_format = meta.date_format
         self.time_format = meta.time_format
         self.datetime_format = meta.datetime_format
-        
 
     def validate_options(self, meta):
         """Validate that the option types are correct and that all required
         options are set
         """
-        # Validate model option
-        if meta.model is None:
-            raise ValueError("`model` option must be set")
 
-        # Validate fields options
-        if not isinstance(meta.included_fields, (list, tuple)):
-            raise ValueError("`included_fields` option must be a list or a tuple")
-        if not isinstance(meta.excluded_fields, (list, tuple)):
-            raise ValueError("`excluded_fields` option must be a list or a tuple")
-        if meta.included_fields and meta.excluded_fields:
-            raise ValueError(
-                "Cannot set both `included fields` and `excluded fields` options"
-            )
+        if not isinstance(meta.fields, (list, tuple)):
+            raise ValueError("`fields` option must be a list or a tuple")
 
-        # Validate primary key attributes
         if not meta.partition_key_name:
             raise ValueError("`partition_key_name` attribute not set")
 
-        # Validate enum option
         if meta.enum_attribute not in {"name", "value"}:
             raise ValueError("`enum_attribute option must be either `name` or `value`")
 
 
+# TODO - Determine how to intelligently split this class up if necessary
 class ModelMapper(ABC):
     """Abstract base class to serialize and deserialize 
     models to and from DynamoDB items.
     """
 
     OPTIONS_CLASS = MapperOptions
+    TYPE_VALIDATOR = TypeValidator
+    DATETIME_PARSER = DateTimeParser
     NESTED_MAPPERS = {}
+    ENUMS = {}
 
-    def __init__(self, use_sort_key=True):
-        self.options = self.OPTIONS_CLASS(self.Meta)
-        self.use_sort_key = use_sort_key
-        self._serializer = TypeSerializer()
-        self._deserializer = TypeDeserializer()
+    def __init__(self, ignore_partition_key=False, ignore_sort_key=False):
+        self._options = self.OPTIONS_CLASS(self.Meta)
+        self.ignore_partition_key = ignore_partition_key
+        self.ignore_sort_key = ignore_sort_key
+        self._serializer_manager = serializer_manager
 
     class Meta:
         """Class to define options for the ModelMapper class. 
@@ -135,8 +120,7 @@ class ModelMapper(ABC):
         """
 
         model = None
-        included_fields = ()
-        excluded_fields = ()
+        fields = ()
         partition_key_name = "PK"
         parition_key_prefix = model.__name__.upper() + "#"
         partition_key_attribute = None
@@ -152,86 +136,124 @@ class ModelMapper(ABC):
         """Return a dictionary containing the formatted primary key for
         the item.
         """
-
-        pk_name = self.options.partition_key.column_name
-        if self.use_sort_key:
-            sk_name = self.options.sort_key.column_name
+        pk_name = self._options.partition_key.column_name
+        if not sort_key_value:
             return {
-                pk_name: self.options.partition_key.prefix + str(partition_key_value),
-                sk_name: self.options.sort_key.prefix + str(sort_key_value),
+                pk_name: self._options.partition_key.prefix + str(partition_key_value),
             }
+        sk_name = self._options.sort_key.column_name
         return {
-            pk_name: self.options.partition_key.prefix + str(partition_key_value),
+            pk_name: self._options.partition_key.prefix + str(partition_key_value),
+            sk_name: self._options.sort_key.prefix + str(sort_key_value),
         }
 
-    def serialize(self, model, partition_key_value=None, sort_key_value=None):
+    def serialize_from_model(
+        self, model, partition_key_value=None, sort_key_value=None
+    ):
         """Serialize the given model to a DynamoDB item."""
-        primary_key = self._construct_primary_key(
-            model, partition_key_value, sort_key_value
-        )
-        item = {**primary_key}
-        if self.options.included_fields:
-            fields = self.options.included_fields
-        else:
-            fields = self.options.excluded_fields
+        return self._serialize(model, partition_key_value, sort_key_value)
 
-        for field in fields:
-            value = getattr(model, field)
-            try:
-                serialized_value = self._serializer.serialize(value)
-            except TypeError:
-                serialized_value = self._fallback_serializer(field, value)
+    def serialize_from_dict(self, dict_, partition_key_value=None, sort_key_value=None):
+        """Serialize the given dictionary to a DynamoDB item."""
+        return self._serialize(dict_, partition_key_value, sort_key_value)
+
+    def serialize_from_json(
+        self, json_data, partition_key_value=None, sort_key_value=None
+    ):
+        """Serialize the given JSON dictionary to a DynamoDB item."""
+        serialized_dict = json.loads(json_data)
+        if not self.TYPE_VALIDATOR.is_dict(serialized_dict):
+            raise UnserialializableTypeException("JSON string must be a dictionary")
+        return self._serialize(serialized_dict, partition_key_value, sort_key_value)
+
+    def deserialize_to_model(self, item, attributes_to_monkey_patch=[]):
+        """Deserialize the given item to a model."""
+        if not self._options.model:
+            raise ModelNotSetException("Please set a model in the Mapper's model class")
+        model_dict = self._deserialize(item, attributes_to_monkey_patch)
+        model_instance = self._options.model(**model_dict)
+        self._add_additional_attributes(
+            model_instance, item, attributes_to_monkey_patch
+        )
+        return model_instance
+
+    def deserialize_to_dict(self, item, attributes_to_monkey_patch=[]):
+        """Deserialize the given item to a python dictionary."""
+        dict_ = self._deserialize(item, attributes_to_monkey_patch)
+        self._add_additional_attributes(dict_, item, attributes_to_monkey_patch)
+        return dict_
+
+    def deserialize_to_json(self, item, attributes_to_monkey_patch=[]):
+        """Deserialize the given item to json."""
+        dict_ = self._deserialize(item, attributes_to_monkey_patch)
+        self._add_additional_attributes(dict_, item, attributes_to_monkey_patch)
+        return json.dumps(dict_)
+
+    def merge_items(self, *items):
+        """Merge an arbitary number of DynamoDB items into a single itme."""
+        merged_item = {}
+        for item in items:
+            merged_item.update(item)
+        return merged_item
+
+    def _serialize(self, model_or_dict, partition_key_value=None, sort_key_value=None):
+        """Serialize the given model or dictionary to a DynamoDB item."""
+        item = {}
+        extra_types = {
+            "datetime_format": self._options.datetime_format,
+            "date_format": self._options.date_format,
+            "time_format": self._options.time_format,
+            "enum_attribute": self._options.enum_attribute,
+        }
+        if not self.ignore_partition_key:
+            primary_key = self._construct_primary_key(
+                model_or_dict, partition_key_value, sort_key_value
+            )
+            item.update(primary_key)
+        for field in self._options.fields:
+            value = get_attribute_or_dict_value(model_or_dict, field)
+            if field in self.NESTED_MAPPERS:
+                mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
+                serialized_value = mapper.serialize_from_model(value)
+            else:
+                serialized_value = self._serializer_manager.serialize(
+                    field, value, **extra_types
+                )
             item[field] = serialized_value
         return item
 
-    def _fallback_serializer(self, field, value):
-        """Method to serialize types not natively supported by boto3's TypeSerializer."""
-        if self.is_enum(value):
-            enum_value = getattr(value, self.options.enum_attribute)
-            serialized_value = self._serializer.serialize(enum_value)
-        elif self.is_datetime(value):
-            formatted_datetime = datetime.strftime(value, self.options.datetime_format)
-            serialized_value = self._serializer.serialize(formatted_datetime)
-        elif self.is_date(value):
-            formatted_date = date.strftime(value, self.options.date_format)
-            serialized_value = self._serializer.serialize(formatted_date)
-        elif self.is_time(value):
-            formatted_time = datetime.strftime(value, self.options.time_format)
-            serialized_value = self._serializer.serialize(formatted_time)
-        elif field in self.NESTED_MAPPERS:
-            mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
-            serialized_value = mapper.serialize(value)  # how to pass pk and sk here?
-        else:
-            raise TypeError(f"Unsupported type. Could not serialize field: {field}")
-        return serialized_value
+    def _deserialize(self, item, attributes_to_monkey_patch):
+        """Deserialize the given item to a python dictionary."""
+        extra_types = {
+            "datetime_format": self._options.datetime_format,
+            "date_format": self._options.date_format,
+            "time_format": self._options.time_format,
+        }
+        model_dict = {}
+        for field in self._options.fields:
+            value = item[field]
+            if field in self.NESTED_MAPPERS:
+                mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
+                deserialized_value = mapper.deserialize_to_model(value)
+            elif field in self.ENUMS:
+                deserialized_value = get_enum_member(self.ENUMS[field], value)
+            else:
+                deserialized_value = self._serializer_manager.deserialize(
+                    field, value, **extra_types
+                )
+            model_dict[field] = deserialized_value
+        return model_dict
 
-    def is_enum(self, value):
-        """Return True if the value is an Enum, otherwise return False."""
-        if isinstance(value, Enum):
-            return True
-        return False
-
-    def is_datetime(self, value):
-        """Return True if the value is a datetime object, otherwise return False."""
-        if isinstance(value, datetime):
-            return True
-        return False
-
-    def is_date(self, value):
-        """Return True if the value is a date object, otherwise return False."""
-        if issubclass(value, date):
-            return True
-        return False
-
-    def is_time(self, value):
-        """Return True if the value is a time object, otherwise return False."""
-        if isinstance(value, time):
-            return True
-        return False
-
-    def deserialize(self, item, attributes_to_monkey_patch):
-        """Deserialize the given item back to a model."""
-        pass
+    def _add_additional_attributes(self, model_or_dict, item, attributes):
+        """Add additional attributes to the model or dictionary after deserialization
+        has taken place.
+        """
+        for attribute in attributes:
+            value = item[attribute]
+            deserialized_value = self._serializer_manager.deserialize(
+                attribute, value
+            )
+            set_attribute_or_dict_value(model_or_dict, attribute, deserialized_value)
 
     def _construct_primary_key(self, model, partition_key_value, sort_key_value):
         """Return a formatted primary key based on the passed in parameters
@@ -244,47 +266,30 @@ class ModelMapper(ABC):
         # Both not passed in, use options class values
         elif not partition_key_value and not sort_key_value:
             primary_key = self.key(
-                getattr(model, str(self.options.partition_key_attribute)),
-                getattr(model, str(self.options.sort_key_attribute), None),
+                get_attribute_or_dict_value(
+                    model, str(self._options.partition_key_attribute)
+                ),
+                get_attribute_or_dict_value(
+                    model, str(self._options.sort_key_attribute), None
+                ),
             )
         # Partition key but no sort key
         elif partition_key_value and not sort_key_value:
             primary_key = self.key(
                 partition_key_value,
-                getattr(model, str(self.options.sort_key_attribute), None),
+                get_attribute_or_dict_value(
+                    model, str(self._options.sort_key_attribute), None
+                ),
             )
         # Sort Key but no partition key
         elif not partition_key_value and sort_key_value:
             primary_key = self.key(
-                getattr(model, str(self.options.partition_key_attribute)),
+                get_attribute_or_dict_value(
+                    model, str(self._options.partition_key_attribute)
+                ),
                 sort_key_value,
             )
         return primary_key
-
-
-class UserMapper(ModelMapper):
-    """Class to serialize and deserialize user models to and from
-    DynamoDB items.
-    """
-
-    class Meta:
-        model = User
-        excluded_fields = (
-            "_notifications",
-            "_pending_chat_requests",
-            "_private_chats",
-            "_group_chats",
-            "_communities",
-        )
-        partition_key_attribute = "_id"
-        sort_key_attribute = "_id"
-
-    NESTED_MAPPERS = {
-        "location": LocationMapper,
-        "avatar": ImageMapper,
-        "cover_photo": ImageMapper,
-        "role": RoleMapper,
-    }
 
 
 # TODO - Delete these once the Mapper classes are finished
