@@ -40,7 +40,7 @@ def handle_response(schema):
         @functools.wraps
         def wrapper(*args, **kwargs):
             model_or_models, http_status_code = view_func(*args, **kwargs)
-            return schema.dump(model_or_models), http_status_code
+            return schema.dumps(model_or_models), http_status_code
         
         return wrapper
     
