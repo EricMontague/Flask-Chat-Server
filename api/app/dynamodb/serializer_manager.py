@@ -6,12 +6,17 @@ actual serialization and deserialization of models and items.
 from datetime import datetime, date, time
 from app.dynamodb.exceptions import UnserialializableTypeException
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
-from app.dynamodb.utils import resolve_mapper_instance, TypeValidator, DateTimeParser
+from app.dynamodb.utils import (
+    resolve_mapper_instance,
+    TypeValidator,
+    DateTimeParser,
+    get_enum_member,
+)
 
 
 class SerializerManager:
-    """Class to unify and extend the functionality of boto3's TypeSerializer and TypeDeserializer
-    classes.
+    """Class to unify and extend the functionality of boto3's TypeSerializer and 
+    TypeDeserializer classes.
     """
 
     def __init__(self, serializer, deserializer):
@@ -49,10 +54,6 @@ class SerializerManager:
         elif TypeValidator.is_time(value):
             formatted_time = datetime.strftime(value, kwargs["time_format"])
             serialized_value = self._serializer.serialize(formatted_time)
-        elif TypeValidator.is_enum_collection(value):
-            serialized_value = [
-                getattr(item, kwargs["enum_attribute"]) for item in value
-            ]
         else:
             raise UnserialializableTypeException(
                 f"Unsupported type. Could not serialize field: {field}"
@@ -61,11 +62,18 @@ class SerializerManager:
 
     def _deserialize_unsupported_types(self, field, value, **kwargs):
         """Method to deserialize types not natively support by boto3's TypeDeserializer."""
-        deserialized_value = (
-            DateTimeParser.parse_datetime_string(value, kwargs["datetime_format"])
-            or DateTimeParser.parse_date_string(value, kwargs["date_format"])
-            or DateTimeParser.parse_time_string(value, kwargs["time_format"])
-        )
+        if TypeValidator.is_enum(value):
+            deserialized_value = get_enum_member(kwargs["enum"], value)
+        else:
+            deserialized_value = (
+                DateTimeParser.parse_datetime_string(value, kwargs["datetime_format"])
+                or DateTimeParser.parse_date_string(value, kwargs["date_format"])
+                or DateTimeParser.parse_time_string(value, kwargs["time_format"])
+            )
+        if not deserialized_value:
+            raise UnserialializableTypeException(
+                f"Unsupported type. Could not deserialize field: {field}"
+            )
         return deserialized_value
 
 

@@ -70,14 +70,16 @@ class TypeValidator:
         return False
 
     @staticmethod
-    def is_enum_collection(value):
-        """Return True if the given list, tuple, or set consists of all Enums."""
+    def is_list_like(value):
+        """Return True if the value is a list, tuple, or a set, otherwise
+        return False
+        """
         if (
             TypeValidator.is_set(value)
             or TypeValidator.is_list(value)
             or TypeValidator.is_tuple(value)
         ):
-            return all(map(TypeValidator.is_enum, value))
+            return True
         return False
 
 
