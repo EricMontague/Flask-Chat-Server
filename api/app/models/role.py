@@ -55,9 +55,7 @@ class RolePermission(Enum):
     CREATE_CHAT = 4
     EDIT_CHAT = 5
     DELETE_CHAT = 6
-    CREATE_COMMUNITY = 7
-    EDIT_COMMUNITY = 8
-    DELETE_COMMUNITY = 9
+    BAN_USERS = 7
 
 
 class RoleName(Enum):
