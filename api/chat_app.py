@@ -2,6 +2,7 @@
 
 
 import os
+from http import HTTPStatus
 from app import create_app
 from app.models import (
     ChatRequest,
@@ -10,6 +11,7 @@ from app.models import (
     GroupChat,
     Community,
     CommunityTopic,
+    CommunityMembership,
     Image,
     ImageType,
     Message,
@@ -24,9 +26,40 @@ from app.models import (
 )
 from app.clients import dynamodb_client
 from app.repositories import dynamodb_repository
-
+from flask import jsonify
 
 app = create_app(os.environ.get("FLASK_CONFIG", "development"))
+
+
+# Blueprints can't handle 404 errors since this error occurs at the routing
+# level before the blueprint is determined
+@app.errorhandler(HTTPStatus.NOT_FOUND)
+def resource_not_found(error):
+    """Triggered when a requested resource could not
+    be found.
+    """
+    return (
+        {
+            "error": "The requested resource could not be found",
+            "status_code": HTTPStatus.NOT_FOUND,
+        },
+        HTTPStatus.NOT_FOUND,
+    )
+
+
+@app.errorhandler(HTTPStatus.INTERNAL_SERVER_ERROR)
+def internal_server_error(error):
+    """Triggered as a means of last resort when a specific
+    error on the server is not caught.
+    """
+    return (
+        {
+            "error": "Due to an internal server error, we could not process your request",
+            "status_code": HTTPStatus.INTERNAL_SERVER_ERROR,
+        },
+        HTTPStatus.INTERNAL_SERVER_ERROR,
+    )
+
 
 
 @app.shell_context_processor
@@ -43,6 +76,7 @@ def make_shell_context():
         GroupChat=GroupChat,
         Community=Community,
         CommunityTopic=CommunityTopic,
+        CommunityMembership=CommunityMembership,
         Image=Image,
         ImageType=ImageType,
         Message=Message,
