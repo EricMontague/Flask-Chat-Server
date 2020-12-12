@@ -16,9 +16,9 @@ Below are the schemas for the various tables in DynamoDB for this application.
 | USER#<user_id>           | USER#<user_id>                                         |
 | COMMUNITY#<community_id> | COMMUNITY#<community_id>   | 
 | GROUPCHAT#<group_chat_id>      | GROUPCHAT#<group_chat_id>                |
-| GROUPCHAT#<group_chat_id>      | GMESSAGE#<message_id>                    |
+| GROUPCHAT#<group_chat_id>      | GROUP_MESSAGE#<ISO-8601-timestamp>#<message_id>                    |
 | PRIVATECHAT#<private_chat_id> | PRIVATECHAT#<private_chat_id>             | 
-| PRIVATECHAT#<private_chat_id> | PMESSAGE#<message_id>                     | 
+| PRIVATECHAT#<private_chat_id> | PRIVATE_MESSAGE#<ISO-8601-timestamp>#<message_id>                     | 
 | USER#<user_id>   | NOTIFICATION#<ISO-8601-timestamp>#<notification_id>    | (actual notifications)
 | USER#<user_id>   | CHATREQUEST#<ISO-8601-timestamp>#<request_id>          | (actual chat requests)
 | USER#<user_id>   | PRIVATECHAT#<private_chat_id>                          |                           
