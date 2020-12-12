@@ -10,6 +10,7 @@ from marshmallow import validate
 
 
 
+
 # Edge cases
 # Role - A user should never send this on a POST request
 # password - Should never be sent out 
@@ -20,13 +21,17 @@ from marshmallow import validate
 class UserSchema(ma.Schema):
     """Class to serialize and deserialize User models."""
 
-    _id = ma.UUID(required=True, data_key="id") # will exclude this on POST requests: schema.load(partial=("id",))
+    _id = ma.UUID(data_key="id") # will exclude this on POST requests: schema.load(partial=("id",))
     username = ma.Str(required=True, validate=validate.Length(min=1, max=32))
+    password = ma.Str(required=True, load_only=True)
     name = ma.Str(required=True, validate=validate.Length(min=1, max=32))
     email = ma.Email(required=True, validate=validate.Length(min=1, max=32))
-    _created_at = ma.DateTime(required=True, data_key="joined_on")  # defaults to ISO 8601
-    last_seen_at = ma.DateTime(required=True)  # defaults to ISO 8601
+    _created_at = ma.DateTime(data_key="joined_on")  # defaults to ISO 8601
+    last_seen_at = ma.DateTime()  # defaults to ISO 8601
     bio = ma.Str(validate=validate.Length(max=280))
     location = ma.Nested(LocationSchema, required=True)
     avatar = ma.Nested(ImageSchema)
     cover_photo = ma.Nested(ImageSchema)
+    type_ = ma.Str(default="User", dump_only=True, data_key="type")
+
+    
