@@ -1,6 +1,7 @@
 """This module contains the image model."""
 
 
+from uuid import uuid4
 from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime
@@ -39,3 +40,37 @@ class ImageType(Enum):
     COMMUNITY_PROFILE_PHOTO = 2
     COMMUNITY_COVER_PHOTO = 3
 
+
+class DefaultImageUrl:
+    """Class to represent default image urls."""
+
+    USER_PROFILE_PHOTO = "https://www.mycdn/2323g34y34"
+    USER_COVER_PHOTO = "https://www.mycdn/qwtkqw98"
+    COMMUNITY_PROFILE_PHOTO = "https://www.mycdn/v346231235"
+    COMMUNITY_COVER_PHOTO = "https://www.mycdn/sek98335"
+
+
+default_user_avatar = Image(
+    uuid4().hex,
+    ImageType.USER_PROFILE_PHOTO,
+    DefaultImageUrl.USER_PROFILE_PHOTO,
+    200,
+    200,
+)
+default_user_cover_photo = Image(
+    uuid4().hex, ImageType.USER_COVER_PHOTO, DefaultImageUrl.USER_COVER_PHOTO, 400, 500
+)
+default_community_avatar = Image(
+    uuid4().hex,
+    ImageType.COMMUNITY_PROFILE_PHOTO,
+    DefaultImageUrl.COMMUNITY_PROFILE_PHOTO,
+    200,
+    200,
+)
+default_community_cover_photo = Image(
+    uuid4().hex,
+    ImageType.COMMUNITY_COVER_PHOTO,
+    DefaultImageUrl.COMMUNITY_COVER_PHOTO,
+    400,
+    500,
+)
