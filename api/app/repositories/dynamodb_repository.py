@@ -2,12 +2,14 @@
 
 
 from http import HTTPStatus
+from app.repositories.abstract_repository import AbstractDatabaseRepository
 from app.clients import dynamodb_client
 from app.models import User, UserEmail, Username, CommunityMembership, Community
-from app.dynamodb.mappings import create_user_from_item
+from app.dynamodb.mapper import create_user_from_item
+from app.dynamodb.constants import PrimaryKeyPrefix
 
 
-class _DynamoDBRepository:
+class _DynamoDBRepository(AbstractDatabaseRepository):
     """Repository class for the DynamoDB backend."""
 
     def __init__(self, dynamodb_client):
@@ -28,7 +30,7 @@ class _DynamoDBRepository:
             "user": user.to_item(),
             "user_email": user_email.to_item(),
             "username": username.to_item(),
-        }
+        } 
         response = self._dynamodb_client.create_user(items)
         if "error" in response:
             # should I raise an exception here?
@@ -52,6 +54,10 @@ class _DynamoDBRepository:
         }
         response = self._dynamodb_client.delete_user(keys)
         return response
+
+    def get_users(self, limit, start_key={}):
+        """Return a list of user models."""
+        pass
 
     def _build_user_attributes_and_keys(self, user, attributes_to_update):
         """Create and return the dictionaries of user attributes to update
