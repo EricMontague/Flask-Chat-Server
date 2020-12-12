@@ -70,8 +70,11 @@ class MapperOptions:
         self.model = meta.model
         self.fields = meta.fields
         self.enum_attribute = meta.enum_attribute
-        self.partition_key = Key(meta.partition_key_name, meta.partition_key_prefix)
-        self.sort_key = Key(meta.sort_key_name, meta.sort_key_prefix)
+        
+        partition_key_prefix = meta.partition_key_prefix or self.model.__name__.upper() + "#"
+        sort_key_prefix = meta.sort_key_prefix or self.model.__name__.upper() + "#"
+        self.partition_key = Key(meta.partition_key_name, partition_key_prefix)
+        self.sort_key = Key(meta.sort_key_name, sort_key_prefix)
         self.partition_key_attribute = meta.partition_key_attribute
         self.sort_key_attribute = meta.sort_key_attribute
         self.date_format = meta.date_format
@@ -119,10 +122,10 @@ class ModelMapper(ABC):
         model = None
         fields = ()
         partition_key_name = "PK"
-        parition_key_prefix = model.__name__.upper() + "#"
+        parition_key_prefix = None
         partition_key_attribute = None
         sort_key_name = "SK"
-        sort_key_prefix = model.__name__.upper() + "#"
+        sort_key_prefix = None
         sort_key_attribute = None
         date_format = "%Y-%m-%d"
         time_format = "%H:%M:%S.%f"
