@@ -29,10 +29,10 @@ class User:
         username,
         name,
         email,
-        created_at,
-        last_seen_at,
         role,
         bio="",
+        last_seen_at=datetime.now(),
+        created_at=datetime.now(),
         location=None,
         avatar=None,
         cover_photo=None,
@@ -84,7 +84,7 @@ class User:
     @password.setter
     def password(self, password):
         """Hash and set the user's password."""
-        self._password_hash = bcrypt.generate_password_hash(password)
+        self._password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
 
     def verify_password(self, password):
         """Return True if the given password matches the user's password,
@@ -243,14 +243,14 @@ class User:
             "type": {"S": ItemType.USER.name},
             "username": {"S": self.username},
             "name": {"S": self.name},
-            "password_hash": {"B": self._password_hash},
+            "password_hash": {"S": self._password_hash},
             "email": {"S": self.email},
             "location": self.location.to_map(),
             "bio": {"S": self.bio},
             "created_at": {"S": self._created_at.isoformat()},
             "last_seen_at": {"S": self.last_seen_at.isoformat()},
-            "avatar": {"NULL": "True"} if not self.avatar else self.avatar.to_map(),
-            "cover_photo": {"NULL": "True"} if not self.cover_photo else self.cover_photo.to_map(),
+            "avatar": {"NULL": True} if not self.avatar else self.avatar.to_map(),
+            "cover_photo": {"NULL": True } if not self.cover_photo else self.cover_photo.to_map(),
             "role": self.role.to_map(),
             "is_online": {"BOOL": self.is_online},
         }
