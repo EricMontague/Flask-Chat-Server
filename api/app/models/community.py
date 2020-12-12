@@ -141,6 +141,15 @@ class CommunityMembership:
         }
 
 
+
+class CommunityPermission(Enum):
+    """Enum to represent community permissions."""
+
+    CREATE_COMMUNITY = 0
+    EDIT_COMMUNITY = 1
+    DELETE_COMMUNITY = 2
+
+
 @dataclass(frozen=True)
 class CommunityGroupChatRelation:
     """Class to represent the relationship between group chats and communities."""
