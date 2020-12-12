@@ -6,12 +6,7 @@ actual serialization and deserialization of models and items.
 from datetime import datetime, date, time
 from app.dynamodb.exceptions import UnserialializableTypeException
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
-from app.dynamodb.utils import (
-    resolve_mapper_instance,
-    TypeValidator,
-    DateTimeParser,
-    get_enum_member,
-)
+from app.dynamodb.utils import TypeValidator, DateTimeParser, get_enum_member
 
 
 class SerializerManager:
