@@ -35,10 +35,10 @@ class Image:
 class ImageType(Enum):
     """Enum to represent image types."""
 
-    USER_PROFILE_PHOTO = 0
-    USER_COVER_PHOTO = 1
-    COMMUNITY_PROFILE_PHOTO = 2
-    COMMUNITY_COVER_PHOTO = 3
+    USER_PROFILE_PHOTO = 1
+    USER_COVER_PHOTO = 2
+    COMMUNITY_PROFILE_PHOTO = 3
+    COMMUNITY_COVER_PHOTO = 4
 
 
 class DefaultImageUrl:
