@@ -7,11 +7,11 @@ from enum import Enum
 class ItemType(Enum):
     """Class to represent an item type in DynamoDB."""
 
-    USER = 0
-    COMMUNITY = 1
-    COMMUNITY_MEMBERSHIP = 2
-    USER_EMAIL = 3
-    USERNAME = 4
+    USER = 1
+    COMMUNITY = 2
+    COMMUNITY_MEMBERSHIP = 3
+    USER_EMAIL = 4
+    USERNAME = 5
 
 
 class PrimaryKeyPrefix:

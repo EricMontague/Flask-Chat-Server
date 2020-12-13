@@ -9,10 +9,10 @@ from enum import Enum
 class UpdateAction(Enum):
     """Enum to represent actions for update expressions in DynamoDB."""
 
-    SET = 0
-    ADD = 1
-    DELETE = 2
-    REMOVE = 3
+    SET = 1
+    ADD = 2
+    DELETE = 3
+    REMOVE = 4
 
 
 class UpdateExpression:
@@ -51,4 +51,4 @@ class UpdateExpression:
     def __str__(self):
         """Return a string representation of an expression."""
         return self.expression
-        
+
