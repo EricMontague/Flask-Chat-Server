@@ -3,6 +3,7 @@
 
 from enum import Enum
 from datetime import datetime
+from app.dynamodb.constants import PrimaryKeyPrefix
 
 
 # A notification should be immutable, except for the read and seen attributes
@@ -59,16 +60,20 @@ class Notification:
         """Mark the notification as seen by the user."""
         self._seen = True
 
-    def to_dynamo(self):
+    def to_item(self):
         """Return a representation of a notification as stored in DynamoDB."""
         return {
-            "id": self._id,
+            "PK": PrimaryKeyPrefix.USER + self._user_id,
+            "SK": PrimaryKeyPrefix.NOTIFICATION
+            + self._created_at.isoformat()
+            + "#"
+            + self._id,
             "notification_type": self._notification_type.name,
             "message": self._message,
-            "target": self._target.to_dynamo(),
+            "target": self._target.to_item(),
             "created_at": self._created_at.isoformat(),
             "read": self._read,
-            "seen": self._seen
+            "seen": self._seen,
         }
 
     def __lt__(self, other):
@@ -83,10 +88,10 @@ class Notification:
 class NotificationType(Enum):
     """Enum that holds constants of notification types."""
 
-    NEW_PRIVATE_CHAT_MESSAGE = 0
-    NEW_GROUP_CHAT_MESSAGE = 1
-    NEW_CHAT_REQUEST = 2
-    CHAT_REQUEST_ACCEPTED = 3
-    CHAT_REQUEST_REJECTED = 4
-    NEW_COMMUNITY_NEAR_YOU = 5
+    NEW_PRIVATE_CHAT_MESSAGE = 1
+    NEW_GROUP_CHAT_MESSAGE = 2
+    NEW_CHAT_REQUEST = 3
+    CHAT_REQUEST_ACCEPTED = 4
+    CHAT_REQUEST_REJECTED = 5
+    NEW_COMMUNITY_NEAR_YOU = 6
 
