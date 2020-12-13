@@ -53,7 +53,7 @@ class Message:
         """
         return self._editted
 
-    def to_dynamo(self):
+    def to_item(self):
         """Return a representation of a message as stored in DynamoDB."""
         return {
             "id": self._id,
@@ -74,11 +74,11 @@ class Reaction(Enum):
     have to a message.
     """
 
-    LIKE = 0
-    LAUGH = 1
-    HEART = 2
-    SAD = 3
-    EYES = 4
-    WOW = 5
-    ANGRY = 6
+    LIKE = 1
+    LAUGH = 2
+    HEART = 3
+    SAD = 4
+    EYES = 5
+    WOW = 6
+    ANGRY = 7
 
