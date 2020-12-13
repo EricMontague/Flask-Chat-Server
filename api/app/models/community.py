@@ -145,9 +145,9 @@ class CommunityMembership:
 class CommunityPermission(Enum):
     """Enum to represent community permissions."""
 
-    CREATE_COMMUNITY = 0
-    EDIT_COMMUNITY = 1
-    DELETE_COMMUNITY = 2
+    CREATE_COMMUNITY = 1
+    EDIT_COMMUNITY = 2
+    DELETE_COMMUNITY = 3
 
 
 @dataclass(frozen=True)
@@ -174,9 +174,9 @@ class CommunityGroupChatRelation:
 class CommunityTopic(Enum):
     """Class to represent a topic for a community."""
 
-    ANXIETY = 0
-    DEPRESSION = 1
-    ADDICTION = 2
-    PTSD = 3
-    OBSESSIVE_COMPULSIVE_DISORDER = 4
+    ANXIETY = 1
+    DEPRESSION = 2
+    ADDICTION = 3
+    PTSD = 4
+    OBSESSIVE_COMPULSIVE_DISORDER = 5
 

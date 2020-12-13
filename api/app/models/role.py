@@ -48,20 +48,20 @@ class RolePermission(Enum):
     to a given role.
     """
 
-    READ_CHAT_MESSAGE = 0
-    WRITE_CHAT_MESSAGE = 1
-    EDIT_CHAT_MESSAGE = 2
-    DELETE_CHAT_MESSAGE = 3
-    CREATE_CHAT = 4
-    EDIT_CHAT = 5
-    DELETE_CHAT = 6
-    BAN_USERS = 7
+    READ_CHAT_MESSAGE = 1
+    WRITE_CHAT_MESSAGE = 2
+    EDIT_CHAT_MESSAGE = 3
+    DELETE_CHAT_MESSAGE = 4
+    CREATE_CHAT = 5
+    EDIT_CHAT = 6
+    DELETE_CHAT = 7
+    BAN_USERS = 8
 
 
 class RoleName(Enum):
     """Class thats holds constants of role names."""
 
-    REGULAR_USER = 0
-    MODERATOR = 1
-    ADMIN = 2
+    REGULAR_USER = 1
+    MODERATOR = 2
+    ADMIN = 3
 
