@@ -44,8 +44,8 @@ def create_application_table():
             GROUP_CHAT_PENDING_REQUESTS_GSI
         ],
         ProvisionedThroughput={
-            "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_RCU", 5),
-            "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_WCU", 5),
+            "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_RCU", 25),
+            "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_WCU", 25),
         },
     )
     return table
