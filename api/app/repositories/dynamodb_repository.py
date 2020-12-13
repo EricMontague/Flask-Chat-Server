@@ -3,6 +3,7 @@
 
 from http import HTTPStatus
 from app.repositories.abstract_repository import AbstractDatabaseRepository
+from app.repositories.exceptions import UniqueConstraintException
 from app.clients import dynamodb_client
 from app.models import User, UserEmail, Username, CommunityMembership, Community
 from app.dynamodb.mapper import create_user_from_item
@@ -33,9 +34,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         } 
         response = self._dynamodb_client.create_user(items)
         if "error" in response:
-            # should I raise an exception here?
-            print("Error!")
-        return response
+            raise UniqueConstraintException(response["error"])
 
     def update_user(self, user, attributes_to_update):
         """Update a user item in DynamoDB."""
