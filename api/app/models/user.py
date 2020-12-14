@@ -315,8 +315,7 @@ class UserEmail:
         return {
             **UserEmail.key(self.email),
             "type": {"S": ItemType.USER_EMAIL.name},
-            "user_id": {"S": self.user_id},
-            "email": {"S": self.email},
+            "user_id": {"S": self.user_id}
         }
 
 
@@ -340,7 +339,6 @@ class Username:
         return {
             **Username.key(self.username),
             "type": {"S": ItemType.USERNAME.name},
-            "user_id": {"S": self.user_id},
-            "username": {"S": self.username},
+            "user_id": {"S": self.user_id}
         }
 
