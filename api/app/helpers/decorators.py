@@ -45,9 +45,20 @@ def handle_response(schema):
             # or (results, http_status_code)
             results = view_response[0]
             http_status_code = view_response[1]
-            if not schema or isinstance(results, dict) and (not results or "error" in results):
+            if (
+                not schema 
+                or isinstance(results, dict) and (not results or "error" in results)
+                or isinstance(results, list) or isinstance(results, str)
+            ):
                 api_response = make_response(results, http_status_code)
-            else:
+            # attempt to serialize every key since I don't know if it's a model or not
+            elif isinstance(results, dict): 
+                for key in results: # Which exceptions should be caught here?
+                    serialized_data = schema.dump(results[key])
+                    if serialized_data:
+                        results[key] = serialized_data
+                api_response = make_response(results, http_status_code)
+            else: # assume it's a model
                 api_response = make_response(schema.dump(results), http_status_code)
 
             if len(view_response) == 3:  # extra headers are included
