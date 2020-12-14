@@ -6,6 +6,7 @@ from app.repositories.abstract_repository import AbstractDatabaseRepository
 from app.repositories.exceptions import UniqueConstraintException
 from app.clients import dynamodb_client
 from app.models import User, UserEmail, Username, CommunityMembership, Community
+from app.models.update_models import update_user_model
 from app.dynamodb.mapper import create_user_from_item
 from app.dynamodb.constants import PrimaryKeyPrefix
 
@@ -31,17 +32,27 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             "user": user.to_item(),
             "user_email": user_email.to_item(),
             "username": username.to_item(),
-        } 
+        }
         response = self._dynamodb_client.create_user(items)
         if "error" in response:
             raise UniqueConstraintException(response["error"])
 
-    def update_user(self, user, attributes_to_update):
+    def update_user(self, old_user, updated_user_data):
         """Update a user item in DynamoDB."""
-        keys, attributes = self._build_user_attributes_and_keys(
-            user, attributes_to_update
-        )
-        response = self._dynamodb_client.update_user(keys, attributes)
+        updated_user = update_user_model(old_user, updated_user_data)
+        items = {"user": updated_user.to_item()}
+        print(old_user.email, updated_user.email)
+        if old_user.email != updated_user.email:
+            items["updated_user_email"] = UserEmail(
+                updated_user.id, updated_user.email
+            ).to_item()
+            items["old_user_email_key"] = UserEmail.key(old_user.email)
+        if old_user.username != updated_user.username:
+            items["upated_username"] = Username(
+                updated_user.id, updated_user.username
+            ).to_item()
+            items["old_username_key"] = Username.key(old_user.username)
+        response = self._dynamodb_client.update_user(items)
         return response
 
     def remove_user(self, user):
@@ -54,34 +65,10 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response = self._dynamodb_client.delete_user(keys)
         return response
 
-    def get_users(self, limit, start_key={}):
+    def get_users(self, limit, start_key=None):
         """Return a list of user models."""
-        pass
-
-    def _build_user_attributes_and_keys(self, user, attributes_to_update):
-        """Create and return the dictionaries of user attributes to update
-        as well as the keys of the items to update in DynamoDB.
-        """
-        filtered_attributes = self._filter_attributes(
-            user.to_item(), attributes_to_update
-        )
-        final_attributes = {}
-        keys = {"user": User.key(user.id)}
-        if "email" in filtered_attributes:
-            keys["user_email"] = UserEmail.key(user.email)
-            final_attributes["user_meail"] = filtered_attributes.pop("email")
-        if "username" in filtered_attributes:
-            keys["username"] = Username.key(user.username)
-            final_attributes["username"] = filtered_attributes.pop("username")
-        final_attributes["user"] = filtered_attributes
-        return keys, final_attributes
-
-    def _filter_attributes(self, item, attributes):
-        """Return a dictionary containing a subset of the
-        attributes of the given DynamoDB item.
-        """
-        filtered_attributes = {attribute: item[attribute] for attribute in attributes}
-        return filtered_attributes
+        results = self._dynamodb_client.get_items(limit, start_key, "UsersIndex")
+        return [create_user_from_item(item) for item in results]
 
 
 dynamodb_repository = _DynamoDBRepository(dynamodb_client)

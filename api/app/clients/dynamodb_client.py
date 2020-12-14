@@ -49,6 +49,18 @@ class _DynamoDBClient:
                     error_message = "A user with this username already exists"
             return {"error": error_message}
 
+    def update_user(self, items):
+        """Update a user in the table """
+        logger.info("Updating user in DynamoDB")
+        parameters = self._build_update_user_parameters(items)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+            error_message = "Could not update user information"
+            return {"error": error_message}
+
     def delete_user(self, keys):
         """Delete a user item from DynamoDB."""
         logger.info("Deleting a user from DynamoDB")
@@ -67,6 +79,21 @@ class _DynamoDBClient:
                     error_message = "User could not be found"
             return {"error": error_message}
 
+    def get_items(self, limit, start_key, index=None):
+        """Return a list of items from the table or an index if given."""
+        results = []
+        while True:
+            if index:
+                response = self._scan_index(limit, start_key, index)
+            else:
+                response = self._scan_table(limit, start_key)
+            pprint(response)
+            start_key = response.get("LastEvaluatedKey")
+            results.extend(response["Items"])
+            if not start_key:
+                break
+        return results
+
     def get_item(self, key):
         """Return a single item from DynamoDB. This method
         will return the item with all of its attributes.
@@ -81,40 +108,6 @@ class _DynamoDBClient:
         response = self._dynamodb.put_item(Item=user_item)
         return response, response["ResponseMetadata"]["HTTPStatusCode"]
 
-    def update_user(self, keys, attributes):
-        """Update a user item in the table """
-        # Special cases are changing a user's email, or username
-        if "email" in attributes or "username" in attributes or "role" in attributes:
-            logging.info(
-                "Email or username attributes need to be updated. Transaction needed."
-            )
-            return self._update_with_transaction(keys, attributes)
-        return self._update_without_transaction(keys["user"], attributes["user"])
-
-    def _update_with_transaction(self, keys, attributes):
-        parameters = self._build_update_user_parameters(keys, attributes)
-        try:
-            return self._execute_transact_write(parameters)
-        except ClientError as err:
-            logger.error(f"{err.response['Error']['Code']}")
-            logger.error(f"{err.response['Error']['Message']}")
-
-            error_message = "Could not update user"
-            return {"error": error_message}
-
-    def _update_without_transaction(self, key, attributes):
-        expression = UpdateExpression(UpdateAction.SET, attributes)
-        logger.info("Updating an item without a transaction")
-        logger.info(expression.attribute_value_placeholders)
-        response = self._dynamodb.update_item(
-            TableName=self._table_name,
-            Key=key,
-            UpdateExpression=expression.expression,
-            ExpressionAttributeNames=expression.attribute_name_placeholders,
-            ExpressionAttributeValues=expression.attribute_value_placeholders,
-        )
-        return response
-
     def delete_item(self, key):
         """Delete an item from DynamoDB and return the response."""
         response = self._dynamodb.delete_item(TableName=self._table_name, Key=key)
@@ -123,6 +116,39 @@ class _DynamoDBClient:
     def _execute_transact_write(self, parameters):
         """Write the given items into DynamoDB as part of a transaction."""
         response = self._dynamodb.transact_write_items(TransactItems=parameters)
+        return response
+
+
+    def _scan_index(self, limit, start_key, index):
+        """Perform a scan on an index and return a list of items."""
+        if start_key:
+            response = self._dynamodb.scan(
+                TableName=self._table_name,
+                IndexName=index,
+                ExclusiveStartKey=start_key,
+                Limit=limit
+            )
+        else:
+            response = self._dynamodb.scan(
+                TableName=self._table_name, 
+                IndexName=index, 
+                Limit=limit
+            )
+        return response
+    
+    def _scan_table(self, limit, start_key):
+        """Perform a scan on the table and return a list of items."""
+        if start_key:
+            response = self._dynamodb.scan(
+                TableName=self._table_name,
+                ExclusiveStartKey=start_key,
+                Limit=limit
+            )
+        else:
+            response = self._dynamodb.scan(
+                TableName=self._table_name, 
+                Limit=limit
+            )
         return response
 
     # May move these _build_* methods into another module and make them functions if this
@@ -141,22 +167,31 @@ class _DynamoDBClient:
         ]
         return parameters
 
-    def _build_update_user_parameters(self, keys, attributes):
-        """Return the parameters necessary for updating a user in a transaction."""
-        expressions = [
-            UpdateExpression(UpdateAction.SET, attributes[key]) for key in keys
-        ]
-        parameters = [
-            {
-                "Update": {
-                    "Key": keys[key],
-                    "TableName": self._table_name,
-                    "UpdateExpression": expressions[key],
-                    "ConditionExpression": "attribute_exists(PK)",
+    def _build_update_user_parameters(self, items):
+        """Return the parameters necessary to update a user in a transaction."""
+        parameters = []
+        if "old_user_email_key" in items:
+            parameters.append(
+                {
+                    "Delete": {
+                        "Key": items.pop("old_user_email_key"),
+                        "TableName": self._table_name,
+                    }
                 }
-            }
-            for key in keys
-        ]
+            )
+        if "old_username_key" in items:
+            parameters.append(
+                {
+                    "Delete": {
+                        "Key": items.pop("old_username_key"),
+                        "TableName": self._table_name,
+                    }
+                }
+            )
+        for item in items:
+            parameters.append(
+                {"Put": {"Item": items[item], "TableName": self._table_name}}
+            )
         return parameters
 
     def _build_delete_user_parameters(self, keys):
