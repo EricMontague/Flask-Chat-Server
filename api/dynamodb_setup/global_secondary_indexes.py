@@ -4,11 +4,11 @@
 import os
 
 
-INVERTED_GSI = {
-    "IndexName": "InvertedIndex",
+USERS_GSI = {
+    "IndexName": "UsersIndex",
     "KeySchema": [
-        {"AttributeName": "SK", "KeyType": "HASH"},
-        {"AttributeName": "PK", "KeyType": "RANGE"},
+        {"AttributeName": "PK", "KeyType": "HASH"},
+        {"AttributeName": "username", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {

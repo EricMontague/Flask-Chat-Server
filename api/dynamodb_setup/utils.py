@@ -6,7 +6,7 @@ for Dynamo tables.
 import os
 import boto3
 from dynamodb_setup.global_secondary_indexes import (
-    INVERTED_GSI,
+    USERS_GSI,
     COMMUNITIES_BY_LOCATION_GSI,
     COMMUNITIES_BY_TOPIC_GSI,
     USER_PENDING_REQUESTS_GSI,
@@ -35,9 +35,10 @@ def create_application_table():
             {"AttributeName": "community_id", "AttributeType": "S"},
             {"AttributeName": "request_status_datetime", "AttributeType": "S"},
             {"AttributeName": "group_chat_id", "AttributeType": "S"},
+            {"AttributeName": "username", "AttributeType": "S"}
         ],
         GlobalSecondaryIndexes=[
-            INVERTED_GSI,
+            USERS_GSI,
             COMMUNITIES_BY_LOCATION_GSI,
             COMMUNITIES_BY_TOPIC_GSI,
             USER_PENDING_REQUESTS_GSI,
