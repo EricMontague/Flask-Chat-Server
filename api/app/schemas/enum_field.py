@@ -23,13 +23,13 @@ class EnumField(fields.Field):
         """Serialize python Enum to a string or integer."""
         if self.serialize_to_name:
             return value.name
-        return attr.value
+        return value.value
 
     def _deserialize(self, value, attr, data, **kwargs):
         """Deserialize integer or string to a python Enum."""
-        if type(value, str):
+        if isinstance(value, str):
             return self._deserialize_string(value.upper())
-        elif type(value, int):
+        elif isinstance(value, int):
             return self._deserialize_integer(value)
         else:
             raise ValidationError("Value must be of type 'str' or 'int'")
@@ -38,12 +38,16 @@ class EnumField(fields.Field):
         """Return an Enum given an integer as a key"""
         try:
             return self.enum(enum_key)
-        except KeyError as err:
-            raise ValidationError("Invalid name for enum") from err
+        except ValueError as err:
+            raise ValidationError(
+                f"Must be one of: {[enum.value for enum in self.enum]}"
+            ) from err
 
     def _deserialize_string(self, enum_key):
         """Return an Enum given a string as a key"""
         try:
             return self.enum[enum_key]
         except KeyError as err:
-            raise ValidationError("Invalid name for enum") from err
+            raise ValidationError(
+                f"Must be one of: {[enum.name for enum in self.enum]}"
+            ) from err
