@@ -20,12 +20,12 @@ from marshmallow import validate, pre_load, post_load, post_dump, EXCLUDE
 class UserSchema(ma.Schema):
     """Class to serialize and deserialize User models."""
 
+    COLLECTION_NAME = "users"
+
     class Meta:
         unknown = EXCLUDE
 
-    _id = ma.UUID(
-        data_key="id", dump_only=True
-    )  # will exclude this on POST requests: schema.load(partial=("id",))
+    _id = ma.UUID(data_key="id", dump_only=True)
     username = ma.Str(required=True, validate=validate.Length(min=1, max=32))
     name = ma.Str(required=True, validate=validate.Length(min=1, max=32))
     email = ma.Email(required=True, validate=validate.Length(min=1, max=32))
@@ -38,14 +38,14 @@ class UserSchema(ma.Schema):
     avatar = ma.Nested(ImageSchema, dump_only=True)
     cover_photo = ma.Nested(ImageSchema, dump_only=True)
 
-    # @pre_load
-    # def strip_unwanted_fields(self, data, many, **kwargs):
-    #     """Remove unwanted fields from the input data before deserialization."""
-    #     unwanted_fields = ["resource_type"]
-    #     for field in unwanted_fields:
-    #         if field in data:
-    #             data.pop(field)
-    #     return data
+    @pre_load
+    def strip_unwanted_fields(self, data, many, **kwargs):
+        """Remove unwanted fields from the input data before deserialization."""
+        unwanted_fields = ["resource_type"]
+        for field in unwanted_fields:
+            if field in data:
+                data.pop(field)
+        return data
 
     @post_load
     def convert_uuid_to_hex(self, data, **kwargs):
