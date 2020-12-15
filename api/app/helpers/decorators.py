@@ -9,23 +9,34 @@ from marshmallow import ValidationError
 
 def handle_request(schema):
     """Decorator to handle deserializing the JSON body
-    of requests to API routes.
+    of requests to API routes as well as Url parameters.
+    Meant to only be used on GET, PUT, and POST requests
     """
 
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            request_data = request.json
-            if not request_data:
-                return (
-                    {"message": "Missing JSON Body in request"},
-                    HTTPStatus.BAD_REQUEST,
-                )
-            try:
-                model_dict = schema.load(request_data)
-            except ValidationError as err:
-                return {"errors": err.messages}, HTTPStatus.UNPROCESSABLE_ENTITY
-            return func(model_dict, *args, **kwargs)
+            if request.method == "GET":
+                try:
+                    view_argument = schema.load(request.args)
+                except ValidationError as err:
+                    return {"error": err.messages["_schema"]}, HTTPStatus.UNPROCESSABLE_ENTITY
+            elif request.method in {"POST", "PUT"}:
+                if not request.json:
+                    return (
+                        {"message": "Missing JSON Body in request"},
+                        HTTPStatus.BAD_REQUEST,
+                    )
+                try:
+                    view_argument = schema.load(request.json)
+                except ValidationError as err:
+                    if "_schema" in err.messages:
+                        return (
+                            {"error": err.messages["_schema"]},
+                            HTTPStatus.UNPROCESSABLE_ENTITY,
+                        )
+                    return {"errors": err.messages}, HTTPStatus.UNPROCESSABLE_ENTITY
+            return func(view_argument, *args, **kwargs)
 
         return wrapper
 
@@ -46,19 +57,28 @@ def handle_response(schema):
             results = view_response[0]
             http_status_code = view_response[1]
             if (
-                not schema 
-                or isinstance(results, dict) and (not results or "error" in results)
-                or isinstance(results, list) or isinstance(results, str)
+                not schema
+                or isinstance(results, str)
+                or isinstance(results, dict)
+                and (not results or "error" in results or "errors" in results)
             ):
                 api_response = make_response(results, http_status_code)
-            # attempt to serialize every key since I don't know if it's a model or not
-            elif isinstance(results, dict): 
-                for key in results: # Which exceptions should be caught here?
-                    serialized_data = schema.dump(results[key])
-                    if serialized_data:
-                        results[key] = serialized_data
+            elif isinstance(results, list):  # attempt to serialize list
+                serialized_results = schema.dump(results)
+                api_response = make_response(
+                    serialized_results or results, http_status_code
+                )
+            elif isinstance(results, dict):  # attempt to serialize every item in dict
+                for key in results:
+                    if key == "model":
+                        model = results.pop(key)
+                        resource_name = schema.COLLECTION_NAME[:-1]
+                        results[resource_name] = schema.dump(model)
+                    elif key == "models":
+                        models = results.pop(key)
+                        results[schema.COLLECTION_NAME] = schema.dump(models)
                 api_response = make_response(results, http_status_code)
-            else: # assume it's a model
+            else:  # assume it's a model
                 api_response = make_response(schema.dump(results), http_status_code)
 
             if len(view_response) == 3:  # extra headers are included
@@ -70,16 +90,3 @@ def handle_response(schema):
 
     return decorator
 
-
-def handle_query_params(func):
-    """Decorator to handle parsing query parameters sent
-    during a request to the api. It handles pagination, filtering, and sorting 
-    for collections. The expected response from the decorated route is a
-    an object that implements the AbstractDatabaseRepository interface."""
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        params = request.args
-        return func(params, *args, **kwargs)
-
-    return wrapper
