@@ -5,19 +5,19 @@ from http import HTTPStatus
 from flask import current_app, url_for
 from app.api import api
 from app.helpers import handle_request, handle_response
-from app.schemas import UserSchema, PaginationSchema
+from app.schemas import UserSchema, UrlParamsSchema
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import DatabaseException
 from app.models.user_factory import UserFactory
 
 
 @api.route("/users")
-@handle_request(PaginationSchema())
+@handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
 def get_users(pagination):
     """Return a list of user resources."""
     per_page = pagination.get("per_page", current_app.config["RESULTS_PER_PAGE"])
-    cursor = pagination.get("next_cursor")
+    cursor = pagination.get("next_cursor", {})
     results = dynamodb_repository.get_users(per_page, cursor)
     return results, HTTPStatus.OK
 
