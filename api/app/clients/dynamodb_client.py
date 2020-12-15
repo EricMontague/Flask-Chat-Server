@@ -81,17 +81,15 @@ class _DynamoDBClient:
 
     def get_items(self, limit, start_key, index=None):
         """Return a list of items from the table or an index if given."""
-        results = []
-        while True:
-            if index:
-                response = self._scan_index(limit, start_key, index)
-            else:
-                response = self._scan_table(limit, start_key)
-            pprint(response)
-            start_key = response.get("LastEvaluatedKey")
-            results.extend(response["Items"])
-            if not start_key:
-                break
+        logger.info("Getting items from DynamoDB")
+        results = {"Items": [], "LastEvaluatedKey": None}
+        if index:
+            response = self._scan_index(limit, start_key, index)
+        else:
+            response = self._scan_table(limit, start_key)
+    
+        results["Items"].extend(response["Items"])
+        results["LastEvaluatedKey"] = response.get("LastEvaluatedKey")
         return results
 
     def get_item(self, key):
@@ -113,11 +111,27 @@ class _DynamoDBClient:
         response = self._dynamodb.delete_item(TableName=self._table_name, Key=key)
         return response, response["ResponseMetadata"]["HTTPStatusCode"]
 
+    def batch_write_items(self, requests):
+        """Write multiple items at a time to the table."""
+        logging.info("Executing batch write request")
+        batch_request = self._build_batch_write_request(requests)
+        try:
+            response = self._dynamodb.batch_write_item(
+                RequestItems={
+                    self._table_name: batch_request
+                }
+            )
+        except ClientError as err:
+            # logging.error(err.response["Error"]["Code"])
+            # logging.error(err.response["Error"]["Message"])
+            pprint(err.response)
+            response = {"error": "Batch write was unsuccessful"}
+        return response
+
     def _execute_transact_write(self, parameters):
         """Write the given items into DynamoDB as part of a transaction."""
         response = self._dynamodb.transact_write_items(TransactItems=parameters)
         return response
-
 
     def _scan_index(self, limit, start_key, index):
         """Perform a scan on an index and return a list of items."""
@@ -207,6 +221,22 @@ class _DynamoDBClient:
             for key in keys
         ]
         return parameters
+
+    def _build_batch_write_request(self, requests):
+        """Return a list that contains all of the requests to batch writes
+        to DynamoDB.
+        """
+        batch_request = []
+        for method, item_or_key in requests:
+            if method == "PutRequest":
+                batch_request.append({
+                    method: {"Item": item_or_key}
+                })
+            elif method == "DeleteRequest":
+                batch_request.append({
+                    method: {"Key": item_or_key}
+                })
+        return batch_request
 
 
 dynamodb_client = _DynamoDBClient()
