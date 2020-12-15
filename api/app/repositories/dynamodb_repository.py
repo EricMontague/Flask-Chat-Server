@@ -9,6 +9,7 @@ from app.models import User, UserEmail, Username, CommunityMembership, Community
 from app.models.update_models import update_user_model
 from app.dynamodb.mapper import create_user_from_item
 from app.dynamodb.constants import PrimaryKeyPrefix
+from app.repositories.utils import encode_cursor, decode_cursor
 
 
 class _DynamoDBRepository(AbstractDatabaseRepository):
@@ -41,7 +42,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         """Update a user item in DynamoDB."""
         updated_user = update_user_model(old_user, updated_user_data)
         items = {"user": updated_user.to_item()}
-        print(old_user.email, updated_user.email)
+
         if old_user.email != updated_user.email:
             items["updated_user_email"] = UserEmail(
                 updated_user.id, updated_user.email
@@ -65,10 +66,23 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response = self._dynamodb_client.delete_user(keys)
         return response
 
-    def get_users(self, limit, start_key=None):
+    def get_users(self, limit, encoded_start_key=None):
         """Return a list of user models."""
-        results = self._dynamodb_client.get_items(limit, start_key, "UsersIndex")
-        return [create_user_from_item(item) for item in results]
+        decoded_start_key = {}
+        if encoded_start_key:
+            decoded_start_key = decode_cursor(encoded_start_key)
+        results = self._dynamodb_client.get_items(
+            limit, decoded_start_key, "UsersIndex"
+        )
+        next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
+        users = [create_user_from_item(item) for item in results["Items"]]
+        response = {
+            "models": users,
+            "next": next_cursor,
+            "has_next": results["LastEvaluatedKey"] is not None,
+            "total": len(users)
+        }
+        return response
 
 
 dynamodb_repository = _DynamoDBRepository(dynamodb_client)
