@@ -62,18 +62,18 @@ class Chat(ABC):
             )
         self._messages[message_id].add_reaction(reaction)
 
-    def to_dynamo(self):
+    def to_item(self):
         """Return a representation of a chat as stored in DynamoDB."""
         return {
             "id": self._id,
             "name": self.name,
             "description": self.description,
             "messages": [
-                self._messages[message_id].to_dynamo()
+                self._messages[message_id].to_item()
                 for message_id in self._messages
             ],
             "members": [
-                self._members[member_id].to_dynamo()
+                self._members[member_id].to_item()
                 for member_id in self._members
             ]
         }
@@ -105,9 +105,9 @@ class PrivateChat(Chat):
             if id != member_id:
                 return self._members[id]
 
-    def to_dynamo(self):
+    def to_item(self):
         """Return a representation of a private as stored in DynamoDB."""
-        return super().to_dynamo()
+        return super().to_item()
 
     def __repr__(self):
         """Return a representatino of a private chat."""
@@ -196,15 +196,15 @@ class GroupChat(Chat):
         """
         return self._private
 
-    def to_dynamo(self):
+    def to_item(self):
         """Return a representation of a group chat as stored in DynamoDB."""
-        dynamodb_representation = super().to_dynamo()
+        dynamodb_representation = super().to_item()
         dynamodb_representation.update({
             "capacity": self._capacity,
             "private": self._private,
             "num_members": self._num_members,
             "pending_requests": [
-                self._pending_requests[request_id].to_dynamo()
+                self._pending_requests[request_id].to_item()
                 for request_id in self._pending_requests
             ]
         })
