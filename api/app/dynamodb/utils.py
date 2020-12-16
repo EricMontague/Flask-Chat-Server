@@ -58,7 +58,7 @@ class TypeValidator:
     @staticmethod
     def is_date(value):
         """Return True if the value is a date object, otherwise return False."""
-        if issubclass(value, date):
+        if isinstance(value, date):
             return True
         return False
 
@@ -80,6 +80,18 @@ class TypeValidator:
             or TypeValidator.is_tuple(value)
         ):
             return True
+        return False
+
+    @staticmethod
+    def is_type_set(value, validator):
+        """Return True if all of the elements in the given set are of
+        the same type
+        """
+        if TypeValidator.is_set(value):
+            return all(
+                validator(element)
+                for element in value
+            )
         return False
 
 
