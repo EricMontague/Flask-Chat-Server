@@ -30,14 +30,17 @@ class SerializerManager:
         """Deserialize the given value from a DynamoDB item or data type
         to a native python value.
         """
-        deserialized_value = self._deserialize_unsupported_types(field, value)
+        deserialized_value = self._deserialize_unsupported_types(field, value, **kwargs)
         if not deserialized_value:
             deserialized_value = self._deserializer.deserialize(value)
         return deserialized_value
 
     def _serialize_unsupported_types(self, field, value, **kwargs):
         """Method to serialize types not natively supported by boto3's TypeSerializer."""
-        if TypeValidator.is_enum(value):
+        if TypeValidator.is_type_set(value, TypeValidator.is_enum):
+            enum_set = {getattr(element, kwargs["enum_attribute"]) for element in value}
+            serialized_value = self._serializer.serialize(enum_set)
+        elif TypeValidator.is_enum(value):
             enum_value = getattr(value, kwargs["enum_attribute"])
             serialized_value = self._serializer.serialize(enum_value)
         elif TypeValidator.is_datetime(value):
@@ -57,17 +60,20 @@ class SerializerManager:
 
     def _deserialize_unsupported_types(self, field, value, **kwargs):
         """Method to deserialize types not natively support by boto3's TypeDeserializer."""
+        deserialized_value = None
         if TypeValidator.is_enum(value):
             deserialized_value = get_enum_member(kwargs["enum"], value)
-        else:
-            deserialized_value = (
-                DateTimeParser.parse_datetime_string(value, kwargs["datetime_format"])
-                or DateTimeParser.parse_date_string(value, kwargs["date_format"])
-                or DateTimeParser.parse_time_string(value, kwargs["time_format"])
+        elif TypeValidator.is_datetime(value):
+            deserialized_value = DateTimeParser.parse_datetime_string(
+                value, kwargs["datetime_format"]
             )
-        if not deserialized_value:
-            raise UnserialializableTypeException(
-                f"Unsupported type. Could not deserialize field: {field}"
+        elif TypeValidator.is_date(value):
+            deserialized_value = DateTimeParser.parse_date_string(
+                value, kwargs["date_format"]
+            )
+        elif TypeValidator.is_time(value):
+            deserialized_value = DateTimeParser.parse_time_string(
+                value, kwargs["time_format"]
             )
         return deserialized_value
 
