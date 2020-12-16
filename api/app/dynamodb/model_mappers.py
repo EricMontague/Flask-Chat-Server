@@ -2,7 +2,6 @@
 models.
 """
 
-
 from app.dynamodb.mapper import ModelMapper
 from app.models import User, Role, RoleName, RolePermission, Location, Image, ImageType
 
@@ -26,6 +25,8 @@ class ImageMapper(ModelMapper):
         model = Image
         fields = ("id", "image_type", "url", "height", "width", "uploaded_at")
 
+    ENUMS = {"image_type": ImageType}
+
 
 class RoleMapper(ModelMapper):
     """Class to serialize and deserialize role models to and from
@@ -34,7 +35,9 @@ class RoleMapper(ModelMapper):
 
     class Meta:
         model = Role
-        fields = ("name", "permissions")
+        fields = ("name", "_permissions")
+
+    ENUMS = {"name": RoleName, "permissions": RolePermission}
 
 
 class UserMapper(ModelMapper):
@@ -63,9 +66,9 @@ class UserMapper(ModelMapper):
         sort_key_attribute = "_id"
 
     NESTED_MAPPERS = {
-        "location": LocationMapper,
-        "avatar": ImageMapper,
-        "cover_photo": ImageMapper,
-        "role": RoleMapper,
+        "location": LocationMapper(ignore_partition_key=True),
+        "avatar": ImageMapper(ignore_partition_key=True),
+        "cover_photo": ImageMapper(ignore_partition_key=True),
+        "role": RoleMapper(ignore_partition_key=True),
     }
 
