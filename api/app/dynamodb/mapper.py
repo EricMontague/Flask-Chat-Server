@@ -78,6 +78,7 @@ class MapperOptions:
     
 
     def __init__(self, meta):
+        self.type = getattr(meta, "type_", None)
         self.model = getattr(meta, "model", None)
         if not self.model:
             raise ValueError("`model` field cannot be None")
@@ -136,6 +137,7 @@ class ModelMapper(ABC):
                 fields = ("id", "username", "password_hash", "age")
                 partition_key_attribute = "id"
                 sort_key_attribute = "id"
+                type_ = "user"
         
 
         Available options:
@@ -155,6 +157,7 @@ class ModelMapper(ABC):
             -  ``datetime_format``: Format for attributes of type datetime.datetime
             - ``enum_attribute``: String that indicates which value of an attribute of type enum.Enum to 
             use
+            - ``type_``: String that indicates the type of the item
             
 
 
@@ -171,6 +174,7 @@ class ModelMapper(ABC):
             time_format = "%H:%M:%S.%f"
             datetime_format = "%Y-%m-%dT%H:%M:%S.%f"
             enum_attribute = "name"
+            type_ = None
         """
 
     def __init__(self, ignore_partition_key=False):
@@ -196,45 +200,54 @@ class ModelMapper(ABC):
         }
 
     def serialize_from_model(
-        self, model, partition_key_value=None, sort_key_value=None
+        self, model, partition_key_value=None, sort_key_value=None, additional_attributes={}
     ):
         """Serialize the given model to a DynamoDB item."""
-        return self._serialize(model, partition_key_value, sort_key_value)
+        item = self._serialize(model, partition_key_value, sort_key_value)
+        if additional_attributes:
+            self._serialize_additional_attributes(item, additional_attributes)
+        return item
 
-    def serialize_from_dict(self, dict_, partition_key_value=None, sort_key_value=None):
+    def serialize_from_dict(self, dict_, partition_key_value=None, sort_key_value=None, additional_attributes={}):
         """Serialize the given dictionary to a DynamoDB item."""
-        return self._serialize(dict_, partition_key_value, sort_key_value)
+        item = self._serialize(dict_, partition_key_value, sort_key_value)
+        if additional_attributes:
+            self._serialize_additional_attributes(item, additional_attributes)
+        return item
 
     def serialize_from_json(
-        self, json_data, partition_key_value=None, sort_key_value=None
+        self, json_data, partition_key_value=None, sort_key_value=None, additional_attributes={}
     ):
         """Serialize the given JSON dictionary to a DynamoDB item."""
         serialized_dict = json.loads(json_data)
         if not self.TYPE_VALIDATOR.is_dict(serialized_dict):
             raise UnserialializableTypeException("JSON string must be a dictionary")
-        return self._serialize(serialized_dict, partition_key_value, sort_key_value)
+        item = self._serialize(serialized_dict, partition_key_value, sort_key_value)
+        if additional_attributes:
+            self._serialize_additional_attributes(item, additional_attributes)
+        return item
 
     def deserialize_to_model(self, item, attributes_to_monkey_patch=[]):
         """Deserialize the given item to a model."""
         if not self._options.model:
             raise ModelNotSetException("Please set a model in the Mapper's model class")
-        model_dict = self._deserialize(item)
+        model_dict = self._deserialize(item, attributes_to_monkey_patch)
         model_instance = self._options.model(**model_dict)
-        self._add_additional_attributes(
+        self._deserialize_additional_attributes(
             model_instance, item, attributes_to_monkey_patch
         )
         return model_instance
 
     def deserialize_to_dict(self, item, attributes_to_monkey_patch=[]):
         """Deserialize the given item to a python dictionary."""
-        dict_ = self._deserialize(item)
-        self._add_additional_attributes(dict_, item, attributes_to_monkey_patch)
+        dict_ = self._deserialize(item, attributes_to_monkey_patch)
+        self._deserialize_additional_attributes(dict_, item, attributes_to_monkey_patch)
         return dict_
 
     def deserialize_to_json(self, item, attributes_to_monkey_patch=[]):
         """Deserialize the given item to json."""
-        dict_ = self._deserialize(item)
-        self._add_additional_attributes(dict_, item, attributes_to_monkey_patch)
+        dict_ = self._deserialize(item, attributes_to_monkey_patch)
+        self._deserialize_additional_attributes(dict_, item, attributes_to_monkey_patch)
         return json.dumps(dict_)
 
     def merge_items(self, *items):
@@ -254,12 +267,12 @@ class ModelMapper(ABC):
             item.update(primary_key)
         for field in self._options.fields:
             value = get_attribute_or_dict_value(model_or_dict, field)
-            item[field] = self._handle_serialization(
-                field, value, partition_key_value, sort_key_value
-            )
+            item[field] = self._handle_serialization(field, value)
+        if self._options.type is not None:
+            item["type"] = self._serializer_manager.serialize("type", self._options.type)
         return item
 
-    def _handle_serialization(self, field, value, partition_key_value, sort_key_value):
+    def _handle_serialization(self, field, value):
         """Serialize the given field value based on its type."""
         options = {
             "datetime_format": self._options.datetime_format,
@@ -271,13 +284,13 @@ class ModelMapper(ABC):
             serialized_value = self._serializer_manager.serialize(field, value, **options)
         elif self.TYPE_VALIDATOR.is_list(value) or self.TYPE_VALIDATOR.is_tuple(value):
             serialized_value = {"L": [
-                self._handle_serialization(field, element, partition_key_value, sort_key_value)
+                self._handle_serialization(field, element)
                 for element in value
             ]}
         elif self.TYPE_VALIDATOR.is_dict(value):
             serialized_value = {"M": dict(
                 [
-                    (k, self._handle_serialization(field, v, partition_key_value, sort_key_value))
+                    (k, self._handle_serialization(field, v))
                     for k, v in value.items()
                 ]
             )}
@@ -290,37 +303,48 @@ class ModelMapper(ABC):
             )
         return serialized_value
 
-    def _deserialize(self, item):
+    def _serialize_additional_attributes(self, item, attributes):
+        """Serialize and add additional attributes to the item."""
+        for attribute_name in attributes:
+            item[attribute_name] = self._handle_serialization(
+                attribute_name, attributes[attribute_name]
+            )
+
+    def _deserialize(self, item, attributes_to_skip):
         """Deserialize the given item to a python dictionary."""
+        attributes_to_skip = set(attributes_to_skip)
         model_dict = {}
         for field in self._options.fields:
-            value = item[field]
-            model_dict[field] = self._handle_deserialization(field, value)
+            if field not in attributes_to_skip:
+                value = item[field]
+                model_dict[field.lstrip("_")] = self._handle_deserialization(field, value, item)
         return model_dict
 
-    def _handle_deserialization(self, field, value):
+    def _handle_deserialization(self, field, value, item):
         """Deserialize the given field value based on its type."""
         options = {
             "datetime_format": self._options.datetime_format,
             "date_format": self._options.date_format,
             "time_format": self._options.time_format,
         }
-        data_type = list(value.keys())[0]
+        data_type = None
+        if self.TYPE_VALIDATOR.is_dict(value):
+            data_type = list(value.keys())[0]
         if data_type == DynamoDBType.LIST:
-            deserialized_value = [self._handle_deserialization(field, element) for element in value]
+            deserialized_value = [self._handle_deserialization(field, element, value) for element in value["L"]]
         elif data_type in {
             DynamoDBType.BINARY_SET,
             DynamoDBType.STRING_SET,
             DynamoDBType.NUMBER_SET,
         }:
-            deserialized_value = {self._handle_deserialization(field, element) for element in value}
-        elif data_type == DynamoDBType.MAP: # this may be unecessary since boto3 can handle Maps
-            deserialized_value = dict(
-                [(k, self._handle_deserialization(field, v)) for k, v in value.items()]
-            )
+            deserialized_value = {self._handle_deserialization(field, element, value) for element in value["SS"]}        
         elif field in self.NESTED_MAPPERS:
             mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
-            deserialized_value = mapper.deserialize_to_model(value)
+            deserialized_value = mapper.deserialize_to_model(value["M"])
+        elif data_type == DynamoDBType.MAP: # this may be unecessary since boto3 can handle Maps
+            deserialized_value = dict(
+                [(k, self._handle_deserialization(field, v, item["M"])) for k, v in value.items()]
+            )
         else:
             # Since the field may be an enum, premptively load it into the options dict
             options["enum"] = self.ENUMS.get(field)
@@ -329,13 +353,13 @@ class ModelMapper(ABC):
             )
         return deserialized_value
 
-    def _add_additional_attributes(self, model_or_dict, item, attributes):
+    def _deserialize_additional_attributes(self, model_or_dict, item, attributes):
         """Add additional attributes to the model or dictionary after deserialization
         has taken place.
         """
         for attribute in attributes:
             value = item[attribute]
-            deserialized_value = self._serializer_manager.deserialize(attribute, value)
+            deserialized_value = self._handle_deserialization(attribute, value, item)
             set_attribute_or_dict_value(model_or_dict, attribute, deserialized_value)
 
     def _construct_primary_key(self, model, partition_key_value, sort_key_value):
