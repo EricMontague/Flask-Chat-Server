@@ -35,7 +35,7 @@ def create_application_table():
             {"AttributeName": "community_id", "AttributeType": "S"},
             {"AttributeName": "request_status_datetime", "AttributeType": "S"},
             {"AttributeName": "group_chat_id", "AttributeType": "S"},
-            {"AttributeName": "username", "AttributeType": "S"}
+            {"AttributeName": "USERS_GSI_SK", "AttributeType": "S"}
         ],
         GlobalSecondaryIndexes=[
             USERS_GSI,

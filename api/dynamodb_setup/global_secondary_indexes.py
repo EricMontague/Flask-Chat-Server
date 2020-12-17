@@ -8,7 +8,7 @@ USERS_GSI = {
     "IndexName": "UsersIndex",
     "KeySchema": [
         {"AttributeName": "PK", "KeyType": "HASH"},
-        {"AttributeName": "username", "KeyType": "RANGE"},
+        {"AttributeName": "USERS_GSI_SK", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
