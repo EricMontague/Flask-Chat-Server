@@ -5,9 +5,14 @@ inserted fake data into the database.
 
 from faker import Faker
 from app.clients import dynamodb_client
+from app.dynamodb import UserMapper, UsernameMapper, UserEmailMapper
 from app.models.user_factory import UserFactory
 from app.models import UserEmail, Username
 
+
+user_mapper = UserMapper()
+username_mapper = UsernameMapper()
+user_email_mapper = UserEmailMapper()
 
 
 class FakeDataGenerator:
@@ -27,9 +32,9 @@ class FakeDataGenerator:
             user = UserFactory.create_user(user_data)
             user_email = UserEmail(user.id, user.email)
             username = Username(user.id, user.username)
-            requests.append(("PutRequest", user.to_item()))
-            requests.append(("PutRequest", user_email.to_item()))
-            requests.append(("PutRequest", username.to_item()))
+            requests.append(("PutRequest", user_mapper.serialize_from_model(user, additional_attributes={"USERS_GSI_SK": user.username})))
+            requests.append(("PutRequest", user_email_mapper.serialize_from_model(user_email)))
+            requests.append(("PutRequest", username_mapper.serialize_from_model(username)))
             response = dynamodb_client.batch_write_items(requests)
             remaining_users -= 1
 

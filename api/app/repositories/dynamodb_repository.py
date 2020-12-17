@@ -7,7 +7,7 @@ from app.repositories.exceptions import UniqueConstraintException
 from app.clients import dynamodb_client
 from app.models import User, UserEmail, Username, CommunityMembership, Community
 from app.models.update_models import update_user_model
-from app.dynamodb.mapper import create_user_from_item
+from app.dynamodb import UserMapper, UsernameMapper, UserEmailMapper
 from app.dynamodb.constants import PrimaryKeyPrefix
 from app.repositories.utils import encode_cursor, decode_cursor
 
@@ -15,24 +15,27 @@ from app.repositories.utils import encode_cursor, decode_cursor
 class _DynamoDBRepository(AbstractDatabaseRepository):
     """Repository class for the DynamoDB backend."""
 
-    def __init__(self, dynamodb_client):
+    def __init__(self, dynamodb_client, **kwargs):
         self._dynamodb_client = dynamodb_client
+        self._user_mapper = kwargs["user_mapper"]
+        self._username_mapper = kwargs["username_mapper"]
+        self._user_email_mapper = kwargs["user_email_mapper"]
 
     def get_user(self, user_id):
         """Return a user from DynamoDB by id."""
-        user_item = self._dynamodb_client.get_item(User.key(user_id))
+        user_item = self._dynamodb_client.get_item(self._user_mapper.key(user_id, user_id))
         if not user_item:
             return None
-        return create_user_from_item(user_item)
+        return self._user_mapper.deserialize_to_model(user_item, ["_password_hash"])
 
     def add_user(self, user):
         """Add a new user to DynamoDB."""
         user_email = UserEmail(user.id, user.email)
         username = Username(user.id, user.username)
         items = {
-            "user": user.to_item(),
-            "user_email": user_email.to_item(),
-            "username": username.to_item(),
+            "user": self._user_mapper.serialize_from_model(user),
+            "user_email": self._user_email_mapper.serialize_from_model(user_email),
+            "username": self._username_mapper.serialize_from_model(username)
         }
         response = self._dynamodb_client.create_user(items)
         if "error" in response:
@@ -41,27 +44,27 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def update_user(self, old_user, updated_user_data):
         """Update a user item in DynamoDB."""
         updated_user = update_user_model(old_user, updated_user_data)
-        items = {"user": updated_user.to_item()}
+        items = {"user":self._user_mapper.serialize_from_model(updated_user)}
 
         if old_user.email != updated_user.email:
-            items["updated_user_email"] = UserEmail(
-                updated_user.id, updated_user.email
-            ).to_item()
-            items["old_user_email_key"] = UserEmail.key(old_user.email)
+            items["updated_user_email"] = self._user_email_mapper.serialize_from_model(
+                UserEmail(updated_user.id, updated_user.email)
+            )
+            items["old_user_email_key"] = self._user_mapper.key(old_user.email, old_user.email)
         if old_user.username != updated_user.username:
-            items["upated_username"] = Username(
-                updated_user.id, updated_user.username
-            ).to_item()
-            items["old_username_key"] = Username.key(old_user.username)
+            items["updated_username"] = self._username_mapper.serialize_from_model(
+                Username(updated_user.id, updated_user.username)
+            )
+            items["old_username_key"] = self._username_mapper.key(old_user.username, old_user.username)
         response = self._dynamodb_client.update_user(items)
         return response
 
     def remove_user(self, user):
         """Delete a user item from DynamoDB."""
         keys = {
-            "user": User.key(user.id),
-            "username": Username.key(user.username),
-            "user_email": UserEmail.key(user.email),
+            "user": self._user_mapper.key(user.id, user.id),
+            "username": self._username_mapper.key(user.username, user.username),
+            "user_email": self._user_email_mapper.key(user.email, user.email),
         }
         response = self._dynamodb_client.delete_user(keys)
         return response
@@ -75,15 +78,23 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             limit, decoded_start_key, "UsersIndex"
         )
         next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
-        users = [create_user_from_item(item) for item in results["Items"]]
+        users = [
+            self._user_mapper.deserialize_to_model(item, ["_password_hash"]) 
+            for item in results["Items"]
+        ]
         response = {
             "models": users,
             "next": next_cursor,
             "has_next": results["LastEvaluatedKey"] is not None,
-            "total": len(users)
+            "total": len(users),
         }
         return response
 
 
-dynamodb_repository = _DynamoDBRepository(dynamodb_client)
+dynamodb_repository = _DynamoDBRepository(
+    dynamodb_client, 
+    user_mapper=UserMapper(),
+    username_mapper=UsernameMapper(),
+    user_email_mapper=UserEmailMapper()
+)
 
