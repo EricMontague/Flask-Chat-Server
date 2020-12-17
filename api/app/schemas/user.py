@@ -4,7 +4,6 @@ User models.
 
 
 from app.extensions import ma
-from app.models import RoleName
 from app.schemas.location import LocationSchema
 from app.schemas.image import ImageSchema
 from marshmallow import validate, pre_load, post_load, post_dump, EXCLUDE
@@ -60,6 +59,6 @@ class UserSchema(ma.Schema):
         serialized data.
         """
         if hasattr(original_model, "role"):
-            data["is_admin"] = original_model.role.name.name is RoleName.ADMIN
+            data["is_admin"] = original_model.role.name.name == "ADMIN"
         return data
 

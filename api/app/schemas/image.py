@@ -4,7 +4,6 @@ serializing and deserializing Image models.
 
 
 from app.extensions import ma
-from app.models import ImageType
 from marshmallow import validate
 
 
