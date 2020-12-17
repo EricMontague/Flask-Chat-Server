@@ -113,7 +113,7 @@ class _DynamoDBClient:
 
     def batch_write_items(self, requests):
         """Write multiple items at a time to the table."""
-        logging.info("Executing batch write request")
+        logger.info("Executing batch write request")
         batch_request = self._build_batch_write_request(requests)
         try:
             response = self._dynamodb.batch_write_item(
@@ -122,8 +122,8 @@ class _DynamoDBClient:
                 }
             )
         except ClientError as err:
-            # logging.error(err.response["Error"]["Code"])
-            # logging.error(err.response["Error"]["Message"])
+            # logger.error(err.response["Error"]["Code"])
+            # logger.error(err.response["Error"]["Message"])
             pprint(err.response)
             response = {"error": "Batch write was unsuccessful"}
         return response
