@@ -3,7 +3,17 @@ models.
 """
 
 from app.dynamodb.mapper import ModelMapper
-from app.models import User, Role, RoleName, RolePermission, Location, Image, ImageType
+from app.models import (
+    User,
+    Username,
+    UserEmail, 
+    Role, 
+    RoleName, 
+    RolePermission, 
+    Location, 
+    Image, 
+    ImageType
+)
 
 
 class LocationMapper(ModelMapper):
@@ -37,7 +47,7 @@ class RoleMapper(ModelMapper):
         model = Role
         fields = ("name", "_permissions")
 
-    ENUMS = {"name": RoleName, "permissions": RolePermission}
+    ENUMS = {"name": RoleName, "_permissions": RolePermission}
 
 
 class UserMapper(ModelMapper):
@@ -62,6 +72,7 @@ class UserMapper(ModelMapper):
             "cover_photo",
             "is_online",
         )
+        type_ = "user"
         partition_key_attribute = "_id"
         sort_key_attribute = "_id"
 
@@ -72,3 +83,30 @@ class UserMapper(ModelMapper):
         "role": RoleMapper(ignore_partition_key=True),
     }
 
+
+
+
+class UserEmailMapper(ModelMapper):
+    """Class to serialize and deserialize UserEmail models to and from
+    DynamoDB items.
+    """
+
+    class Meta:
+        model = UserEmail
+        fields = ("user_id", "email")
+        partition_key_attribute = "email"
+        sort_key_attribute = "email"
+        type_ = "user_email"
+
+
+class UsernameMapper(ModelMapper):
+    """Class to serialize and deserialize Username models to and from
+    DynamoDB items.
+    """
+
+    class Meta:
+        model = Username
+        fields = ("user_id", "username")
+        partition_key_attribute = "username"
+        sort_key_attribute = "username"
+        type_ = "username"
