@@ -144,7 +144,7 @@ def set_attribute_or_dict_value(model_or_dict, attribute_or_key, value):
     model or in the given dictionary.
     """
     if TypeValidator.is_dict(model_or_dict):
-        model_or_dict[attribute_or_key] - value
+        model_or_dict[attribute_or_key] = value
     else:
         setattr(model_or_dict, attribute_or_key, value)
 
