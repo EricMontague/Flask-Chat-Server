@@ -7,6 +7,7 @@ from datetime import datetime, date, time
 from app.dynamodb.exceptions import UnserialializableTypeException
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
 from app.dynamodb.utils import TypeValidator, DateTimeParser, get_enum_member
+from pprint import pprint
 
 
 class SerializerManager:
@@ -61,7 +62,9 @@ class SerializerManager:
     def _deserialize_unsupported_types(self, field, value, **kwargs):
         """Method to deserialize types not natively support by boto3's TypeDeserializer."""
         deserialized_value = None
-        if TypeValidator.is_enum(value):
+        if TypeValidator.is_dict(value):
+            value = list(value.values())[0]
+        if kwargs.get("enum"):
             deserialized_value = get_enum_member(kwargs["enum"], value)
         elif TypeValidator.is_datetime(value):
             deserialized_value = DateTimeParser.parse_datetime_string(
