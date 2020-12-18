@@ -6,7 +6,7 @@ actual serialization and deserialization of models and items.
 from datetime import datetime, date, time
 from app.dynamodb.exceptions import UnserialializableTypeException
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
-from app.dynamodb.utils import TypeValidator, DateTimeParser, get_enum_member
+from app.dynamodb.utils import TypeValidator, DateTimeParser, get_enum_member, convert_decimal_to_float_or_int
 from pprint import pprint
 
 
@@ -34,6 +34,8 @@ class SerializerManager:
         deserialized_value = self._deserialize_unsupported_types(field, value, **kwargs)
         if not deserialized_value:
             deserialized_value = self._deserializer.deserialize(value)
+            if TypeValidator.is_decimal(deserialized_value):
+                deserialized_value = convert_decimal_to_float_or_int(deserialized_value)
         return deserialized_value
 
     def _serialize_unsupported_types(self, field, value, **kwargs):
@@ -66,17 +68,13 @@ class SerializerManager:
             value = list(value.values())[0]
         if kwargs.get("enum"):
             deserialized_value = get_enum_member(kwargs["enum"], value)
-        elif TypeValidator.is_datetime(value):
-            deserialized_value = DateTimeParser.parse_datetime_string(
-                value, kwargs["datetime_format"]
-            )
-        elif TypeValidator.is_date(value):
-            deserialized_value = DateTimeParser.parse_date_string(
-                value, kwargs["date_format"]
-            )
-        elif TypeValidator.is_time(value):
-            deserialized_value = DateTimeParser.parse_time_string(
-                value, kwargs["time_format"]
+        else:
+            deserialized_value = (
+                DateTimeParser.parse_datetime_string(value, kwargs["datetime_format"])
+                or DateTimeParser.parse_date_string(value, kwargs["date_format"])
+                or DateTimeParser.parse_time_string(
+                    value, kwargs["time_format"]
+                )
             )
         return deserialized_value
 
