@@ -32,7 +32,15 @@ class FakeDataGenerator:
             user = UserFactory.create_user(user_data)
             user_email = UserEmail(user.id, user.email)
             username = Username(user.id, user.username)
-            requests.append(("PutRequest", user_mapper.serialize_from_model(user, additional_attributes={"USERS_GSI_SK": user.username})))
+            requests.append(
+                (
+                    "PutRequest", 
+                    user_mapper.serialize_from_model(
+                        user, 
+                        additional_attributes={"USERS_GSI_SK": user.username}
+                    )
+                )
+            )
             requests.append(("PutRequest", user_email_mapper.serialize_from_model(user_email)))
             requests.append(("PutRequest", username_mapper.serialize_from_model(username)))
             response = dynamodb_client.batch_write_items(requests)
