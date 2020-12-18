@@ -2,21 +2,10 @@
 """
 
 
-import json
 from abc import ABC
 from datetime import datetime, date, time
 from dataclasses import dataclass
 from enum import Enum
-from app.models import (
-    User,
-    Role,
-    RoleName,
-    RolePermission,
-    CommunityPermission,
-    Location,
-    Image,
-    ImageType,
-)
 from app.dynamodb.constants import PrimaryKeyPrefix
 from app.dynamodb.exceptions import (
     MapperInstanceResolutionException,
@@ -30,7 +19,6 @@ from app.dynamodb.utils import (
     set_attribute_or_dict_value,
 )
 from app.dynamodb.serializer_manager import serializer_manager
-from pprint import pprint
 
 
 class DynamoDBType:
@@ -155,8 +143,8 @@ class ModelMapper(ABC):
             - ``date_format``: Format for attributes of type datetime.date
             - ``time_format``: Format for attributes of type datetime.time
             -  ``datetime_format``: Format for attributes of type datetime.datetime
-            - ``enum_attribute``: String that indicates which value of an attribute of type enum.Enum to 
-            use
+            - ``enum_attribute``: String that indicates which value of an attribute of type 
+            enum.Enum to use
             - ``type_``: String that indicates the type of the item
             
 
@@ -208,25 +196,6 @@ class ModelMapper(ABC):
             self._serialize_additional_attributes(item, additional_attributes)
         return item
 
-    def serialize_from_dict(self, dict_, partition_key_value=None, sort_key_value=None, additional_attributes={}):
-        """Serialize the given dictionary to a DynamoDB item."""
-        item = self._serialize(dict_, partition_key_value, sort_key_value)
-        if additional_attributes:
-            self._serialize_additional_attributes(item, additional_attributes)
-        return item
-
-    def serialize_from_json(
-        self, json_data, partition_key_value=None, sort_key_value=None, additional_attributes={}
-    ):
-        """Serialize the given JSON dictionary to a DynamoDB item."""
-        serialized_dict = json.loads(json_data)
-        if not self.TYPE_VALIDATOR.is_dict(serialized_dict):
-            raise UnserialializableTypeException("JSON string must be a dictionary")
-        item = self._serialize(serialized_dict, partition_key_value, sort_key_value)
-        if additional_attributes:
-            self._serialize_additional_attributes(item, additional_attributes)
-        return item
-
     def deserialize_to_model(self, item, attributes_to_monkey_patch=[]):
         """Deserialize the given item to a model."""
         if not self._options.model:
@@ -237,18 +206,6 @@ class ModelMapper(ABC):
             model_instance, item, attributes_to_monkey_patch
         )
         return model_instance
-
-    def deserialize_to_dict(self, item, attributes_to_monkey_patch=[]):
-        """Deserialize the given item to a python dictionary."""
-        dict_ = self._deserialize(item, attributes_to_monkey_patch)
-        self._deserialize_additional_attributes(dict_, item, attributes_to_monkey_patch)
-        return dict_
-
-    def deserialize_to_json(self, item, attributes_to_monkey_patch=[]):
-        """Deserialize the given item to json."""
-        dict_ = self._deserialize(item, attributes_to_monkey_patch)
-        self._deserialize_additional_attributes(dict_, item, attributes_to_monkey_patch)
-        return json.dumps(dict_)
 
     def merge_items(self, *items):
         """Merge an arbitary number of DynamoDB items into a single itme."""
@@ -331,13 +288,19 @@ class ModelMapper(ABC):
         if self.TYPE_VALIDATOR.is_dict(value):
             data_type = list(value.keys())[0]
         if data_type == DynamoDBType.LIST:
-            deserialized_value = [self._handle_deserialization(field, element, value) for element in value["L"]]
+            deserialized_value = [
+                self._handle_deserialization(field, element, value) 
+                for element in value["L"]
+            ]
         elif data_type in {
             DynamoDBType.BINARY_SET,
             DynamoDBType.STRING_SET,
             DynamoDBType.NUMBER_SET,
         }:
-            deserialized_value = {self._handle_deserialization(field, element, value) for element in value["SS"]}        
+            deserialized_value = {
+                self._handle_deserialization(field, element, value) 
+                for element in value["SS"]
+            }        
         elif field in self.NESTED_MAPPERS:
             mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
             deserialized_value = mapper.deserialize_to_model(value["M"])
@@ -398,68 +361,4 @@ class ModelMapper(ABC):
             )
         return primary_key
 
-
-# TODO - Delete these once the Mapper classes are finished
-def create_user_from_item(user_item):
-    """Create and return a user model from a DynamoDB item."""
-    # Remove uneeded attributes
-    del user_item["SK"]
-    del user_item["type"]
-    user_id = user_item.pop("PK")["S"].split("#")[-1]
-    user_attributes = {"id": user_id}
-    for attribute_name, attribute_value in user_item.items():
-        if attribute_name in {"avatar", "cover_photo"}:
-            actual_value = create_image_from_map(user_item[attribute_name]["M"])
-        elif attribute_name == "location":
-            actual_value = create_location_from_map(user_item["location"]["M"])
-        elif attribute_name == "role":
-            actual_value = create_role_from_map(user_item["role"]["M"])
-        elif attribute_name in {"last_seen_at", "created_at"}:
-            actual_value = datetime.fromisoformat(attribute_value["S"])
-        else:
-            actual_value = list(user_item[attribute_name].values())[0]
-        user_attributes[attribute_name] = actual_value
-    password_hash = user_attributes.pop("password_hash")
-    user = User(**user_attributes)
-    user._password_hash = password_hash
-    return user
-
-
-def create_location_from_map(location_map):
-    """Create and return a location model from a DynamoDB map."""
-    location_attributes = {}
-    for attribute_name, attribute_value in location_map.items():
-        location_attributes[attribute_name] = attribute_value["S"]
-    return Location(**location_attributes)
-
-
-def create_role_from_map(role_map):
-    """Create and return a role model from a DynamoDB map."""
-    role_attributes = {}
-    for attribute_name, attribute_value in role_map.items():
-        if attribute_name == "name":
-            actual_value = RoleName[attribute_value["S"]]
-        elif attribute_name == "permissions":
-            actual_value = {
-                RolePermission.__dict__.get(perm) or CommunityPermission[perm]
-                for perm in attribute_value["SS"]
-            }
-        role_attributes[attribute_name] = actual_value
-    return Role(**role_attributes)
-
-
-def create_image_from_map(image_map):
-    """Create and return an image model from a DynamoDB map."""
-    image_attributes = {}
-    for attribute_name, attribute_value in image_map.items():
-        if attribute_name in {"width", "height"}:
-            actual_value = int(attribute_value["N"])
-        elif attribute_name == "image_type":
-            actual_value = ImageType[attribute_value["S"]]
-        elif attribute_name == "uploaded_at":
-            actual_value = datetime.fromisoformat(attribute_value["S"])
-        else:
-            actual_value = attribute_value["S"]
-        image_attributes[attribute_name] = actual_value
-    return Image(**image_attributes)
 
