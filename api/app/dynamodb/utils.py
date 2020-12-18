@@ -6,6 +6,7 @@ DynamoDB Mapper package.
 from collections import abc
 from enum import Enum
 from datetime import datetime, date, time
+from decimal import Decimal
 
 
 class TypeValidator:
@@ -16,59 +17,43 @@ class TypeValidator:
     @staticmethod
     def is_dict(value):
         """Return True if the value is a python dictionary, otherwise return False."""
-        if isinstance(value, dict):
-            return True
-        return False
-
+        return isinstance(value, dict)
+    
     @staticmethod
     def is_set(value):
         """Return True if the value is a python set, otherwise return False."""
-        if isinstance(value, abc.Set):
-            return True
-        return False
-
+        return isinstance(value, abc.Set)
+    
     @staticmethod
     def is_list(value):
         """Return True if the value is a python list, otherwise return False."""
-        if isinstance(value, list):
-            return True
-        return False
-
+        return isinstance(value, list)
+        
     @staticmethod
     def is_tuple(value):
         """Return True if the value is a python tuple, otherwise return False."""
-        if isinstance(value, tuple):
-            return True
-        return False
-
+        return isinstance(value, tuple)
+            
     @staticmethod
     def is_enum(value):
         """Return True if the value is an Enum, otherwise return False."""
-        if isinstance(value, Enum):
-            return True
-        return False
-
+        return isinstance(value, Enum)
+            
     @staticmethod
     def is_datetime(value):
         """Return True if the value is a datetime object, otherwise return False."""
-        if isinstance(value, datetime):
-            return True
-        return False
+        return isinstance(value, datetime)
 
     @staticmethod
     def is_date(value):
         """Return True if the value is a date object, otherwise return False."""
-        if isinstance(value, date):
-            return True
-        return False
-
+        return isinstance(value, date)
+           
     @staticmethod
     def is_time(value):
         """Return True if the value is a time object, otherwise return False."""
-        if isinstance(value, time):
-            return True
-        return False
-
+        return isinstance(value, time)
+    
     @staticmethod
     def is_list_like(value):
         """Return True if the value is a list, tuple, or a set, otherwise
@@ -93,6 +78,13 @@ class TypeValidator:
                 for element in value
             )
         return False
+    
+    @staticmethod
+    def is_decimal(value):
+        """Return True if the given value is of type decimal.Decimal, else
+        return false.
+        """
+        return isinstance(value, Decimal)
 
 
 class DateTimeParser:
@@ -102,21 +94,21 @@ class DateTimeParser:
     def parse_datetime_string(string, format):
         try:
             return datetime.strptime(string, format)
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
     @staticmethod
     def parse_date_string(string, format):
         try:
             return datetime.strptime(string, format).date()
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
     @staticmethod
     def parse_time_string(string, format):
         try:
             return datetime.strptime(string, format).time()
-        except ValueError:
+        except (ValueError, TypeError):
             return None
 
 
@@ -148,3 +140,12 @@ def set_attribute_or_dict_value(model_or_dict, attribute_or_key, value):
     else:
         setattr(model_or_dict, attribute_or_key, value)
 
+
+
+def convert_decimal_to_float_or_int(value):
+    """Convert a object of type decimal.Decimal to a float or
+    and int based on its value.
+    """
+    if int(value) == value: # it's an integer
+        return int(value)
+    return float(value)
