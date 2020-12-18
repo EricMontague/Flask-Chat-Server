@@ -4,6 +4,9 @@
 import os
 
 
+PROJECT_ROOT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+
+
 class BaseConfig:
     """Base configuration class for the application."""
 
