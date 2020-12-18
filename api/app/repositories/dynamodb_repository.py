@@ -33,7 +33,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         user_email = UserEmail(user.id, user.email)
         username = Username(user.id, user.username)
         items = {
-            "user": self._user_mapper.serialize_from_model(user),
+            "user": self._user_mapper.serialize_from_model(
+                user, additional_attributes={"USERS_GSI_SK": user.username}
+            ),
             "user_email": self._user_email_mapper.serialize_from_model(user_email),
             "username": self._username_mapper.serialize_from_model(username)
         }
@@ -44,7 +46,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def update_user(self, old_user, updated_user_data):
         """Update a user item in DynamoDB."""
         updated_user = update_user_model(old_user, updated_user_data)
-        items = {"user":self._user_mapper.serialize_from_model(updated_user)}
+        items = {"user":self._user_mapper.serialize_from_model(
+            updated_user, additional_attributes={"USERS_GSI_SK": updated_user.username})
+        }
 
         if old_user.email != updated_user.email:
             items["updated_user_email"] = self._user_email_mapper.serialize_from_model(
