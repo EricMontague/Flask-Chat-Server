@@ -7,12 +7,14 @@ import os
 import logging
 import logging.config
 import boto3
+from config import PROJECT_ROOT_DIRECTORY
+from pathlib import Path
 from pprint import pprint
 from app.dynamodb.expressions import UpdateExpression, UpdateAction
 from botocore.exceptions import ClientError
 
 
-logging.config.fileConfig("logging.conf")
+logging.config.fileConfig(PROJECT_ROOT_DIRECTORY + "/logging.conf")
 logger = logging.getLogger("dynamoDBClient")
 
 
