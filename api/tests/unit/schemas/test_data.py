@@ -1,20 +1,10 @@
 """This file contains fake data to be used throughout tests."""
 
 
-import json
-
-user_data_json = json.dumps({
-    "avatar": {
-        "height": 200,
-        "url": "https://www.mycdn/2323g34y34",
-        "width": 200
-    },
+complete_user_data = {
+    "avatar": {"height": 200, "url": "https://www.mycdn/2323g34y34", "width": 200},
     "bio": "",
-    "cover_photo": {
-        "height": 400,
-        "url": "https://www.mycdn/qwtkqw98",
-        "width": 500
-    },
+    "cover_photo": {"height": 400, "url": "https://www.mycdn/qwtkqw98", "width": 500},
     "email": "brad@gmail.com",
     "id": "18feb26ae2d5435d80d8798beb3b3d5d",
     "is_admin": False,
@@ -23,15 +13,15 @@ user_data_json = json.dumps({
     "location": {
         "city": "Philadelphia",
         "country": "United States",
-        "state": "Pennsylvania"
+        "state": "Pennsylvania",
     },
     "name": "Brad",
     "resource_type": "User",
-    "username": "brad345"
-})
+    "username": "brad345",
+}
 
 
-user_data_dict = {
+partial_user_data = {
     "name": "Brad",
     "username": "brad345",
     "email": "brad@gmail.com",
@@ -39,6 +29,6 @@ user_data_dict = {
     "location": {
         "city": "Philadelphia",
         "state": "Pennsylvania",
-        "country": "United States"
-    }
+        "country": "United States",
+    },
 }
