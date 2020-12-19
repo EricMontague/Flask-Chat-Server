@@ -7,6 +7,27 @@ from flask import request, make_response
 from marshmallow import ValidationError
 
 
+def handle_get_request(schema, url_params):
+    """Validate query string parameters sent on a GET request."""
+    try:
+        return schema.load(url_params)
+    except ValidationError as err:
+        return {"error": err.messages["_schema"]}, HTTPStatus.UNPROCESSABLE_ENTITY
+    
+
+def handle_post_and_put_requests(schema, json_data):
+    """Validate and return deserialized JSON body of POST and PUT requests."""
+    try:
+        return schema.load(json_data)
+    except ValidationError as err:
+        if "_schema" in err.messages:
+            return (
+                {"error": err.messages["_schema"]},
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+            )
+        return {"errors": err.messages}, HTTPStatus.UNPROCESSABLE_ENTITY
+
+
 def handle_request(schema):
     """Decorator to handle deserializing the JSON body
     of requests to API routes as well as Url parameters.
@@ -17,27 +38,17 @@ def handle_request(schema):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if request.method == "GET":
-                try:
-                    view_argument = schema.load(request.args)
-                except ValidationError as err:
-                    return {"error": err.messages["_schema"]}, HTTPStatus.UNPROCESSABLE_ENTITY
+                view_argument = handle_get_request(schema, request.args)
             elif request.method in {"POST", "PUT"}:
                 if not request.json:
                     return (
-                        {"message": "Missing JSON Body in request"},
+                        {"error": "Missing JSON Body in request"},
                         HTTPStatus.BAD_REQUEST,
                     )
-                try:
-                    view_argument = schema.load(request.json)
-                except ValidationError as err:
-                    if "_schema" in err.messages:
-                        return (
-                            {"error": err.messages["_schema"]},
-                            HTTPStatus.UNPROCESSABLE_ENTITY,
-                        )
-                    return {"errors": err.messages}, HTTPStatus.UNPROCESSABLE_ENTITY
+                view_argument = handle_post_and_put_requests(schema, request.json)
+            if "error" in view_argument or "errors" in view_argument:
+                return view_argument
             return func(view_argument, *args, **kwargs)
-
         return wrapper
 
     return decorator
