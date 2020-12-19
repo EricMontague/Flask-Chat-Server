@@ -26,7 +26,6 @@ class UserFactory:
         permissions = {
             perm for perm in RolePermission if perm != RolePermission.BAN_USERS
         }
-        permissions.add(CommunityPermission.CREATE_COMMUNITY)
         role = Role(RoleName.REGULAR_USER, permissions)
         user_data["role"] = role
         user_data["location"] = Location(**user_data.pop("location"))
