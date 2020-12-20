@@ -12,20 +12,17 @@ def handle_get_request(schema, url_params):
     try:
         return schema.load(url_params)
     except ValidationError as err:
-        return {"error": err.messages["_schema"]}, HTTPStatus.UNPROCESSABLE_ENTITY
-    
+        return {"error": err.messages["_schema"]}
 
-def handle_post_and_put_requests(schema, json_data):
+
+def handle_post_or_put_request(schema, json_data):
     """Validate and return deserialized JSON body of POST and PUT requests."""
     try:
         return schema.load(json_data)
     except ValidationError as err:
         if "_schema" in err.messages:
-            return (
-                {"error": err.messages["_schema"]},
-                HTTPStatus.UNPROCESSABLE_ENTITY,
-            )
-        return {"errors": err.messages}, HTTPStatus.UNPROCESSABLE_ENTITY
+            return {"error": err.messages["_schema"]}
+        return {"errors": err.messages}
 
 
 def handle_request(schema):
@@ -45,13 +42,56 @@ def handle_request(schema):
                         {"error": "Missing JSON Body in request"},
                         HTTPStatus.BAD_REQUEST,
                     )
-                view_argument = handle_post_and_put_requests(schema, request.json)
+                view_argument = handle_post_or_put_request(schema, request.json)
             if "error" in view_argument or "errors" in view_argument:
-                return view_argument
+                return view_argument, HTTPStatus.UNPROCESSABLE_ENTITY
             return func(view_argument, *args, **kwargs)
+
         return wrapper
 
     return decorator
+
+
+def serialize_model_or_models(results, schema):
+    """Serialize all models present in a dictionary returned
+    by a view function and update the dictionary with new
+    keys to reflect the model or models' name
+    """
+    for key in results:
+        if key == "model":
+            model = results.pop(key)
+            resource_name = schema.COLLECTION_NAME[:-1]
+            results[resource_name] = schema.dump(model)
+        elif key == "models":
+            models = results.pop(key)
+            results[schema.COLLECTION_NAME] = schema.dump(models)
+
+
+def handle_serialization(results, schema, http_status_code):
+    """Serialize the return arguments from a view function and use
+    them to create and return a Flask response object.
+    """
+    if isinstance(results, list):  # attempt to serialize list
+        serialized_results = schema.dump(results)
+        api_response = make_response(serialized_results or results, http_status_code)
+    elif isinstance(results, dict):  # attempt to serialize every item in dict
+        serialize_model_or_models(results, schema)
+        api_response = make_response(results, http_status_code)
+    else:  # assume it's a model
+        api_response = make_response(schema.dump(results), http_status_code)
+    return api_response
+
+
+def not_require_serialization(schema, results):
+    """Return True if the response from the view function doesn't
+    need to be serialized by a marshmallow schema.
+    """
+    if not schema or isinstance(results, str):
+        return True
+    
+    if isinstance(results, dict) and (not results or "error" in results or "errors" in results):
+        return True
+    return False
 
 
 def handle_response(schema):
@@ -67,32 +107,12 @@ def handle_response(schema):
             # or (results, http_status_code)
             results = view_response[0]
             http_status_code = view_response[1]
-            if (
-                not schema
-                or isinstance(results, str)
-                or isinstance(results, dict)
-                and (not results or "error" in results or "errors" in results)
-            ):
-                api_response = make_response(results, http_status_code)
-            elif isinstance(results, list):  # attempt to serialize list
-                serialized_results = schema.dump(results)
-                api_response = make_response(
-                    serialized_results or results, http_status_code
-                )
-            elif isinstance(results, dict):  # attempt to serialize every item in dict
-                for key in results:
-                    if key == "model":
-                        model = results.pop(key)
-                        resource_name = schema.COLLECTION_NAME[:-1]
-                        results[resource_name] = schema.dump(model)
-                    elif key == "models":
-                        models = results.pop(key)
-                        results[schema.COLLECTION_NAME] = schema.dump(models)
-                api_response = make_response(results, http_status_code)
-            else:  # assume it's a model
-                api_response = make_response(schema.dump(results), http_status_code)
 
-            if len(view_response) == 3:  # extra headers are included
+            if not_require_serialization(schema, results):
+                api_response = make_response(results, http_status_code)
+            else:
+                api_response = handle_serialization(results, schema, http_status_code)
+            if len(view_response) == 3:  # extra headers are included in the response
                 api_response.headers.extend(view_response[2])
             api_response.headers["Content-Type"] = "application/json"
             return api_response
