@@ -29,6 +29,8 @@ class FakeErrorSchema:
 class FakeDataSchema:
     """Fake marshmallow schema whose methods return dictionaries."""
 
+    COLLECTION_NAME = "Users"
+
     def __init__(self):
         self.user_data = {
             "id": 2,
@@ -48,6 +50,28 @@ class FakeDataSchema:
         return self.user_data
 
 
+class FakeHeaders(dict):
+    """Class that mimics the necessary methods and attributes of a Werkzeug Headers object."""
+
+    def __init__(self):
+        super().__init__()
+
+    def extend(self, extra_headers):
+        """Add extra headers to the FakeHeaders object."""
+        self.update(extra_headers)
+
+
+class FakeResponse:
+    """Class that mimics the necessary methods an attributes of a Flask Response
+    object.
+    """
+
+    def __init__(self):
+        self.headers = FakeHeaders()
+        self.status_code = 200
+        self.data = "Fake Flask response!"
+    
+
 @pytest.fixture
 def fake_error_schema_class():
     """Return a fake marshmallow schema that only throws errors"""
@@ -56,6 +80,11 @@ def fake_error_schema_class():
 
 @pytest.fixture
 def fake_data_schema():
-    """Return a fakem marshmallow schema whose methods returns data."""
+    """Return a fake marshmallow schema whose methods returns data."""
     return FakeDataSchema()
 
+
+@pytest.fixture
+def fake_response():
+    """Return an instance of a FakeResponse object."""
+    return FakeResponse()
