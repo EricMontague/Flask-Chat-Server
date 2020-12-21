@@ -176,12 +176,12 @@ class ModelMapper(ABC):
         """
         pk_name = self._options.partition_key.column_name
         partition_key = self._options.partition_key.prefix + str(partition_key_value)
-        sort_key = self._options.sort_key.prefix + str(sort_key_value)
         if not sort_key_value:
             return {
                 pk_name: self._serializer_manager.serialize("", partition_key),
             }
         sk_name = self._options.sort_key.column_name
+        sort_key = self._options.sort_key.prefix + str(sort_key_value)
         return {
             pk_name: self._serializer_manager.serialize("", partition_key),
             sk_name: self._serializer_manager.serialize("", sort_key)
@@ -192,8 +192,7 @@ class ModelMapper(ABC):
     ):
         """Serialize the given model to a DynamoDB item."""
         item = self._serialize(model, partition_key_value, sort_key_value)
-        if additional_attributes:
-            self._serialize_additional_attributes(item, additional_attributes)
+        self._serialize_additional_attributes(item, additional_attributes)
         return item
 
     def deserialize_to_model(self, item, attributes_to_monkey_patch=[]):
