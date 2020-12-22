@@ -36,6 +36,13 @@ class DynamoDBType:
     LIST = "L"
 
 
+SET_TYPES = {
+    "BS": DynamoDBType.BINARY_SET,
+    "SS": DynamoDBType.STRING_SET,
+    "NS": DynamoDBType.NUMBER_SET,
+}
+
+
 def resolve_mapper_instance(cls_or_instance):
     """Return a mapper instance from a ModelMapper class or instance."""
     if isinstance(cls_or_instance, type):
@@ -63,8 +70,6 @@ class MapperOptions:
     DEFAULT_PK_NAME = "PK"
     DEFAULT_SK_NAME = "SK"
 
-    
-
     def __init__(self, meta):
         self.type = getattr(meta, "type_", None)
         self.model = getattr(meta, "model", None)
@@ -78,13 +83,12 @@ class MapperOptions:
         self.enum_attribute = getattr(meta, "enum_attribute", "name")
         if self.enum_attribute not in {"name", "value"}:
             raise ValueError("`enum_attribute option must be either `name` or `value`")
-        
 
         partition_key_prefix = getattr(
-            meta, "partition_key_prefix",  self.model.__name__.upper() + "#"
+            meta, "partition_key_prefix", self.model.__name__.upper() + "#"
         )
         sort_key_prefix = getattr(
-            meta, "sort_key_prefix",  self.model.__name__.upper() + "#"
+            meta, "sort_key_prefix", self.model.__name__.upper() + "#"
         )
         partition_key_name = getattr(meta, "partition_key_name", "PK")
         sort_key_name = getattr(meta, "sort_key_name", "SK")
@@ -98,9 +102,6 @@ class MapperOptions:
         self.date_format = getattr(meta, "date_format", "%Y-%m-%d")
         self.time_format = getattr(meta, "time_format", "%H:%M:%S.%f")
         self.datetime_format = getattr(meta, "datetime_format", "%Y-%m-%dT%H:%M:%S.%f")
-
-
-        
 
 
 # TODO - Determine how to intelligently split this class up if necessary
@@ -184,11 +185,15 @@ class ModelMapper(ABC):
         sort_key = self._options.sort_key.prefix + str(sort_key_value)
         return {
             pk_name: self._serializer_manager.serialize("", partition_key),
-            sk_name: self._serializer_manager.serialize("", sort_key)
+            sk_name: self._serializer_manager.serialize("", sort_key),
         }
 
     def serialize_from_model(
-        self, model, partition_key_value=None, sort_key_value=None, additional_attributes={}
+        self,
+        model,
+        partition_key_value=None,
+        sort_key_value=None,
+        additional_attributes={},
     ):
         """Serialize the given model to a DynamoDB item."""
         item = self._serialize(model, partition_key_value, sort_key_value)
@@ -206,7 +211,8 @@ class ModelMapper(ABC):
         )
         return model_instance
 
-    def merge_items(self, *items):
+    @staticmethod
+    def merge_items(*items):
         """Merge an arbitary number of DynamoDB items into a single itme."""
         merged_item = {}
         for item in items:
@@ -225,7 +231,9 @@ class ModelMapper(ABC):
             value = get_attribute_or_dict_value(model_or_dict, field)
             item[field] = self._handle_serialization(field, value)
         if self._options.type is not None:
-            item["type"] = self._serializer_manager.serialize("type", self._options.type)
+            item["type"] = self._serializer_manager.serialize(
+                "type", self._options.type
+            )
         return item
 
     def _handle_serialization(self, field, value):
@@ -236,23 +244,26 @@ class ModelMapper(ABC):
             "time_format": self._options.time_format,
             "enum_attribute": self._options.enum_attribute,
         }
-        if self.TYPE_VALIDATOR.is_set(value):     
-            serialized_value = self._serializer_manager.serialize(field, value, **options)
+        if self.TYPE_VALIDATOR.is_set(value):
+            serialized_value = self._serializer_manager.serialize(
+                field, value, **options
+            )
         elif self.TYPE_VALIDATOR.is_list(value) or self.TYPE_VALIDATOR.is_tuple(value):
-            serialized_value = {"L": [
-                self._handle_serialization(field, element)
-                for element in value
-            ]}
+            serialized_value = {
+                "L": [self._handle_serialization(field, element) for element in value]
+            }
         elif self.TYPE_VALIDATOR.is_dict(value):
-            serialized_value = {"M": dict(
-                [
-                    (k, self._handle_serialization(field, v))
-                    for k, v in value.items()
-                ]
-            )}
+            serialized_value = {
+                "M": dict(
+                    [
+                        (k, self._handle_serialization(field, v))
+                        for k, v in value.items()
+                    ]
+                )
+            }
         elif field in self.NESTED_MAPPERS:
             mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
-            serialized_value = {"M": mapper.serialize_from_model(value)} 
+            serialized_value = {"M": mapper.serialize_from_model(value)}
         else:
             serialized_value = self._serializer_manager.serialize(
                 field, value, **options
@@ -273,9 +284,12 @@ class ModelMapper(ABC):
         for field in self._options.fields:
             if field not in attributes_to_skip:
                 value = item[field]
-                model_dict[field.lstrip("_")] = self._handle_deserialization(field, value, item)
+                model_dict[field.lstrip("_")] = self._handle_deserialization(
+                    field, value, item
+                )
         return model_dict
 
+    # TODO - Break up into separate methods
     def _handle_deserialization(self, field, value, item):
         """Deserialize the given field value based on its type."""
         options = {
@@ -288,25 +302,29 @@ class ModelMapper(ABC):
             data_type = list(value.keys())[0]
         if data_type == DynamoDBType.LIST:
             deserialized_value = [
-                self._handle_deserialization(field, element, value) 
+                self._handle_deserialization(field, element, value)
                 for element in value["L"]
             ]
-        elif data_type in {
-            DynamoDBType.BINARY_SET,
-            DynamoDBType.STRING_SET,
-            DynamoDBType.NUMBER_SET,
-        }:
+        elif data_type in SET_TYPES:
+            set_type = SET_TYPES[data_type]
             deserialized_value = {
-                self._handle_deserialization(field, element, value) 
-                for element in value["SS"]
-            }        
+                self._handle_deserialization(field, element, value)
+                for element in value[set_type]
+            }
         elif field in self.NESTED_MAPPERS:
             mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
-            deserialized_value = mapper.deserialize_to_model(value["M"])
-        elif data_type == DynamoDBType.MAP: # this may be unecessary since boto3 can handle Maps
-            deserialized_value = dict(
-                [(k, self._handle_deserialization(field, v, item["M"])) for k, v in value.items()]
-            )
+            if list(value["M"].keys())[0] in mapper._options.fields:
+                deserialized_value = mapper.deserialize_to_model(value["M"])
+            else:
+                deserialized_value = {}
+                for k, v in value["M"].items():
+                    deserialized_value[k] = mapper.deserialize_to_model(v["M"])            
+        elif (
+            data_type == DynamoDBType.MAP
+        ):  # this may be unecessary since boto3 can handle Maps
+            deserialized_value = {}
+            for k, v in value.items():
+                deserialized_value[k] = self._handle_deserialization(field, v, item["M"])
         else:
             # Since the field may be an enum, premptively load it into the options dict
             options["enum"] = self.ENUMS.get(field)
@@ -359,5 +377,4 @@ class ModelMapper(ABC):
                 sort_key_value,
             )
         return primary_key
-
 
