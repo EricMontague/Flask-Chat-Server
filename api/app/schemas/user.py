@@ -9,17 +9,11 @@ from app.schemas.image import ImageSchema
 from marshmallow import validate, pre_load, post_load, post_dump, EXCLUDE
 
 
-# Edge cases
-# Role - A user should never send this on a POST request
-# password - Should never be sent out
-# created_at - should never be sent on a POST request and should never be updated
-# last_seen_at - should never be sent on a POST request and should never be updated
-
-
 class UserSchema(ma.Schema):
     """Class to serialize and deserialize User models."""
 
     COLLECTION_NAME = "users"
+    RESOURCE_NAME = "user"
 
     class Meta:
         unknown = EXCLUDE
@@ -44,13 +38,6 @@ class UserSchema(ma.Schema):
         for field in unwanted_fields:
             if field in data:
                 data.pop(field)
-        return data
-
-    @post_load
-    def convert_uuid_to_hex(self, data, **kwargs):
-        """Convert the user's id to its hex value."""
-        if "_id" in data:
-            data["_id"] = data["_id"].hex
         return data
 
     @post_dump(pass_original=True)
