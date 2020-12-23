@@ -17,30 +17,12 @@ from app.dynamodb.utils import (
     DateTimeParser,
     get_attribute_or_dict_value,
     set_attribute_or_dict_value,
+    DynamoDBType
 )
 from app.dynamodb.serializer_manager import serializer_manager
 
 
-class DynamoDBType:
-    """Class that holds constants of DynamoDB data types."""
 
-    STRING = "S"
-    NUMBER = "N"
-    BINARY = "B"
-    STRING_SET = "SS"
-    NUMBER_SET = "NS"
-    BINARY_SET = "BS"
-    NULL = "NULL"
-    BOOLEAN = "BOOL"
-    MAP = "M"
-    LIST = "L"
-
-
-SET_TYPES = {
-    "BS": DynamoDBType.BINARY_SET,
-    "SS": DynamoDBType.STRING_SET,
-    "NS": DynamoDBType.NUMBER_SET,
-}
 
 
 def resolve_mapper_instance(cls_or_instance):
@@ -305,17 +287,11 @@ class ModelMapper(ABC):
                 self._handle_deserialization(field, element, value)
                 for element in value["L"]
             ]
-        elif data_type in SET_TYPES:
-            set_type = SET_TYPES[data_type]
-            deserialized_value = {
-                self._handle_deserialization(field, element, value)
-                for element in value[set_type]
-            }
         elif field in self.NESTED_MAPPERS:
             mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
             if list(value["M"].keys())[0] in mapper._options.fields:
                 deserialized_value = mapper.deserialize_to_model(value["M"])
-            else:
+            else: # Dictionary of dictionaries
                 deserialized_value = {}
                 for k, v in value["M"].items():
                     deserialized_value[k] = mapper.deserialize_to_model(v["M"])            
