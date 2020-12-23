@@ -6,7 +6,14 @@ actual serialization and deserialization of models and items.
 from datetime import datetime, date, time
 from app.dynamodb.exceptions import UnserialializableTypeException
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
-from app.dynamodb.utils import TypeValidator, DateTimeParser, get_enum_member, convert_decimal_to_float_or_int
+from app.dynamodb.utils import (
+    TypeValidator, 
+    DateTimeParser, 
+    get_enum_member, 
+    convert_decimal_to_float_or_int,
+    DynamoDBType,
+    SET_TYPES
+)
 from pprint import pprint
 
 
@@ -65,15 +72,27 @@ class SerializerManager:
         """Method to deserialize types not natively support by boto3's TypeDeserializer."""
         deserialized_value = None
         if TypeValidator.is_dict(value):
-            value = list(value.values())[0]
+            inner_value = list(value.values())[0]
         if kwargs.get("enum"):
-            deserialized_value = get_enum_member(kwargs["enum"], value)
+            data_type = list(value.keys())[0]
+            if data_type == DynamoDBType.LIST:
+                deserialized_value = [
+                    get_enum_member(kwargs["enum"], element)
+                    for element in inner_value
+                ]
+            elif data_type in SET_TYPES:
+                deserialized_value = {
+                    get_enum_member(kwargs["enum"], element)
+                    for element in inner_value
+                }
+            else:
+                deserialized_value = get_enum_member(kwargs["enum"], inner_value)
         else:
             deserialized_value = (
-                DateTimeParser.parse_datetime_string(value, kwargs["datetime_format"])
-                or DateTimeParser.parse_date_string(value, kwargs["date_format"])
+                DateTimeParser.parse_datetime_string(inner_value, kwargs["datetime_format"])
+                or DateTimeParser.parse_date_string(inner_value, kwargs["date_format"])
                 or DateTimeParser.parse_time_string(
-                    value, kwargs["time_format"]
+                    inner_value, kwargs["time_format"]
                 )
             )
         return deserialized_value
