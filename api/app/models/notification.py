@@ -3,7 +3,6 @@
 
 from enum import Enum
 from datetime import datetime
-from app.dynamodb.constants import PrimaryKeyPrefix
 
 
 # A notification should be immutable, except for the read and seen attributes
@@ -59,22 +58,6 @@ class Notification:
     def mark_as_seen(self):
         """Mark the notification as seen by the user."""
         self._seen = True
-
-    def to_item(self):
-        """Return a representation of a notification as stored in DynamoDB."""
-        return {
-            "PK": PrimaryKeyPrefix.USER + self._user_id,
-            "SK": PrimaryKeyPrefix.NOTIFICATION
-            + self._created_at.isoformat()
-            + "#"
-            + self._id,
-            "notification_type": self._notification_type.name,
-            "message": self._message,
-            "target": self._target.to_item(),
-            "created_at": self._created_at.isoformat(),
-            "read": self._read,
-            "seen": self._seen,
-        }
 
     def __lt__(self, other):
         """Comparator dunder method for sorting notifications."""

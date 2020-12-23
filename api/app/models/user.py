@@ -1,7 +1,6 @@
 """This module contains the user model."""
 
 from app import bcrypt
-from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from app.exceptions import (
@@ -228,33 +227,6 @@ class User:
         """
         return community_id in self._communities
 
-    @staticmethod
-    def key(user_id):
-        """Return the primary key for a user item."""
-        return {
-            "PK": {"S": PrimaryKeyPrefix.USER + user_id},
-            "SK": {"S": PrimaryKeyPrefix.USER + user_id},
-        }
-
-    def to_item(self):
-        """Return a representation of a user item as stored in DynamoDB."""
-        return {
-            **User.key(self._id),
-            "type": {"S": ItemType.USER.name},
-            "username": {"S": self.username},
-            "name": {"S": self.name},
-            "password_hash": {"S": self._password_hash},
-            "email": {"S": self.email},
-            "location": self.location.to_map(),
-            "bio": {"S": self.bio},
-            "created_at": {"S": self._created_at.isoformat()},
-            "last_seen_at": {"S": self.last_seen_at.isoformat()},
-            "avatar": {"NULL": True} if not self.avatar else self.avatar.to_map(),
-            "cover_photo": {"NULL": True } if not self.cover_photo else self.cover_photo.to_map(),
-            "role": self.role.to_map(),
-            "is_online": {"BOOL": self.is_online},
-        }
-
     def __str__(self):
         """Return a more readable string representation 
         of a user than __repr__ with far less fields.
@@ -302,22 +274,6 @@ class UserEmail:
     user_id: str
     email: str
 
-    @staticmethod
-    def key(email):
-        """Return the primary key for the UserEmail model for DynamoDB."""
-        return {
-            "PK": {"S": PrimaryKeyPrefix.USER_EMAIL + email},
-            "SK": {"S": PrimaryKeyPrefix.USER_EMAIL + email},
-        }
-
-    def to_item(self):
-        """Return a representation of the UserEmail model as stored in DynamoDB."""
-        return {
-            **UserEmail.key(self.email),
-            "type": {"S": ItemType.USER_EMAIL.name},
-            "user_id": {"S": self.user_id}
-        }
-
 
 @dataclass(frozen=True)
 class Username:
@@ -325,20 +281,4 @@ class Username:
 
     user_id: str
     username: str
-
-    @staticmethod
-    def key(username):
-        """Return the primary key for the Username model for DynamoDB."""
-        return {
-            "PK": {"S": PrimaryKeyPrefix.USERNAME + username},
-            "SK": {"S": PrimaryKeyPrefix.USERNAME + username},
-        }
-
-    def to_item(self):
-        """Return a representation of the Username model as stored in DynamoDB."""
-        return {
-            **Username.key(self.username),
-            "type": {"S": ItemType.USERNAME.name},
-            "user_id": {"S": self.user_id}
-        }
 

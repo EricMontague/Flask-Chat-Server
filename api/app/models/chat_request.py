@@ -3,7 +3,6 @@
 
 from enum import Enum
 from datetime import datetime
-from app.dynamodb.constants import PrimaryKeyPrefix
 
 
 class ChatRequest:
@@ -49,24 +48,6 @@ class ChatRequest:
     def reject(self):
         """Mark the request as rejected."""
         self._status = ChatRequestStatus.REJECTED
-
-    def to_item(self):
-        """Return a representation of a chat request as stored in DynamoDB."""
-        request_dict = {
-            "PK": PrimaryKeyPrefix.USER + self._user_id,
-            "SK": PrimaryKeyPrefix.CHAT_REQUEST
-            + self._created_at.isoformat()
-            + "#"
-            + self._id,
-            "chat_id": self._chat_id,
-            "created_at": self._created_at.isoformat(),
-            "status": self._status.name,
-            "seen": self._seen,
-        }
-        if self._status is ChatRequestStatus.PENDING:
-            request_dict["request_status_datetime"] = PrimaryKeyPrefix.PENDING_CHAT_REQUEST
-            + self._created_at.isoformat()
-        return request_dict
 
     def __repr__(self):
         """Return the representation of a chat request."""

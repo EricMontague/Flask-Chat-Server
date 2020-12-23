@@ -29,15 +29,6 @@ class Role:
         """
         self._permissions.remove(permissions)
 
-    def to_map(self):
-        """Return a representation of a role as stored in DynamoDB."""
-        return {
-            "M": {
-                "name": {"S": self.name.name},
-                "permissions": {"SS": [perm.name for perm in self._permissions]},
-            }
-        }
-
     def __repr__(self):
         """Return a representation of a role model."""
         return "Role(name=%r, permissions=%r)" % (self.name, self._permissions)
