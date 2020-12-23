@@ -22,6 +22,11 @@ def get_users(pagination):
     return results, HTTPStatus.OK
 
 
+@api.route("/users/<user_id>/communities")
+def get_user_communities():
+    pass
+
+
 @api.route("/users/<user_id>")
 @handle_response(UserSchema())
 def get_user(user_id):
