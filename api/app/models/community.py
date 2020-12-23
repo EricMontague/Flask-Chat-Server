@@ -5,14 +5,21 @@ from datetime import datetime
 from dataclasses import dataclass
 from enum import Enum
 from app.exceptions import CommunityMemberNotFoundException
-from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
 
 
 class Community:
     """Class to represent a community."""
 
     def __init__(
-        self, id, name, description, topic, avatar, cover_photo, location, founder,
+        self,
+        id,
+        name,
+        description,
+        topic,
+        avatar,
+        cover_photo,
+        location,
+        created_at=datetime.now(),
     ):
         self._id = id
         self.name = name
@@ -21,10 +28,9 @@ class Community:
         self.avatar = avatar
         self.cover_photo = cover_photo
         self.location = location
-        self._created_at = datetime.now()
+        self._created_at = created_at
         self._members = {}
         self._group_chats = {}
-        self._founder = founder
 
     @property
     def id(self):
@@ -72,29 +78,6 @@ class Community:
         """
         return member_id in self._members
 
-    def to_item(self):
-        """Return a representation of a community as stored in DynamoDB."""
-        return {
-            "PK": PrimaryKeyPrefix.COMMUNITY + self._id,
-            "SK": PrimaryKeyPrefix.COMMUNITY + self._id,
-            "community_id": PrimaryKeyPrefix.COMMUNITY + self._id,
-            "name": self.name,
-            "description": self.description,
-            "topic": self.topic.name,
-            "avatar": self.avatar.to_item(),
-            "cover_photo": self.cover_photo.to_item(),
-            "location": self.location.to_item(),
-            "country": PrimaryKeyPrefix.COUNTRY + self.location.country,
-            "state_city": (
-                PrimaryKeyPrefix.STATE
-                + self.location.state
-                + PrimaryKeyPrefix.CITY
-                + self.location.city
-            ),
-            "created_at": self._created_at.isoformat(),
-            "founder_id": self._founder.id,
-        }
-
     def __repr__(self):
         """Return a representation of a community. Some attributes are not
         shown in order to reduce verbosity.
@@ -115,31 +98,24 @@ class Community:
 
 @dataclass(frozen=True)
 class CommunityMembership:
-    """Class to represent the relationship between users and communities."""
+    """Class to represent the relationship between a community
+    and a user who is a member of that community.
+    """
 
-    user_id: str
     community_id: str
+    user_id: str
     created_at: datetime = datetime.now()
+    is_founder: bool = False
 
-    def key(self):
-        """Return the primary key of the community membership model for
-        DynamoDB.
-        """
-        return {
-            "PK": PrimaryKeyPrefix.USER + self.user_id,
-            "SK": PrimaryKeyPrefix.COMMUNITY + self.community_id,
-        }
 
-    def to_item(self):
-        """Return the representation of a community membership as stored in
-        DynamoDB.
-        """
-        return {
-            **self.key(),
-            "community_membership_id": self.user_id + "#" + self.community_id,
-            "created_at": self.created_at.isoformat(),
-        }
+@dataclass(frozen=True)
+class CommunityName:
+    """Class to be used in DynamoDB to enforce a uniqueness constraint
+    on a community's name.
+    """
 
+    community_id: str
+    name: str
 
 
 class CommunityPermission(Enum):
@@ -165,10 +141,11 @@ class CommunityGroupChatRelation:
         return {
             "PK": PrimaryKeyPrefix.GROUP_CHAT + self.group_chat_id,
             "SK": PrimaryKeyPrefix.COMMUNITY + self.community_id,
-            "community_group_chat_relation": self.group_chat_id + "#" + self.community_id,
-            "created_at": self.created_at.isoformat()
+            "community_group_chat_relation": self.group_chat_id
+            + "#"
+            + self.community_id,
+            "created_at": self.created_at.isoformat(),
         }
-
 
 
 class CommunityTopic(Enum):
