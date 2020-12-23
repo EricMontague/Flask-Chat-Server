@@ -9,6 +9,28 @@ from datetime import datetime, date, time
 from decimal import Decimal
 
 
+class DynamoDBType:
+    """Class that holds constants of DynamoDB data types."""
+
+    STRING = "S"
+    NUMBER = "N"
+    BINARY = "B"
+    STRING_SET = "SS"
+    NUMBER_SET = "NS"
+    BINARY_SET = "BS"
+    NULL = "NULL"
+    BOOLEAN = "BOOL"
+    MAP = "M"
+    LIST = "L"
+
+
+SET_TYPES = {
+    "BS": DynamoDBType.BINARY_SET,
+    "SS": DynamoDBType.STRING_SET,
+    "NS": DynamoDBType.NUMBER_SET,
+}
+
+
 class TypeValidator:
     """Class used to validate various python types for
     the ModelMapper class
@@ -86,6 +108,11 @@ class TypeValidator:
         """
         return isinstance(value, Decimal)
 
+    @staticmethod
+    def is_nested_dict(dict_):
+        """Return True if the dictionary is nested, otherwise return False."""
+        return any(TypeValidator.is_dict(value) for value in dict_.values())
+
 
 class DateTimeParser:
     """Class to parse date, time and datetime strings."""
@@ -117,9 +144,9 @@ def get_enum_member(enum, name_or_value):
     either by name or value.
     """
     try:
-        return enum[name_or_value]
+        return enum[name_or_value] # Get by name
     except KeyError:
-        return enum(name_or_value)
+        return enum(int(name_or_value)) # Get by value
 
 
 def get_attribute_or_dict_value(model_or_dict, attribute_or_key, default=None):
