@@ -60,8 +60,7 @@ def serialize_model_or_models(results, schema):
     for key in results:
         if key == "model":
             model = results.pop(key)
-            resource_name = schema.COLLECTION_NAME[:-1]
-            results[resource_name] = schema.dump(model)
+            results[schema.RESOURCE_NAME] = schema.dump(model)
         elif key == "models":
             models = results.pop(key)
             results[schema.COLLECTION_NAME] = schema.dump(models)
