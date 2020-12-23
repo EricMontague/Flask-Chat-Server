@@ -28,3 +28,11 @@ class AbstractDatabaseRepository(ABC):
     @abstractmethod
     def get_users(self, *args, **kwargs):
         pass
+
+    @abstractmethod
+    def get_community(self, community_id):
+        pass
+
+    @abstractmethod
+    def add_community(self, community, founder_id):
+        pass
