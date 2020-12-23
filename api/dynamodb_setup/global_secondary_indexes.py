@@ -20,8 +20,8 @@ USERS_GSI = {
 COMMUNITIES_BY_LOCATION_GSI = {
     "IndexName": "CommunitiesByLocation",
     "KeySchema": [
-        {"AttributeName": "country", "KeyType": "HASH"},
-        {"AttributeName": "state_city", "KeyType": "RANGE"},
+        {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_PK", "KeyType": "HASH"},
+        {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_SK", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
@@ -34,8 +34,8 @@ COMMUNITIES_BY_LOCATION_GSI = {
 COMMUNITIES_BY_TOPIC_GSI = {
     "IndexName": "CommunitiesByTopic",
     "KeySchema": [
-        {"AttributeName": "topic", "KeyType": "HASH"},
-        {"AttributeName": "community_id", "KeyType": "RANGE"},
+        {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_PK", "KeyType": "HASH"},
+        {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_SK", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {

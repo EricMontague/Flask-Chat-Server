@@ -29,13 +29,13 @@ def create_application_table():
         AttributeDefinitions=[
             {"AttributeName": "PK", "AttributeType": "S"},
             {"AttributeName": "SK", "AttributeType": "S"},
-            {"AttributeName": "country", "AttributeType": "S"},
-            {"AttributeName": "state_city", "AttributeType": "S"},
-            {"AttributeName": "topic", "AttributeType": "S"},
-            {"AttributeName": "community_id", "AttributeType": "S"},
             {"AttributeName": "request_status_datetime", "AttributeType": "S"},
             {"AttributeName": "group_chat_id", "AttributeType": "S"},
-            {"AttributeName": "USERS_GSI_SK", "AttributeType": "S"}
+            {"AttributeName": "USERS_GSI_SK", "AttributeType": "S"},
+            {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_PK", "AttributeType": "S"},
+            {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_SK", "AttributeType": "S"},
+            {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_PK", "AttributeType": "S"},
+            {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_SK", "AttributeType": "S"}
         ],
         GlobalSecondaryIndexes=[
             USERS_GSI,
