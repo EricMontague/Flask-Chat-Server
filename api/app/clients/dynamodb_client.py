@@ -30,7 +30,7 @@ class _DynamoDBClient:
     def create_user(self, items):
         """Add a new user item to DynamoDB."""
         logger.info("Adding new user to DynamoDB")
-        parameters = self._build_create_user_parameters(items)
+        parameters = self._build_create_item_parameters(items)
         try:
             return self._execute_transact_write(parameters)
         except ClientError as err:
@@ -79,6 +79,25 @@ class _DynamoDBClient:
                     reason["Code"] for reason in err.response["CancellationReasons"]
                 ):
                     error_message = "User could not be found"
+            return {"error": error_message}
+    
+    def create_community(self, items):
+        """Add a new community to DynamoDB."""
+        logger.info("Adding new community to DynamoDB")
+        parameters = self._build_create_item_parameters(items)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+
+            error_message = "Could not add community"
+            if err.response["Error"]["Code"] == "TransactionCanceledException":
+                if (
+                    err.response["CancellationReasons"][1]["Code"]
+                    == "ConditionalCheckFailed"
+                ):
+                    error_message = "A community with this name already exists"
             return {"error": error_message}
 
     def get_items(self, limit, start_key, index=None):
@@ -169,8 +188,8 @@ class _DynamoDBClient:
 
     # May move these _build_* methods into another module and make them functions if this
     # module becomes too large
-    def _build_create_user_parameters(self, items):
-        """Return the parameters necessary to create a user in a transaction."""
+    def _build_create_item_parameters(self, items):
+        """Return the parameters necessary to create an item in a transaction."""
         parameters = [
             {
                 "Put": {
