@@ -8,7 +8,7 @@ from app.helpers import handle_request, handle_response
 from app.schemas import UserSchema, UrlParamsSchema
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import DatabaseException
-from app.models.user_factory import UserFactory
+from app.models.factories import UserFactory
 
 
 @api.route("/users")
