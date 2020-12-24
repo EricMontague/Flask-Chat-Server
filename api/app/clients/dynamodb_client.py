@@ -66,7 +66,7 @@ class _DynamoDBClient:
     def delete_user(self, keys):
         """Delete a user item from DynamoDB."""
         logger.info("Deleting a user from DynamoDB")
-        parameters = self._build_delete_user_parameters(keys)
+        parameters = self._build_delete_item_parameters(keys)
         try:
             return self._execute_transact_write(parameters)
         except ClientError as err:
@@ -80,7 +80,7 @@ class _DynamoDBClient:
                 ):
                     error_message = "User could not be found"
             return {"error": error_message}
-    
+
     def create_community(self, items):
         """Add a new community to DynamoDB."""
         logger.info("Adding new community to DynamoDB")
@@ -100,6 +100,36 @@ class _DynamoDBClient:
                     error_message = "A community with this name already exists"
             return {"error": error_message}
 
+    def update_community(self, items):
+        """Update a community item in DynamoDB."""
+        logger.info("Updating a community in DynamoDB")
+        parameters = self._build_update_commmunity_parameters(items)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+            error_message = "Could not update community information"
+            return {"error": error_message}
+
+    def delete_community(self, keys):
+        """Delete a community from DynamoDB."""
+        logger.info("Deleting a community from DynamoDB")
+        parameters = self._build_delete_item_parameters(keys)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+
+            error_message = "Could not delete community"
+            if err.response["Error"]["Code"] == "TransactionCanceledException":
+                if any(
+                    reason["Code"] for reason in err.response["CancellationReasons"]
+                ):
+                    error_message = "Community could not be found"
+            return {"error": error_message}
+
     def get_items(self, limit, start_key, index=None):
         """Return a list of items from the table or an index if given."""
         logger.info("Getting items from DynamoDB")
@@ -108,7 +138,7 @@ class _DynamoDBClient:
             response = self._scan_index(limit, start_key, index)
         else:
             response = self._scan_table(limit, start_key)
-    
+
         results["Items"].extend(response["Items"])
         results["LastEvaluatedKey"] = response.get("LastEvaluatedKey")
         return results
@@ -132,15 +162,48 @@ class _DynamoDBClient:
         response = self._dynamodb.delete_item(TableName=self._table_name, Key=key)
         return response, response["ResponseMetadata"]["HTTPStatusCode"]
 
+    def query(self, limit, start_key, primary_key, index=None):
+        logger.info("Querying items from DynamoDB")
+        results = {"Items": [], "LastEvaluatedKey": None}
+        if index:
+            response = self._query_index(limit, start_key, primary_key, index)
+        else:
+            response = self._query_table(limit, start_key, primary_key)
+
+        results["Items"].extend(response["Items"])
+        results["LastEvaluatedKey"] = response.get("LastEvaluatedKey")
+        return results
+
+    def _query_index(self, limit, start_key, primary_key, index):
+        if start_key:
+            response = self._dynamodb.query(
+                TableName=self._table_name,
+                IndexName=index,
+                Limit=limit,
+                ExclusiveStartKey=start_key,
+                KeyConditionExpression=f"{primary_key['pk_name']} = :pk",
+                ExpressionAttributeValues={":pk": primary_key["pk_value"]},
+            )
+        else:
+            response = self._dynamodb.query(
+                TableName=self._table_name,
+                IndexName=index,
+                Limit=limit,
+                KeyConditionExpression=f"{primary_key['pk_name']} = :pk",
+                ExpressionAttributeValues={":pk": primary_key["pk_value"]},
+            )
+        return response
+
+    def _query_table(self, limit, start_key, primary_key):
+        pass
+
     def batch_write_items(self, requests):
         """Write multiple items at a time to the table."""
         logger.info("Executing batch write request")
         batch_request = self._build_batch_write_request(requests)
         try:
             response = self._dynamodb.batch_write_item(
-                RequestItems={
-                    self._table_name: batch_request
-                }
+                RequestItems={self._table_name: batch_request}
             )
         except ClientError as err:
             # logger.error(err.response["Error"]["Code"])
@@ -161,29 +224,22 @@ class _DynamoDBClient:
                 TableName=self._table_name,
                 IndexName=index,
                 ExclusiveStartKey=start_key,
-                Limit=limit
+                Limit=limit,
             )
         else:
             response = self._dynamodb.scan(
-                TableName=self._table_name, 
-                IndexName=index, 
-                Limit=limit
+                TableName=self._table_name, IndexName=index, Limit=limit
             )
         return response
-    
+
     def _scan_table(self, limit, start_key):
         """Perform a scan on the table and return a list of items."""
         if start_key:
             response = self._dynamodb.scan(
-                TableName=self._table_name,
-                ExclusiveStartKey=start_key,
-                Limit=limit
+                TableName=self._table_name, ExclusiveStartKey=start_key, Limit=limit
             )
         else:
-            response = self._dynamodb.scan(
-                TableName=self._table_name, 
-                Limit=limit
-            )
+            response = self._dynamodb.scan(TableName=self._table_name, Limit=limit)
         return response
 
     # May move these _build_* methods into another module and make them functions if this
@@ -229,8 +285,26 @@ class _DynamoDBClient:
             )
         return parameters
 
-    def _build_delete_user_parameters(self, keys):
-        """Return the parameters necessary for deleting a user in a transaction."""
+    def _build_update_commmunity_parameters(self, items):
+        """Return the parameters necessary to update a community in a transaction."""
+        parameters = []
+        if "old_community_name_key" in items:
+            parameters.append(
+                {
+                    "Delete": {
+                        "Key": items.pop("old_community_name_key"),
+                        "TableName": self._table_name,
+                    }
+                }
+            )
+        for item in items:
+            parameters.append(
+                {"Put": {"Item": items[item], "TableName": self._table_name}}
+            )
+        return parameters
+
+    def _build_delete_item_parameters(self, keys):
+        """Return the parameters necessary for deleting an item in a transaction."""
         parameters = [
             {
                 "Delete": {
@@ -250,13 +324,9 @@ class _DynamoDBClient:
         batch_request = []
         for method, item_or_key in requests:
             if method == "PutRequest":
-                batch_request.append({
-                    method: {"Item": item_or_key}
-                })
+                batch_request.append({method: {"Item": item_or_key}})
             elif method == "DeleteRequest":
-                batch_request.append({
-                    method: {"Key": item_or_key}
-                })
+                batch_request.append({method: {"Key": item_or_key}})
         return batch_request
 
 
