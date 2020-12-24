@@ -4,6 +4,8 @@ information from url parameters
 
 
 from app.extensions import ma
+from app.schemas.enum_field import EnumField
+from app.models import CommunityTopic
 from marshmallow import EXCLUDE, validates_schema, ValidationError
 
 
@@ -27,3 +29,12 @@ class UrlParamsSchema(ma.Schema):
                 "Next and previous cursors cannot be present at the same time"
             )
         return data
+
+
+class CommunityTopicSchema(UrlParamsSchema):
+    """Class to serialize and deserialize information from url parameters
+    for querying for communities by topic.
+    """
+
+    topic = EnumField(CommunityTopic, required=True)
+    
