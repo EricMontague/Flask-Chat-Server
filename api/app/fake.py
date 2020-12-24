@@ -3,28 +3,44 @@ inserted fake data into the database.
 """
 
 
+import random
 from faker import Faker
 from app.clients import dynamodb_client
-from app.dynamodb import UserMapper, UsernameMapper, UserEmailMapper
-from app.models.user_factory import UserFactory
-from app.models import UserEmail, Username
+from app.repositories import dynamodb_repository
+from app.dynamodb import (
+    UserMapper, 
+    UsernameMapper, 
+    UserEmailMapper,
+    CommunityMapper,
+    CommunityNameMapper,
+    CommunityMembershipMapper
+)
+from app.models.factories import UserFactory, CommunityFactory
+from app.models import UserEmail, Username, CommunityName, CommunityMembership, CommunityTopic
+from app.dynamodb.constants import PrimaryKeyPrefix
 
 
 user_mapper = UserMapper()
 username_mapper = UsernameMapper()
 user_email_mapper = UserEmailMapper()
+community_mapper = CommunityMapper()
+community_name_mapper = CommunityNameMapper()
+community_membership_mapper = CommunityMembershipMapper()
+
+
+topics = [topic for topic in CommunityTopic]
 
 
 class FakeDataGenerator:
     """Class to generate fake data for the application."""
 
-    def __init__(self, num_users=25):
+    def __init__(self, num_users=25, num_communities=25):
         self._faker = Faker()
         self.num_users = num_users
+        self.num_communities = num_communities
 
     def add_users(self):
         """Add fake user data to the database."""
-
         remaining_users = self.num_users
         while remaining_users > 0:
             requests = []
@@ -43,7 +59,7 @@ class FakeDataGenerator:
             )
             requests.append(("PutRequest", user_email_mapper.serialize_from_model(user_email)))
             requests.append(("PutRequest", username_mapper.serialize_from_model(username)))
-            response = dynamodb_client.batch_write_items(requests)
+            dynamodb_client.batch_write_items(requests)
             remaining_users -= 1
 
     def add_notifications(self):
@@ -56,7 +72,46 @@ class FakeDataGenerator:
 
     def add_communities(self):
         """Add fake community data to the database."""
-        pass
+        results = dynamodb_repository.get_users(25)
+        users = results["models"]
+        remaining_communities = self.num_communities
+        while remaining_communities > 0:
+            requests = []
+            community_data = self._generate_fake_community_data()
+            community = CommunityFactory.create_community(community_data)
+            community_name = CommunityName(community.id, community.name)
+            community_membership = CommunityMembership(
+                community.id, 
+                random.choice(users).id, 
+                is_founder=True
+            )
+            additional_attributes={
+                "COMMUNITY_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
+                "COMMUNITY_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
+                "COMMUNITY_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY + community.location.country,
+                "COMMUNITY_BY_LOCATION_GSI_SK": (
+                    PrimaryKeyPrefix.STATE + community.location.state 
+                    + PrimaryKeyPrefix.CITY + community.location.city
+                )
+            }
+            requests.append(
+                (
+                    "PutRequest",
+                    community_mapper.serialize_from_model(
+                        community, additional_attributes=additional_attributes
+
+                    )
+                )
+            )
+            requests.append(
+                (
+                    "PutRequest",
+                    community_membership_mapper.serialize_from_model(community_membership)
+                )
+            )
+            requests.append(("PutRequest", community_name_mapper.serialize_from_model(community_name)))
+            dynamodb_client.batch_write_items(requests)
+            remaining_communities -= 1
 
     def add_group_chats(self):
         """Add fake group chat data to the database."""
@@ -65,6 +120,20 @@ class FakeDataGenerator:
     def add_private_chats(self):
         """Add fake private chat data to the database."""
         pass
+
+    def _generate_fake_community_data(self):
+        """Return fake community data as a dictionary."""
+        fake_community_data = {
+            "name": self._faker.name(),
+            "description": self._faker.paragraph()[:280],
+            "topic": random.choice(topics),
+            "location": {
+                "city": self._faker.city(),
+                "state": self._faker.state(),
+                "country": "United States"
+            }
+        }
+        return fake_community_data
 
     def _generate_fake_user_data(self):
         """Return fake user data as a dictionary."""
