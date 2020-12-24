@@ -36,3 +36,15 @@ class AbstractDatabaseRepository(ABC):
     @abstractmethod
     def add_community(self, community, founder_id):
         pass
+
+    @abstractmethod
+    def update_community(self, community, attributes_to_update, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def remove_community(self, community):
+        pass
+
+    @abstractmethod
+    def get_communities(self, *args, **kwargs):
+        pass
