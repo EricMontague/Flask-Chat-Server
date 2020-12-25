@@ -28,7 +28,14 @@ community_name_mapper = CommunityNameMapper()
 community_membership_mapper = CommunityMembershipMapper()
 
 
-topics = [topic for topic in CommunityTopic]
+TOPICS = [topic for topic in CommunityTopic]
+LOCATIONS = [
+    {"city" : "New York", "state": "New York", "country": "United States"},
+    {"city" : "Philadelphia", "state": "Pennsylvania", "country": "United States"},
+    {"city" : "Chicago", "state": "Illinois", "country": "United States"},
+    {"city" : "San Francisco", "state": "California", "country": "United States"},
+    {"city" : "Miami", "state": "Florida", "country": "United States"}
+]
 
 
 class FakeDataGenerator:
@@ -126,12 +133,8 @@ class FakeDataGenerator:
         fake_community_data = {
             "name": self._faker.name(),
             "description": self._faker.paragraph()[:280],
-            "topic": random.choice(topics),
-            "location": {
-                "city": self._faker.city(),
-                "state": self._faker.state(),
-                "country": "United States"
-            }
+            "topic": random.choice(TOPICS),
+            "location": random.choices(LOCATIONS)
         }
         return fake_community_data
 
