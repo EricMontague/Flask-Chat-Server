@@ -130,6 +130,35 @@ class _DynamoDBClient:
                     error_message = "Community could not be found"
             return {"error": error_message}
 
+    def add_community_member(self, keys, item):
+        """Add a community membership item to DynamoDB."""
+        parameters = self._build_add_community_member_parameters(keys, item)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+            pprint(err.response)
+            error_message = "Could not add user to community"
+            if err.response["CancellationReasons"][0]["Code"] == "ConditionalCheckFailed":
+                error_message = "User could not be found"
+            elif err.response["CancellationReasons"][1]["Code"] == "ConditionalCheckFailed":
+                error_message = "Community could not be found"
+            return {"error": error_message}
+
+    def remove_community_member(self, key):
+        """Delete a community membership item from DynamoDB."""
+        try:
+            return self.delete_item(key)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+            pprint(err.response)
+            error_message = "Could not remove member from community"
+            if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                error_message = "Community or user not found"
+            return {"error": error_message}
+
     def get_items(self, limit, start_key, index=None):
         """Return a list of items from the table or an index if given."""
         logger.info("Getting items from DynamoDB")
@@ -159,8 +188,12 @@ class _DynamoDBClient:
 
     def delete_item(self, key):
         """Delete an item from DynamoDB and return the response."""
-        response = self._dynamodb.delete_item(TableName=self._table_name, Key=key)
-        return response, response["ResponseMetadata"]["HTTPStatusCode"]
+        response = self._dynamodb.delete_item(
+            TableName=self._table_name,
+            Key=key,
+            ConditionExpression="attribute_exists(PK) AND attribute_exists(SK)",
+        )
+        return response
 
     def query(self, limit, start_key, primary_key, index=None):
         logger.info("Querying items from DynamoDB")
@@ -175,27 +208,66 @@ class _DynamoDBClient:
         return results
 
     def _query_index(self, limit, start_key, primary_key, index):
+        key_condition_expression = f"{primary_key['pk_name']} = :pk"
+        expression_attribute_values = {":pk": primary_key["pk_value"]}
+        if "sk_name" in primary_key:
+            key_condition_expression += (
+                f" AND begins_with({primary_key['sk_name']}, :sk)"
+            )
+            expression_attribute_values[":sk"] = primary_key["sk_value"]
         if start_key:
             response = self._dynamodb.query(
                 TableName=self._table_name,
                 IndexName=index,
                 Limit=limit,
                 ExclusiveStartKey=start_key,
-                KeyConditionExpression=f"{primary_key['pk_name']} = :pk",
-                ExpressionAttributeValues={":pk": primary_key["pk_value"]},
+                KeyConditionExpression=key_condition_expression,
+                ExpressionAttributeValues=expression_attribute_values,
             )
         else:
             response = self._dynamodb.query(
                 TableName=self._table_name,
                 IndexName=index,
                 Limit=limit,
-                KeyConditionExpression=f"{primary_key['pk_name']} = :pk",
-                ExpressionAttributeValues={":pk": primary_key["pk_value"]},
+                KeyConditionExpression=key_condition_expression,
+                ExpressionAttributeValues=expression_attribute_values,
             )
         return response
 
     def _query_table(self, limit, start_key, primary_key):
-        pass
+        key_condition_expression = f"{primary_key['pk_name']} = :pk"
+        expression_attribute_values = {":pk": primary_key["pk_value"]}
+        if "sk_name" in primary_key:
+            key_condition_expression += (
+                f" AND begins_with({primary_key['sk_name']}, :sk)"
+            )
+            expression_attribute_values[":sk"] = primary_key["sk_value"]
+        if start_key:
+            response = self._dynamodb.query(
+                TableName=self._table_name,
+                Limit=limit,
+                ExclusiveStartKey=start_key,
+                KeyConditionExpression=key_condition_expression,
+                ExpressionAttributeValues=expression_attribute_values,
+            )
+        else:
+            response = self._dynamodb.query(
+                TableName=self._table_name,
+                Limit=limit,
+                KeyConditionExpression=key_condition_expression,
+                ExpressionAttributeValues=expression_attribute_values,
+            )
+        return response
+
+    def batch_get_items(self, keys):
+        """Return multiple items from DynamoDB."""
+        return self._dynamodb.batch_get_item(
+            RequestItems={
+                self._table_name: {
+                    "Keys": keys
+                }
+            }
+        )
 
     def batch_write_items(self, requests):
         """Write multiple items at a time to the table."""
@@ -249,12 +321,12 @@ class _DynamoDBClient:
         parameters = [
             {
                 "Put": {
-                    "Item": items[item],
+                    "Item": items[key],
                     "TableName": self._table_name,
                     "ConditionExpression": "attribute_not_exists(PK)",
                 }
             }
-            for item in items
+            for key in items
         ]
         return parameters
 
@@ -328,6 +400,26 @@ class _DynamoDBClient:
             elif method == "DeleteRequest":
                 batch_request.append({method: {"Key": item_or_key}})
         return batch_request
+
+    def _build_add_community_member_parameters(self, keys, item):
+        parameters = [
+            {
+                "ConditionCheck": {
+                    "Key": keys["user_key"],
+                    "TableName": self._table_name,
+                    "ConditionExpression": f"attribute_exists(PK) AND attribute_exists(SK)",
+                }
+            },
+            {
+                "ConditionCheck": {
+                    "Key": keys["community_key"],
+                    "TableName": self._table_name,
+                    "ConditionExpression": f"attribute_exists(PK) AND attribute_exists(SK)",
+                }
+            },
+            {"Put": {"Item": item, "TableName": self._table_name,}},
+        ]
+        return parameters
 
 
 dynamodb_client = _DynamoDBClient()
