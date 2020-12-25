@@ -12,7 +12,7 @@ def handle_get_request(schema, url_params):
     try:
         return schema.load(url_params)
     except ValidationError as err:
-        return {"error": err.messages["_schema"]}
+        return {"error": err.messages["_schema"][0]}
 
 
 def handle_post_or_put_request(schema, json_data):
