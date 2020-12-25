@@ -12,3 +12,5 @@ class UniqueConstraintException(DatabaseException):
     the database layer.
     """
     
+class NotFoundException(DatabaseException):
+    """Raised when an item could not be found in the database."""
