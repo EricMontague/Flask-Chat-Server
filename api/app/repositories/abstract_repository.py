@@ -30,6 +30,10 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
+    def get_user_communities(self, user_id, *args, **kwargs):
+        pass
+
+    @abstractmethod
     def get_community(self, community_id):
         pass
 
@@ -48,3 +52,24 @@ class AbstractDatabaseRepository(ABC):
     @abstractmethod
     def get_communities(self, *args, **kwargs):
         pass
+
+    @abstractmethod
+    def get_communities_by_topic(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def get_communities_by_location(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def add_community_member(self, community_id, user_id):
+        pass
+
+    @abstractmethod
+    def remove_community_member(self, community_id, user_id):
+        pass
+
+    @abstractmethod
+    def get_community_members(self, community_id, *args, **kwargs):
+        pass
+
