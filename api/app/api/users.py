@@ -5,9 +5,9 @@ from http import HTTPStatus
 from flask import current_app, url_for
 from app.api import api
 from app.helpers import handle_request, handle_response
-from app.schemas import UserSchema, UrlParamsSchema
+from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema
 from app.repositories import dynamodb_repository
-from app.repositories.exceptions import DatabaseException
+from app.repositories.exceptions import DatabaseException, NotFoundException
 from app.models.factories import UserFactory
 
 
@@ -23,8 +23,18 @@ def get_users(pagination):
 
 
 @api.route("/users/<user_id>/communities")
-def get_user_communities():
-    pass
+@handle_request(UrlParamsSchema())
+@handle_response(CommunitySchema(many=True))
+def get_user_communities(url_params, user_id):
+    """Return a list of the user's communities."""
+    per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    try:
+        results = dynamodb_repository.get_user_communities(user_id, per_page)
+    except NotFoundException as err:
+        return {"error": str(err)}, HTTPStatus.NOT_FOUND
+    except DatabaseException as err:
+        return {"error": str(str)}, HTTPStatus.BAD_REQUEST
+    return results, HTTPStatus.OK
 
 
 @api.route("/users/<user_id>")
