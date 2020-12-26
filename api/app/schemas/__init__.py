@@ -6,5 +6,5 @@ deserializing models.
 from app.schemas.user import UserSchema
 from app.schemas.location import LocationSchema
 from app.schemas.image import ImageSchema
-from app.schemas.url_parameters import UrlParamsSchema, CommunityTopicSchema
+from app.schemas.url_parameters import UrlParamsSchema, CommunityUrlParamsSchema
 from app.schemas.community import CommunitySchema

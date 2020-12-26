@@ -32,6 +32,9 @@ class CommunitySchema(ma.Schema):
     )  # defaults to ISO 8601
     resource_type = ma.Str(default="Community", dump_only=True)
 
+    self_url = ma.URLFor("api.get_community", community_id="<_id>")
+    members_url = ma.URLFor("api.get_community_members", community_id="<_id>")
+
     @pre_load
     def strip_unwanted_fields(self, data, many, **kwargs):
         """Remove unwanted fields from the input data before deserialization."""

@@ -31,6 +31,11 @@ class UserSchema(ma.Schema):
     avatar = ma.Nested(ImageSchema, dump_only=True)
     cover_photo = ma.Nested(ImageSchema, dump_only=True)
 
+    # links
+    self_url = ma.URLFor("api.get_user", user_id="<_id>")
+    communities_url= ma.URLFor("api.get_user_communities", user_id="<_id>")
+    
+
     @pre_load
     def strip_unwanted_fields(self, data, many, **kwargs):
         """Remove unwanted fields from the input data before deserialization."""
