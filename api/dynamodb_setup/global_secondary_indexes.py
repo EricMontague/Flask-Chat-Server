@@ -7,7 +7,7 @@ import os
 USERS_GSI = {
     "IndexName": "UsersIndex",
     "KeySchema": [
-        {"AttributeName": "PK", "KeyType": "HASH"},
+        {"AttributeName": "USERS_GSI_PK", "KeyType": "HASH"},
         {"AttributeName": "USERS_GSI_SK", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
@@ -20,8 +20,8 @@ USERS_GSI = {
 COMMUNITIES_BY_LOCATION_GSI = {
     "IndexName": "CommunitiesByLocation",
     "KeySchema": [
-        {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_PK", "KeyType": "HASH"},
-        {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_SK", "KeyType": "RANGE"},
+        {"AttributeName": "COMMUNITIES_BY_LOCATION_GSI_PK", "KeyType": "HASH"},
+        {"AttributeName": "COMMUNITIES_BY_LOCATION_GSI_SK", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
@@ -34,8 +34,8 @@ COMMUNITIES_BY_LOCATION_GSI = {
 COMMUNITIES_BY_TOPIC_GSI = {
     "IndexName": "CommunitiesByTopic",
     "KeySchema": [
-        {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_PK", "KeyType": "HASH"},
-        {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_SK", "KeyType": "RANGE"},
+        {"AttributeName": "COMMUNITIES_BY_TOPIC_GSI_PK", "KeyType": "HASH"},
+        {"AttributeName": "COMMUNITIES_BY_TOPIC_GSI_SK", "KeyType": "RANGE"},
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {

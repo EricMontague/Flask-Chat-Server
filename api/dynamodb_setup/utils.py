@@ -31,11 +31,12 @@ def create_application_table():
             {"AttributeName": "SK", "AttributeType": "S"},
             {"AttributeName": "request_status_datetime", "AttributeType": "S"},
             {"AttributeName": "group_chat_id", "AttributeType": "S"},
+            {"AttributeName": "USERS_GSI_PK", "AttributeType": "S"},
             {"AttributeName": "USERS_GSI_SK", "AttributeType": "S"},
-            {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_PK", "AttributeType": "S"},
-            {"AttributeName": "COMMUNITY_BY_TOPIC_GSI_SK", "AttributeType": "S"},
-            {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_PK", "AttributeType": "S"},
-            {"AttributeName": "COMMUNITY_BY_LOCATION_GSI_SK", "AttributeType": "S"}
+            {"AttributeName": "COMMUNITIES_BY_TOPIC_GSI_PK", "AttributeType": "S"},
+            {"AttributeName": "COMMUNITIES_BY_TOPIC_GSI_SK", "AttributeType": "S"},
+            {"AttributeName": "COMMUNITIES_BY_LOCATION_GSI_PK", "AttributeType": "S"},
+            {"AttributeName": "COMMUNITIES_BY_LOCATION_GSI_SK", "AttributeType": "S"}
         ],
         GlobalSecondaryIndexes=[
             USERS_GSI,
