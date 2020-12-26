@@ -55,12 +55,16 @@ class FakeDataGenerator:
             user = UserFactory.create_user(user_data)
             user_email = UserEmail(user.id, user.email)
             username = Username(user.id, user.username)
+            additional_attributes={
+                "USERS_GSI_PK": PrimaryKeyPrefix.USER + user.id,
+                "USERS_GSI_SK": user.username
+            }
             requests.append(
                 (
                     "PutRequest", 
                     user_mapper.serialize_from_model(
                         user, 
-                        additional_attributes={"USERS_GSI_SK": user.username}
+                        additional_attributes=additional_attributes
                     )
                 )
             )
@@ -83,20 +87,25 @@ class FakeDataGenerator:
         users = results["models"]
         remaining_communities = self.num_communities
         while remaining_communities > 0:
+            random_user = random.choice(users)
             requests = []
             community_data = self._generate_fake_community_data()
             community = CommunityFactory.create_community(community_data)
             community_name = CommunityName(community.id, community.name)
             community_membership = CommunityMembership(
                 community.id, 
-                random.choice(users).id, 
+                random_user.id, 
                 is_founder=True
             )
-            additional_attributes={
-                "COMMUNITY_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
-                "COMMUNITY_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
-                "COMMUNITY_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY + community.location.country,
-                "COMMUNITY_BY_LOCATION_GSI_SK": (
+            membership_additional_attributes={
+                "USERS_GSI_PK": PrimaryKeyPrefix.USER + random_user.id,
+                "USERS_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id
+            }
+            community_additional_attributes={
+                "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
+                "COMMUNITIES_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
+                "COMMUNITIES_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY + community.location.country,
+                "COMMUNITIES_BY_LOCATION_GSI_SK": (
                     PrimaryKeyPrefix.STATE + community.location.state 
                     + PrimaryKeyPrefix.CITY + community.location.city
                 )
@@ -105,7 +114,7 @@ class FakeDataGenerator:
                 (
                     "PutRequest",
                     community_mapper.serialize_from_model(
-                        community, additional_attributes=additional_attributes
+                        community, additional_attributes=community_additional_attributes
 
                     )
                 )
@@ -113,7 +122,9 @@ class FakeDataGenerator:
             requests.append(
                 (
                     "PutRequest",
-                    community_membership_mapper.serialize_from_model(community_membership)
+                    community_membership_mapper.serialize_from_model(
+                        community_membership, additional_attributes=membership_additional_attributes
+                    )
                 )
             )
             requests.append(("PutRequest", community_name_mapper.serialize_from_model(community_name)))
@@ -134,7 +145,7 @@ class FakeDataGenerator:
             "name": self._faker.name(),
             "description": self._faker.paragraph()[:280],
             "topic": random.choice(TOPICS),
-            "location": random.choices(LOCATIONS)
+            "location": random.choice(LOCATIONS)
         }
         return fake_community_data
 
