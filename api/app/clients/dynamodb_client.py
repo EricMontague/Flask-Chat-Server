@@ -158,6 +158,14 @@ class _DynamoDBClient:
             if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 error_message = "Community or user not found"
             return {"error": error_message}
+    
+    def batch_delete_items(self, keys):
+        dynamodb = boto3.resource("dynamodb")
+        table = dynamodb.Table(self._table_name)
+        with table.batch_writer() as batch:
+            for key in keys:
+                batch.delete_item(Key=key)
+        return True
 
     def get_items(self, limit, start_key, index=None):
         """Return a list of items from the table or an index if given."""
@@ -261,6 +269,7 @@ class _DynamoDBClient:
 
     def batch_get_items(self, keys):
         """Return multiple items from DynamoDB."""
+        logger.info("Making batch get call")
         return self._dynamodb.batch_get_item(
             RequestItems={
                 self._table_name: {

@@ -1,7 +1,9 @@
 """This module contains the DynamoDB repository."""
 
 
+import os
 from http import HTTPStatus
+from pprint import pprint
 from app.repositories.abstract_repository import AbstractDatabaseRepository
 from app.repositories.exceptions import UniqueConstraintException, NotFoundException
 from app.clients import dynamodb_client
@@ -24,6 +26,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
     def __init__(self, dynamodb_client, **kwargs):
         self._dynamodb_client = dynamodb_client
+        self._table_name = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
         self._user_mapper = kwargs.get("user_mapper")
         self._username_mapper = kwargs.get("username_mapper")
         self._user_email_mapper = kwargs.get("user_email_mapper")
@@ -43,9 +46,13 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         """Add a new user to DynamoDB."""
         user_email = UserEmail(user.id, user.email)
         username = Username(user.id, user.username)
+        additional_attributes={
+            "USERS_GSI_PK": PrimaryKeyPrefix.USER + user.id,
+            "USERS_GSI_SK": user.username
+        }
         items = {
             "user": self._user_mapper.serialize_from_model(
-                user, additional_attributes={"USERS_GSI_SK": user.username}
+                user, additional_attributes=additional_attributes
             ),
             "user_email": self._user_email_mapper.serialize_from_model(user_email),
             "username": self._username_mapper.serialize_from_model(username),
@@ -57,10 +64,14 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def update_user(self, old_user, updated_user_data):
         """Update a user item in DynamoDB."""
         updated_user = update_user_model(old_user, updated_user_data)
+        additional_attributes={
+            "USERS_GSI_PK": PrimaryKeyPrefix.USER + updated_user.id,
+            "USERS_GSI_SK": updated_user.username
+        }
         items = {
             "user": self._user_mapper.serialize_from_model(
                 updated_user,
-                additional_attributes={"USERS_GSI_SK": updated_user.username},
+                additional_attributes=additional_attributes,
             )
         }
 
@@ -89,8 +100,45 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             "user_email": self._user_email_mapper.key(user.email, user.email),
         }
         response = self._dynamodb_client.delete_user(keys)
-        return response
 
+        # Make use of threading here later so this doesn't block
+        user_primary_key = self._user_mapper.key(user.id)
+        limit = 25
+        cursor = {}
+        query_params = [
+            limit,
+            cursor,
+            {
+                "pk_name": "USERS_GSI_PK", 
+                "pk_value": user_primary_key["PK"], 
+                "sk_name": "USERS_GSI_SK",
+                "sk_value": {"S":PrimaryKeyPrefix.COMMUNITY},
+            },
+            "UsersIndex"
+        ]
+        self._delete_community_memberships(query_params)
+        return response
+    
+    def _delete_community_memberships(self, query_params):
+        while True:
+            query_results = self._dynamodb_client.query(*query_params)
+            if not query_results["Items"]:
+                break
+
+            # Delete all community membership items
+            membership_keys = [
+                {
+                    "PK": PrimaryKeyPrefix.COMMUNITY + item["community_id"]["S"],
+                    "SK": PrimaryKeyPrefix.USER + item["user_id"]["S"]
+                }
+                for item in query_results["Items"]
+            ]
+
+            self._dynamodb_client.batch_delete_items(membership_keys)
+            if not query_results["LastEvaluatedKey"]:
+                break
+        
+        
     def get_users(self, limit, encoded_start_key=None):
         """Return a collection of user models."""
         decoded_start_key = {}
@@ -99,21 +147,46 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         results = self._dynamodb_client.get_items(
             limit, decoded_start_key, "UsersIndex"
         )
-        next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
-        users = [
-            self._user_mapper.deserialize_to_model(item, ["_password_hash"])
-            for item in results["Items"]
-        ]
-        response = {
-            "models": users,
-            "next": next_cursor,
-            "has_next": results["LastEvaluatedKey"] is not None,
-            "total": len(users),
-        }
-        return response
+        return self._process_query_or_scan_results(results, self._user_mapper, ["_password_hash"])          
     
     def get_user_communities(self, user_id, limit, **kwargs):
-        pass
+        """Return a collection of the user's communities."""
+        cursor = {}
+        if "cursor" in kwargs:
+            cursor = decode_cursor(kwargs["cursor"])
+        user = self.get_user(user_id)
+        if not user:
+            raise NotFoundException("User not found")
+        primary_key = self._user_mapper.key(user_id)
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "USERS_GSI_PK", 
+                "pk_value": primary_key["PK"], 
+                "sk_name": "USERS_GSI_SK",
+                "sk_value": {"S":PrimaryKeyPrefix.COMMUNITY},
+            },
+            "UsersIndex"
+        )
+        
+        if not query_results["Items"]:
+            response = {
+                "models": [],
+                "total": 0
+            }
+        else:
+            community_keys = [
+                self._community_mapper.key(item["community_id"]["S"], item["community_id"]["S"])
+                for item in query_results["Items"]
+            ]
+            pprint(community_keys)
+            batch_results = self._dynamodb_client.batch_get_items(community_keys)
+            pprint(batch_results)
+            response = self._process_batch_results(batch_results, self._community_mapper)
+        response["has_next"] = query_results["LastEvaluatedKey"] is not None
+        response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
+        return response
 
     def get_community(self, community_id):
         """Return a community from DynamoDB by id."""
@@ -128,11 +201,11 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         community_name = CommunityName(community.id, community.name)
         community_membership = CommunityMembership(community.id, founder_id)
         additional_attributes = {
-            "COMMUNITY_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
-            "COMMUNITY_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
-            "COMMUNITY_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY
+            "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
+            "COMMUNITIES_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
+            "COMMUNITIES_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY
             + community.location.country,
-            "COMMUNITY_BY_LOCATION_GSI_SK": (
+            "COMMUNITIES_BY_LOCATION_GSI_SK": (
                 PrimaryKeyPrefix.STATE
                 + community.location.state
                 + PrimaryKeyPrefix.CITY
@@ -160,13 +233,13 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             old_community, updated_community_data
         )
         additional_attributes = {
-            "COMMUNITY_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC
+            "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC
             + updated_community.topic.name,
-            "COMMUNITY_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY
+            "COMMUNITIES_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY
             + updated_community.id,
-            "COMMUNITY_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY
+            "COMMUNITIES_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY
             + updated_community.location.country,
-            "COMMUNITY_BY_LOCATION_GSI_SK": (
+            "COMMUNITIES_BY_LOCATION_GSI_SK": (
                 PrimaryKeyPrefix.STATE
                 + updated_community.location.state
                 + PrimaryKeyPrefix.CITY
@@ -200,6 +273,21 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             ),
         }
         response = self._dynamodb_client.delete_community(keys)
+        primary_key = self._community_mapper.key(community.id)
+        
+        limit = 25
+        cursor = {}
+        query_params = [
+            limit, 
+            cursor,
+            {
+                "pk_name": "PK", 
+                "pk_value": primary_key["PK"], 
+                "sk_name": "SK",
+                "sk_value": {"S":PrimaryKeyPrefix.USER},
+            }
+        ]
+        self._delete_community_memberships(query_params)
         return response
 
     def get_communities(self, limit, **kwargs):
@@ -215,7 +303,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             results = self._dynamodb_client.get_items(
                 limit, cursor, "CommunitiesByLocation"
             )
-            return self._process_results(results, self._community_mapper)
+            return self._process_query_or_scan_results(results, self._community_mapper)
 
     def get_communities_by_topic(self, limit, topic, cursor={}):
         """Return a collection of community models that have the given topic"""
@@ -223,10 +311,10 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         results = self._dynamodb_client.query(
             limit,
             cursor,
-            {"pk_name": "COMMUNITY_BY_TOPIC_GSI_PK", "pk_value": {"S": partition_key}},
+            {"pk_name": "COMMUNITIES_BY_TOPIC_GSI_PK", "pk_value": {"S": partition_key}},
             "CommunitiesByTopic",
         )
-        return self._process_results(results, self._community_mapper)
+        return self._process_query_or_scan_results(results, self._community_mapper)
 
     def get_communities_by_location(self, limit, location, cursor={}):
         """Return a collection of community models that are in the given location"""
@@ -237,23 +325,27 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if "city" in location:
             sort_key += PrimaryKeyPrefix.CITY + location["city"].title()
         primary_key = {
-            "pk_name": "COMMUNITY_BY_LOCATION_GSI_PK",
+            "pk_name": "COMMUNITIES_BY_LOCATION_GSI_PK",
             "pk_value": {"S": partition_key},
         }
         if sort_key:
-            primary_key["sk_name"] = "COMMUNITY_BY_LOCATION_GSI_SK"
+            primary_key["sk_name"] = "COMMUNITIES_BY_LOCATION_GSI_SK"
             primary_key["sk_value"] = {"S": sort_key}
             
         results = self._dynamodb_client.query(
             limit, cursor, primary_key, "CommunitiesByLocation",
         )
-        return self._process_results(results, self._community_mapper)
+        return self._process_query_or_scan_results(results, self._community_mapper)
 
     def add_community_member(self, community_id, user_id):
         """Add a user to a community."""
         community_membership = CommunityMembership(community_id, user_id)
+        additional_attributes = {
+            "USERS_GSI_PK": PrimaryKeyPrefix.USER + user_id,
+            "USERS_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community_id
+        }
         item = self._community_membership_mapper.serialize_from_model(
-            community_membership
+            community_membership, additional_attributes=additional_attributes
         )
 
         keys = {
@@ -279,6 +371,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if "cursor" in kwargs:
             cursor = decode_cursor(kwargs["cursor"])
         community = self.get_community(community_id)
+        if not community:
+            raise NotFoundException("Community not found")
         primary_key = self._community_mapper.key(community_id)
         query_results = self._dynamodb_client.query(
             limit,
@@ -295,13 +389,17 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             for item in query_results["Items"]
         ]
         batch_results = self._dynamodb_client.batch_get_items(user_keys)
-        results = self._process_results(batch_results, self._user_mapper)
-        results["model"] = community
-        return results
-
-    def _process_results(self, results, mapper):
+        response = self._process_batch_results(batch_results, self._user_mapper, ["_password_hash"])
+        response["has_next"] = query_results["LastEvaluatedKey"] is not None
+        response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
+        return response
+        
+    def _process_query_or_scan_results(self, results, mapper, attributes_to_monkey_patch=[]):
         next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
-        models = [mapper.deserialize_to_model(item) for item in results["Items"]]
+        models = [
+            mapper.deserialize_to_model(item, attributes_to_monkey_patch) 
+            for item in results["Items"]
+        ]
         response = {
             "models": models,
             "next": next_cursor,
@@ -310,6 +408,17 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         }
         return response
 
+    def _process_batch_results(self, results, mapper, attributes_to_monkey_patch=[]):
+        models = [
+            mapper.deserialize_to_model(item, attributes_to_monkey_patch) 
+            for item in results["Responses"][self._table_name]
+        ]
+        response = {
+            "models": models,
+            "total": len(models)
+        }
+    
+        return response
 
 dynamodb_repository = _DynamoDBRepository(
     dynamodb_client,
