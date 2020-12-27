@@ -12,6 +12,7 @@ class ItemType(Enum):
     COMMUNITY_MEMBERSHIP = 3
     USER_EMAIL = 4
     USERNAME = 5
+    COMMUNITY_NAME = 6
 
 
 class PrimaryKeyPrefix:
