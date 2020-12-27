@@ -17,12 +17,9 @@ from app.dynamodb.utils import (
     DateTimeParser,
     get_attribute_or_dict_value,
     set_attribute_or_dict_value,
-    DynamoDBType
+    DynamoDBType,
 )
 from app.dynamodb.serializer_manager import serializer_manager
-
-
-
 
 
 def resolve_mapper_instance(cls_or_instance):
@@ -65,6 +62,14 @@ class MapperOptions:
         self.enum_attribute = getattr(meta, "enum_attribute", "name")
         if self.enum_attribute not in {"name", "value"}:
             raise ValueError("`enum_attribute option must be either `name` or `value`")
+
+        self.attributes_to_monkey_patch = getattr(
+            meta, "attributes_to_monkey_patch", ()
+        )
+        if not isinstance(self.attributes_to_monkey_patch, (list, tuple)):
+            raise ValueError(
+                "`attributes_to_monkey_patch` option must be a list or a tuple"
+            )
 
         partition_key_prefix = getattr(
             meta, "partition_key_prefix", self.model.__name__.upper() + "#"
@@ -182,14 +187,14 @@ class ModelMapper(ABC):
         self._serialize_additional_attributes(item, additional_attributes)
         return item
 
-    def deserialize_to_model(self, item, attributes_to_monkey_patch=[]):
+    def deserialize_to_model(self, item):
         """Deserialize the given item to a model."""
         if not self._options.model:
             raise ModelNotSetException("Please set a model in the Mapper's model class")
-        model_dict = self._deserialize(item, attributes_to_monkey_patch)
+        model_dict = self._deserialize(item)
         model_instance = self._options.model(**model_dict)
         self._deserialize_additional_attributes(
-            model_instance, item, attributes_to_monkey_patch
+            model_instance, item, self._options.attributes_to_monkey_patch
         )
         return model_instance
 
@@ -259,9 +264,9 @@ class ModelMapper(ABC):
                 attribute_name, attributes[attribute_name]
             )
 
-    def _deserialize(self, item, attributes_to_skip):
+    def _deserialize(self, item):
         """Deserialize the given item to a python dictionary."""
-        attributes_to_skip = set(attributes_to_skip)
+        attributes_to_skip = set(self._options.attributes_to_monkey_patch)
         model_dict = {}
         for field in self._options.fields:
             if field not in attributes_to_skip:
@@ -291,16 +296,18 @@ class ModelMapper(ABC):
             mapper = resolve_mapper_instance(self.NESTED_MAPPERS[field])
             if list(value["M"].keys())[0] in mapper._options.fields:
                 deserialized_value = mapper.deserialize_to_model(value["M"])
-            else: # Dictionary of dictionaries
+            else:  # Dictionary of dictionaries
                 deserialized_value = {}
                 for k, v in value["M"].items():
-                    deserialized_value[k] = mapper.deserialize_to_model(v["M"])            
+                    deserialized_value[k] = mapper.deserialize_to_model(v["M"])
         elif (
             data_type == DynamoDBType.MAP
         ):  # this may be unecessary since boto3 can handle Maps
             deserialized_value = {}
             for k, v in value.items():
-                deserialized_value[k] = self._handle_deserialization(field, v, item["M"])
+                deserialized_value[k] = self._handle_deserialization(
+                    field, v, item["M"]
+                )
         else:
             # Since the field may be an enum, premptively load it into the options dict
             options["enum"] = self.ENUMS.get(field)

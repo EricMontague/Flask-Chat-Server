@@ -4,7 +4,7 @@ models.
 
 
 from app.dynamodb.mapper import ModelMapper
-from app.dynamodb.constants import PrimaryKeyPrefix
+from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
 from app.models import (
     User,
     Username,
@@ -78,9 +78,10 @@ class UserMapper(ModelMapper):
             "cover_photo",
             "is_online",
         )
-        type_ = "user"
+        type_ = ItemType.USER.name
         partition_key_attribute = "_id"
         sort_key_attribute = "_id"
+        attributes_to_monkey_patch = ("_password_hash",)
 
     NESTED_MAPPERS = {
         "location": LocationMapper(ignore_partition_key=True),
@@ -100,7 +101,7 @@ class UserEmailMapper(ModelMapper):
         fields = ("user_id", "email")
         partition_key_attribute = "email"
         sort_key_attribute = "email"
-        type_ = "user_email"
+        type_ = ItemType.USER_EMAIL.name
 
 
 class UsernameMapper(ModelMapper):
@@ -113,7 +114,7 @@ class UsernameMapper(ModelMapper):
         fields = ("user_id", "username")
         partition_key_attribute = "username"
         sort_key_attribute = "username"
-        type_ = "username"
+        type_ = ItemType.USERNAME.name
 
 
 class CommunityMapper(ModelMapper):
@@ -135,7 +136,7 @@ class CommunityMapper(ModelMapper):
         )
         partition_key_attribute = "_id"
         sort_key_attribute = "_id"
-        type_ = "community"
+        type_ = ItemType.COMMUNITY.name
 
     ENUMS = {"topic": CommunityTopic}
     NESTED_MAPPERS = {
@@ -155,7 +156,7 @@ class CommunityNameMapper(ModelMapper):
         fields = ("community_id", "name")
         partition_key_attribute = "name"
         sort_key_attribute = "name"
-        type_ = "community_name"
+        type_ = ItemType.COMMUNITY_NAME.name
 
 
 class CommunityMembershipMapper(ModelMapper):
@@ -170,5 +171,5 @@ class CommunityMembershipMapper(ModelMapper):
         partition_key_prefix = PrimaryKeyPrefix.COMMUNITY
         sort_key_prefix = PrimaryKeyPrefix.USER
         sort_key_attribute = "user_id"
-        type_ = "community_membership"
+        type_ = ItemType.COMMUNITY_MEMBERSHIP.name
 
