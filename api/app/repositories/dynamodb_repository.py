@@ -17,7 +17,7 @@ from app.dynamodb import (
     CommunityMembershipMapper,
     CommunityNameMapper,
 )
-from app.dynamodb.constants import PrimaryKeyPrefix
+from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
 from app.repositories.utils import encode_cursor, decode_cursor
 
 
@@ -40,7 +40,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         user_item = self._dynamodb_client.get_item(primary_key)
         if not user_item:
             return None
-        return self._user_mapper.deserialize_to_model(user_item, ["_password_hash"])
+        return self._user_mapper.deserialize_to_model(user_item)
 
     def add_user(self, user):
         """Add a new user to DynamoDB."""
@@ -137,8 +137,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             self._dynamodb_client.batch_delete_items(membership_keys)
             if not query_results["LastEvaluatedKey"]:
                 break
-        
-        
+         
     def get_users(self, limit, encoded_start_key=None):
         """Return a collection of user models."""
         decoded_start_key = {}
@@ -147,7 +146,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         results = self._dynamodb_client.get_items(
             limit, decoded_start_key, "UsersIndex"
         )
-        return self._process_query_or_scan_results(results, self._user_mapper, ["_password_hash"])          
+        return self._process_query_or_scan_results(results, self._user_mapper, ItemType.USER.name)          
     
     def get_user_communities(self, user_id, limit, **kwargs):
         """Return a collection of the user's communities."""
@@ -162,12 +161,12 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             limit,
             cursor,
             {
-                "pk_name": "USERS_GSI_PK", 
+                "pk_name": "INVERTED_GSI_PK", 
                 "pk_value": primary_key["PK"], 
-                "sk_name": "USERS_GSI_SK",
+                "sk_name": "INVERTED_GSI_SK",
                 "sk_value": {"S":PrimaryKeyPrefix.COMMUNITY},
             },
-            "UsersIndex"
+            "InvertedIndex"
         )
         
         if not query_results["Items"]:
@@ -180,10 +179,10 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 self._community_mapper.key(item["community_id"]["S"], item["community_id"]["S"])
                 for item in query_results["Items"]
             ]
-            pprint(community_keys)
+            
             batch_results = self._dynamodb_client.batch_get_items(community_keys)
-            pprint(batch_results)
-            response = self._process_batch_results(batch_results, self._community_mapper)
+            
+            response = self._process_batch_results(batch_results, self._community_mapper, ItemType.COMMUNITY.name)
         response["has_next"] = query_results["LastEvaluatedKey"] is not None
         response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
         return response
@@ -200,7 +199,11 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         """Add a new community to DynamoDB."""
         community_name = CommunityName(community.id, community.name)
         community_membership = CommunityMembership(community.id, founder_id)
-        additional_attributes = {
+        membership_additional_attributes={
+            "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + founder_id,
+            "INVERTED_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id
+        }
+        community_additional_attributes = {
             "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
             "COMMUNITIES_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
             "COMMUNITIES_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY
@@ -214,13 +217,13 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         }
         items = {
             "community": self._community_mapper.serialize_from_model(
-                community, additional_attributes=additional_attributes
+                community, additional_attributes=community_additional_attributes
             ),
             "community_name": self._community_name_mapper.serialize_from_model(
                 community_name
             ),
             "community_membership": self._community_membership_mapper.serialize_from_model(
-                community_membership
+                community_membership, additional_attributes=membership_additional_attributes
             ),
         }
         response = self._dynamodb_client.create_community(items)
@@ -303,7 +306,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             results = self._dynamodb_client.get_items(
                 limit, cursor, "CommunitiesByLocation"
             )
-            return self._process_query_or_scan_results(results, self._community_mapper)
+            return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
 
     def get_communities_by_topic(self, limit, topic, cursor={}):
         """Return a collection of community models that have the given topic"""
@@ -314,7 +317,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             {"pk_name": "COMMUNITIES_BY_TOPIC_GSI_PK", "pk_value": {"S": partition_key}},
             "CommunitiesByTopic",
         )
-        return self._process_query_or_scan_results(results, self._community_mapper)
+        return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
 
     def get_communities_by_location(self, limit, location, cursor={}):
         """Return a collection of community models that are in the given location"""
@@ -335,14 +338,14 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         results = self._dynamodb_client.query(
             limit, cursor, primary_key, "CommunitiesByLocation",
         )
-        return self._process_query_or_scan_results(results, self._community_mapper)
+        return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
 
     def add_community_member(self, community_id, user_id):
         """Add a user to a community."""
         community_membership = CommunityMembership(community_id, user_id)
         additional_attributes = {
-            "USERS_GSI_PK": PrimaryKeyPrefix.USER + user_id,
-            "USERS_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community_id
+            "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + user_id,
+            "INVERTED_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community_id
         }
         item = self._community_membership_mapper.serialize_from_model(
             community_membership, additional_attributes=additional_attributes
@@ -389,16 +392,17 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             for item in query_results["Items"]
         ]
         batch_results = self._dynamodb_client.batch_get_items(user_keys)
-        response = self._process_batch_results(batch_results, self._user_mapper, ["_password_hash"])
+        response = self._process_batch_results(batch_results, self._user_mapper, ItemType.USER.name)
         response["has_next"] = query_results["LastEvaluatedKey"] is not None
         response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
         return response
         
-    def _process_query_or_scan_results(self, results, mapper, attributes_to_monkey_patch=[]):
+    def _process_query_or_scan_results(self, results, mapper, item_type):
         next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
         models = [
-            mapper.deserialize_to_model(item, attributes_to_monkey_patch) 
+            mapper.deserialize_to_model(item) 
             for item in results["Items"]
+            if item["type"]["S"] == item_type
         ]
         response = {
             "models": models,
@@ -408,10 +412,11 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         }
         return response
 
-    def _process_batch_results(self, results, mapper, attributes_to_monkey_patch=[]):
+    def _process_batch_results(self, results, mapper, item_type):
         models = [
-            mapper.deserialize_to_model(item, attributes_to_monkey_patch) 
+            mapper.deserialize_to_model(item) 
             for item in results["Responses"][self._table_name]
+            if item["type"]["S"] == item_type
         ]
         response = {
             "models": models,
