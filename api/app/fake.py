@@ -98,8 +98,8 @@ class FakeDataGenerator:
                 is_founder=True
             )
             membership_additional_attributes={
-                "USERS_GSI_PK": PrimaryKeyPrefix.USER + random_user.id,
-                "USERS_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id
+                "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + random_user.id,
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id
             }
             community_additional_attributes={
                 "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
@@ -154,7 +154,7 @@ class FakeDataGenerator:
         name = self._faker.name()
         fake_user_data = {
             "name": name,
-            "username": name + "123",
+            "username": name.replace(" ", "") + "123",
             "email": self._faker.email(),
             "password": "password",
             "location": {
