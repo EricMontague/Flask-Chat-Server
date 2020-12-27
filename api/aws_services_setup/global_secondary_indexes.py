@@ -44,6 +44,20 @@ COMMUNITIES_BY_TOPIC_GSI = {
     },
 }
 
+
+INVERTED_GSI = {
+    "IndexName": "InvertedIndex",
+    "KeySchema": [
+        {"AttributeName": "INVERTED_GSI_PK", "KeyType": "HASH"},
+        {"AttributeName": "INVERTED_GSI_SK", "KeyType": "RANGE"},
+    ],
+    "Projection": {"ProjectionType": "ALL"},
+    "ProvisionedThroughput": {
+        "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25),
+        "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25),
+    },
+}
+
 # GROUP_CHATS_GSI = {
 #     "IndexName": "GroupChatsIndex",
 #     "KeySchema": [
@@ -98,3 +112,13 @@ GROUP_CHAT_PENDING_REQUESTS_GSI = {
         "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25),
     },
 }
+
+
+GSI_LIST = [
+    USERS_GSI,
+    COMMUNITIES_BY_LOCATION_GSI,
+    COMMUNITIES_BY_TOPIC_GSI,
+    USER_PENDING_REQUESTS_GSI,
+    GROUP_CHAT_PENDING_REQUESTS_GSI,
+    INVERTED_GSI
+]

@@ -4,7 +4,7 @@ such as database table creation, running tests and more.
 
 
 import click
-from dynamodb_setup.utils import create_application_table, delete_application_table
+from aws_services_setup.utils import create_application_table, delete_application_table
 from botocore.exceptions import ClientError
 
 
