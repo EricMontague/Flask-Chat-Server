@@ -2,13 +2,14 @@
 
 
 from http import HTTPStatus
-from flask import current_app, url_for
+from flask import current_app, url_for, request
 from app.api import api
-from app.helpers import handle_request, handle_response
+from app.helpers import handle_request, handle_response, handle_file_request
 from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema
-from app.repositories import dynamodb_repository
+from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from app.models.factories import UserFactory
+from werkzeug.utils import secure_filename
 
 
 @api.route("/users")
@@ -83,4 +84,31 @@ def delete_user(user_id):
     dynamodb_repository.remove_user(user)
     return {}, HTTPStatus.NO_CONTENT
 
+
+@api.route("/users/<user_id>/cover-photo", methods=["PUT"])
+@handle_file_request("cover_photo")
+@handle_response(None)
+def upload_user_cover_photo(file_contents, user_id):
+    """Add or replace the user's cover photo."""
+    user = dynamodb_repository.get_user(user_id)
+    if not user:
+        return {"error": "User not found"}, HTTPStatus.NOT_FOUND
+    # filename = secure_filename(file.filename)
+    s3_repository.add(user.id + "_COVER_PHOTO", file_contents)
+    # dynamodb_repository.update_user()
+    return {}, HTTPStatus.NO_CONTENT
+
+
+@api.route("/users/<user_id>/avatar", methods=["PUT"])
+@handle_file_request("avatar")
+@handle_response(None)
+def upload_user_avatar(file_contents, user_id):
+    """Add or a replace the user's avatar."""
+    user = dynamodb_repository.get_user(user_id)
+    if not user:
+        return {"error": "User not found"}, HTTPStatus.NOT_FOUND
+    # filename = secure_filename(file.filename)
+    s3_repository.add(user.id + "_AVATAR", file_contents)
+    # dynamodb_repository.update_user()
+    return {}, HTTPStatus.NO_CONTENT
 

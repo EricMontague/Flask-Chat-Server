@@ -4,7 +4,7 @@
 from http import HTTPStatus
 from flask import url_for, current_app
 from app.api import api
-from app.helpers.decorators import handle_request, handle_response
+from app.helpers.decorators import handle_request, handle_response, handle_file_request
 from app.schemas import (
     CommunitySchema,
     UrlParamsSchema,
@@ -12,7 +12,7 @@ from app.schemas import (
     UserSchema,
 )
 from app.models.factories import CommunityFactory
-from app.repositories import dynamodb_repository
+from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 
 
@@ -119,4 +119,32 @@ def leave_community(community_id, user_id):
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
         return {"error": str(err)}, HTTPStatus.BAD_REQUEST
+    return {}, HTTPStatus.NO_CONTENT
+
+
+@api.route("/communities/<community_id>/cover-photo", methods=["PUT"])
+@handle_file_request("cover_photo")
+@handle_response(None)
+def upload_community_cover_photo(file_contents, community_id):
+    """Add or replace the community's cover photo."""
+    community = dynamodb_repository.get_community(community_id)
+    if not community:
+        return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
+    # filename = secure_filename(file.filename)
+    s3_repository.add(community.id + "_COVER_PHOTO", file_contents)
+    # dynamodb_repository.update_community()
+    return {}, HTTPStatus.NO_CONTENT
+
+
+@api.route("/communities/<community_id>/avatar", methods=["PUT"])
+@handle_file_request("avatar")
+@handle_response(None)
+def upload_community_avatar(file_contents, community_id):
+    """Add or a replace the community's avatar."""
+    community = dynamodb_repository.get_community(community_id)
+    if not community:
+        return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
+    # filename = secure_filename(file.filename)
+    s3_repository.add(community.id + "_AVATAR", file_contents)
+    # dynamodb_repository.update_community()
     return {}, HTTPStatus.NO_CONTENT
