@@ -73,3 +73,21 @@ class AbstractDatabaseRepository(ABC):
     def get_community_members(self, community_id, *args, **kwargs):
         pass
 
+
+
+class FileStorageRepository(ABC):
+    """Abstract base class for all repositories that deal with
+    storing files and BLOB data.
+    """
+
+    def get(self, file_id):
+        pass
+
+    def add(self, file_id, file):
+        pass
+
+    def remove(self, file_id):
+        pass
+
+    
+    
