@@ -4,40 +4,63 @@ such as database table creation, running tests and more.
 
 
 import click
-from aws_services_setup.utils import create_application_table, delete_application_table
+from aws_services_setup.utils import (
+    create_dynamodb_table,
+    delete_dynamodb_table,
+    create_s3_bucket,
+    delete_s3_bucket,
+)
 from botocore.exceptions import ClientError
 
 
-
 @click.group()
-def dynamo_db():
+def aws():
     pass
 
 
-@dynamo_db.command()
+@aws.command()
 def create_table():
-    """Create the single DynamoDB Users table"""
+    """Create the single DynamoDB application table"""
     try:
-        table = create_application_table()
+        table = create_dynamodb_table()
         print(f"Successfully created table - {table.table_name}")
         print(f"Status - {table.table_status}\n")
     except ClientError as err:
         print(err, "\n")
 
 
-@dynamo_db.command()
+@aws.command()
 def delete_table():
     """Delete the single Dynamodb table"""
     try:
-        response = delete_application_table()
+        response = delete_dynamodb_table()
         name = response["TableDescription"]["TableName"]
         status = response["TableDescription"]["TableStatus"]
         print(f"Successfully deleted table - {name}")
         print(f"Status - {status}\n")
     except ClientError as err:
         print(err)
-  
-        
+
+
+@aws.command()
+def create_bucket():
+    """Create the single S3 bucket."""
+    try:
+        response = create_s3_bucket()
+        print("Bucket successfully created!")
+    except ClientError as err:
+        print(err, "\n")
+
+
+@aws.command()
+def delete_bucket():
+    """Delete the single S3 bucket."""
+    try:
+        response = delete_s3_bucket()
+        print("Bucket successfully deleted!")
+    except ClientError as err:
+        print(err, "\n")
+
 
 if __name__ == "__main__":
-    dynamo_db()
+    aws()

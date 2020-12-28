@@ -5,16 +5,17 @@ for AWS services
 
 import os
 import boto3
-from dynamodb_setup.global_secondary_indexes import GSI_LIST
+from aws_services_setup.global_secondary_indexes import GSI_LIST
 
 
 TABLE_NAME = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
-BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME", "ChatAppImageBucket")
+BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME", "chat-app-images")
+BUCKET_LOCATION = os.environ.get("AWS_S3_BUCKET_LOCATION", "us-east-2")
 dynamodb = boto3.resource("dynamodb")
-s3 = boto3.client("s3")
+s3_client = boto3.client("s3")
 
 
-def create_application_table():
+def create_dynamodb_table():
     """Create the application's single table in DynamoDB."""
     table = dynamodb.create_table(
         TableName=TABLE_NAME,
@@ -45,22 +46,25 @@ def create_application_table():
     return table
 
 
-def delete_application_table():
-    """Delete the application's ginle table from DynamoDB"""
+def delete_dynamodb_table():
+    """Delete the application's single table from DynamoDB"""
     table = dynamodb.Table(TABLE_NAME)
     response = table.delete()
     return response
 
 
-def create_bucket():
+def create_s3_bucket():
     """Create a bucket in S3."""
-    return s3.create_bucket(
-        Bucket=BUCKET_NAME
+    return s3_client.create_bucket(
+        Bucket=BUCKET_NAME,
+        CreateBucketConfiguration={
+            "LocationConstraint": BUCKET_LOCATION
+        }
     )
 
 
-def delete_bucket():
+def delete_s3_bucket():
     """Delete a bucket from S3."""
-    return s3.delete_bucket(
-        bucket=BUCKET_NAME
+    return s3_client.delete_bucket(
+        Bucket=BUCKET_NAME
     )
