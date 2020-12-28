@@ -13,6 +13,8 @@ class BaseConfig:
     # Make sure this is set for production
     SECRET_KEY = os.environ.get("SECRET_KEY", "hard to guess string")
     RESULTS_PER_PAGE = 20
+    ALLOWED_FILE_EXTENSIONS = {"png", "jpg", "jpeg"}
+    MAX_CONTENT_LENGTH = 1024 * 1024
 
 
 class DevelopmentConfig(BaseConfig):
