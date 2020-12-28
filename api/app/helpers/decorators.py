@@ -3,8 +3,9 @@
 
 import functools
 from http import HTTPStatus
-from flask import request, make_response
+from flask import request, make_response, current_app
 from marshmallow import ValidationError
+from app.helpers.files import is_allowed_file_extension
 
 
 def handle_get_request(schema, url_params):
@@ -87,8 +88,10 @@ def not_require_serialization(schema, results):
     """
     if not schema or isinstance(results, str):
         return True
-    
-    if isinstance(results, dict) and (not results or "error" in results or "errors" in results):
+
+    if isinstance(results, dict) and (
+        not results or "error" in results or "errors" in results
+    ):
         return True
     return False
 
@@ -115,6 +118,36 @@ def handle_response(schema):
                 api_response.headers.extend(view_response[2])
             api_response.headers["Content-Type"] = "application/json"
             return api_response
+
+        return wrapper
+
+    return decorator
+
+
+def handle_file_request(expected_filename):
+    """Decorator to handle uploads of files."""
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            file = request.files.get(expected_filename)
+            if file is None:
+                return (
+                    {"error": "Could not find an image file in the request"},
+                    HTTPStatus.BAD_REQUEST,
+                )
+            if file.filename == "":
+                return {"error": "No selected file"}, HTTPStatus.BAD_REQUEST
+            if not is_allowed_file_extension(
+                file.filename, current_app.config["ALLOWED_FILE_EXTENSIONS"]
+            ):
+                return (
+                    {
+                        "message": f"File extension not allowed. Valid extensions include: {list(current_app.config['ALLOWED_FILE_EXTENSIONS'])}"
+                    },
+                    HTTPStatus.BAD_REQUEST,
+                )
+            return func(file.read(), *args, **kwargs)
 
         return wrapper
 
