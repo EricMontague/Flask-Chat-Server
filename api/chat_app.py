@@ -25,7 +25,7 @@ from app.models import (
     Location,
 )
 from app.clients import dynamodb_client
-from app.repositories import dynamodb_repository
+from app.repositories import dynamodb_repository, s3_repository
 from flask import jsonify
 
 app = create_app(os.environ.get("FLASK_CONFIG", "development"))
@@ -70,6 +70,7 @@ def make_shell_context():
     return dict(
         dynamodb_repository=dynamodb_repository,
         dynamodb_client=dynamodb_client,
+        s3_repository=s3_repository,
         ChatRequest=ChatRequest,
         ChatRequestStatus=ChatRequestStatus,
         PrivateChat=PrivateChat,
