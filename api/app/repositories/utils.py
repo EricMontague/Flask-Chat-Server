@@ -3,6 +3,7 @@
 
 import json
 import base64
+import hashlib
 
 
 def encode_cursor(value):
@@ -18,3 +19,11 @@ def decode_cursor(value):
     byte_string = base64.b64decode(value)
     return json.loads(byte_string.decode("utf-8"))
 
+
+def encode_file_contents(file_contents):
+    """Create an MD5 hash of the file contents and then return
+    the base64 encoded string of the md5 hash.
+    """
+    md = hashlib.md5(file_contents).digest()
+    contents_md5 = base64.b64encode(md).decode("utf-8")
+    return contents_md5
