@@ -134,19 +134,6 @@ class CommunityGroupChatRelation:
     community_id: str
     created_at: datetime = datetime.now()
 
-    def to_item(self):
-        """Return the representation of a relationship between a group chat
-        and a community as stored in DynamoDB.
-        """
-        return {
-            "PK": PrimaryKeyPrefix.GROUP_CHAT + self.group_chat_id,
-            "SK": PrimaryKeyPrefix.COMMUNITY + self.community_id,
-            "community_group_chat_relation": self.group_chat_id
-            + "#"
-            + self.community_id,
-            "created_at": self.created_at.isoformat(),
-        }
-
 
 class CommunityTopic(Enum):
     """Class to represent a topic for a community."""
