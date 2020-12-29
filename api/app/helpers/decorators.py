@@ -147,7 +147,7 @@ def handle_file_request(expected_filename):
                     },
                     HTTPStatus.BAD_REQUEST,
                 )
-            return func(file.read(), *args, **kwargs)
+            return func(file, *args, **kwargs)
 
         return wrapper
 
