@@ -1,15 +1,22 @@
 """This module contains view functions for accessing user resources."""
 
 
+
 from http import HTTPStatus
 from flask import current_app, url_for, request
 from app.api import api
-from app.helpers import handle_request, handle_response, handle_file_request
+from app.helpers import (
+    handle_request,
+    handle_response,
+    handle_file_request,
+    upload_to_cdn,
+    process_image
+)
 from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema
 from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from app.models.factories import UserFactory
-from werkzeug.utils import secure_filename
+from app.models import ImageType
 
 
 @api.route("/users")
@@ -88,27 +95,25 @@ def delete_user(user_id):
 @api.route("/users/<user_id>/cover-photo", methods=["PUT"])
 @handle_file_request("cover_photo")
 @handle_response(None)
-def upload_user_cover_photo(file_contents, user_id):
+def upload_user_cover_photo(file, user_id):
     """Add or replace the user's cover photo."""
     user = dynamodb_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
-    # filename = secure_filename(file.filename)
-    s3_repository.add(user.id + "_COVER_PHOTO", file_contents)
-    # dynamodb_repository.update_user()
+    image_data = process_image(user.id, s3_repository, file, ImageType.USER_COVER_PHOTO)
+    dynamodb_repository.update_user_image(user, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
-@api.route("/users/<user_id>/avatar", methods=["PUT"])
-@handle_file_request("avatar")
+@api.route("/users/<user_id>/profile-photo", methods=["PUT"])
+@handle_file_request("profile_photo")
 @handle_response(None)
-def upload_user_avatar(file_contents, user_id):
-    """Add or a replace the user's avatar."""
+def upload_user_profile_photo(file, user_id):
+    """Add or a replace the user's profile photo."""
     user = dynamodb_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
-    # filename = secure_filename(file.filename)
-    s3_repository.add(user.id + "_AVATAR", file_contents)
-    # dynamodb_repository.update_user()
+    image_data = process_image(user.id, s3_repository, file, ImageType.USER_PROFILE_PHOTO)
+    dynamodb_repository.update_user_image(user, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
