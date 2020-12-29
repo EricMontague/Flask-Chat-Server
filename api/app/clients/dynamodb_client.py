@@ -187,13 +187,16 @@ class _DynamoDBClient:
         response = self._dynamodb.get_item(TableName=self._table_name, Key=key,)
         return response.get("Item")
 
-    def put_item(self, user_item):
+    def put_item(self, item):
         """Replace an entire item in the table or create a new item
         if it exists. Returns the response from DynamoDB afterwards
         """
-        response = self._dynamodb.put_item(Item=user_item)
-        return response, response["ResponseMetadata"]["HTTPStatusCode"]
-
+        response = self._dynamodb.put_item(
+            TableName=self._table_name,
+            Item=item
+        )
+        return response
+        
     def delete_item(self, key):
         """Delete an item from DynamoDB and return the response."""
         response = self._dynamodb.delete_item(
