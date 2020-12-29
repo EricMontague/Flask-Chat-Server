@@ -22,6 +22,10 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
+    def update_user_image(self, user, image_data):
+        pass
+
+    @abstractmethod
     def remove_user(self, user_id):
         pass
 
@@ -43,6 +47,10 @@ class AbstractDatabaseRepository(ABC):
 
     @abstractmethod
     def update_community(self, community, attributes_to_update, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def update_community_image(self, community, image_data):
         pass
 
     @abstractmethod

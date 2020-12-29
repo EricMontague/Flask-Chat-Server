@@ -7,7 +7,7 @@ from pprint import pprint
 from app.repositories.abstract_repository import AbstractDatabaseRepository
 from app.repositories.exceptions import UniqueConstraintException, NotFoundException
 from app.clients import dynamodb_client
-from app.models import UserEmail, Username, CommunityMembership, CommunityName
+from app.models import UserEmail, Username, CommunityMembership, CommunityName, Image, ImageType
 from app.models.update_models import update_user_model, update_community_model
 from app.dynamodb import (
     UserMapper,
@@ -90,6 +90,24 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 old_user.username, old_user.username
             )
         response = self._dynamodb_client.update_user(items)
+        return response
+
+    def update_user_image(self, user, image_data):
+        """Update one of the user's images in DynamoDB."""
+        new_image = Image(**image_data)
+        if image_data["image_type"] == ImageType.USER_PROFILE_PHOTO:
+            user.avatar = new_image
+        elif image_data["image_type"] == ImageType.USER_COVER_PHOTO:
+            user.cover_photo = new_image
+        additional_attributes={
+            "USERS_GSI_PK": PrimaryKeyPrefix.USER + user.id,
+            "USERS_GSI_SK": user.username
+        }
+        user_item = self._user_mapper.serialize_from_model(
+            user, additional_attributes=additional_attributes,
+        )
+        
+        response = self._dynamodb_client.put_item(user_item)
         return response
 
     def remove_user(self, user):
@@ -265,6 +283,33 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 old_community.name, old_community.name
             )
         response = self._dynamodb_client.update_community(items)
+        return response
+
+    def update_community_image(self, community, image_data):
+        """Update a community's image data in DynamoDB."""
+        new_image = Image(**image_data)
+        if image_data["image_type"] == ImageType.COMMUNITY_PROFILE_PHOTO:
+            community.avatar = new_image
+        elif image_data["image_type"] == ImageType.COMMUNITY_COVER_PHOTO:
+            community.cover_photo = new_image
+        additional_attributes = {
+            "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC
+            + community.topic.name,
+            "COMMUNITIES_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY
+            + community.id,
+            "COMMUNITIES_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY
+            + community.location.country,
+            "COMMUNITIES_BY_LOCATION_GSI_SK": (
+                PrimaryKeyPrefix.STATE
+                + community.location.state
+                + PrimaryKeyPrefix.CITY
+                + community.location.city
+            ),
+        }
+        community_item = self._community_mapper.serialize_from_model(
+            community, additional_attributes=additional_attributes,
+        )
+        response = self._dynamodb_client.put_item(community_item)
         return response
 
     def remove_community(self, community):
