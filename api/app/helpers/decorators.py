@@ -37,7 +37,7 @@ def handle_request(schema):
         def wrapper(*args, **kwargs):
             if request.method == "GET":
                 view_argument = handle_get_request(schema, request.args)
-            elif request.method in {"POST", "PUT"}:
+            elif request.method in {"POST", "PUT", "PATCH"}:
                 if not request.json:
                     return (
                         {"error": "Missing JSON Body in request"},
