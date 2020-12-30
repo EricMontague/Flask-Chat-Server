@@ -19,6 +19,8 @@ from app.models import (
     CommunityMembership,
     CommunityName,
     CommunityTopic,
+    Notification,
+    NotificationType,
 )
 
 
@@ -173,3 +175,28 @@ class CommunityMembershipMapper(ModelMapper):
         sort_key_attribute = "user_id"
         type_ = ItemType.COMMUNITY_MEMBERSHIP.name
 
+
+class NotificationMapper(ModelMapper):
+    """Class to serialize and deserialize Notification models to and
+    from DynamoDB items.
+    """
+
+    class Meta:
+        model = Notification
+        fields = (
+            "_id",
+            "_user_id",
+            "_notification_type",
+            "_message",
+            "_target_url",
+            "_created_at",
+            "_read",
+            "_seen",
+        )
+        partition_key_attribute = "_user_id"
+        partition_key_prefix = PrimaryKeyPrefix.USER
+        sort_key_prefix = PrimaryKeyPrefix.NOTIFICATION
+        sort_key_attribute = "_id"
+        type_ = ItemType.NOTIFICATION.name
+
+    ENUMS = {"_notification_type": NotificationType}
