@@ -34,6 +34,7 @@ class UserSchema(ma.Schema):
     # links
     self_url = ma.URLFor("api.get_user", user_id="<_id>")
     communities_url= ma.URLFor("api.get_user_communities", user_id="<_id>")
+    notifications_url = ma.URLFor("api.get_user_notifications", user_id="<_id>")
     
 
     @pre_load
