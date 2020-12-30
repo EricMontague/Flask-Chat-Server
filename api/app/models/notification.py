@@ -11,19 +11,40 @@ from datetime import datetime
 class Notification:
     """Class to represent a user notification."""
 
-    def __init__(self, id, notification_type, message, target):
+    def __init__(
+        self, 
+        id, 
+        user_id, 
+        notification_type, 
+        message, 
+        target_url, 
+        created_at=datetime.now(), 
+        read=False, 
+        seen=False
+    ):
         self._id = id
+        self._user_id = user_id
         self._notification_type = notification_type
         self._message = message
-        self._target = target
-        self._created_at = datetime.now()
-        self._read = False
-        self._seen = False
+        self._target_url = target_url
+        self._created_at = created_at
+        self._read = read
+        self._seen = seen
 
     @property
     def id(self):
         """Return the id of the notification."""
         return self._id
+
+    @property
+    def user_id(self):
+        """Return the id of the user that the notification belongs to."""
+        return self._user_id
+    
+    @property
+    def target_url(self):
+        """Return the id of the target of the notification."""
+        return self._target_url
 
     @property
     def notification_type(self):
@@ -59,13 +80,11 @@ class Notification:
         """Mark the notification as seen by the user."""
         self._seen = True
 
-    def __lt__(self, other):
-        """Comparator dunder method for sorting notifications."""
-        pass
-
     def __repr__(self):
         """Return the representation of the Notification."""
-        return "Notification(id=%r, notification_type=%r, message=%r, target=%r)"
+        return "Notification(id=%r, notification_type=%r, message=%r, target_url=%r)" % (
+            self._id, self._notification_type, self._message, self._target_url
+        )
 
 
 class NotificationType(Enum):
