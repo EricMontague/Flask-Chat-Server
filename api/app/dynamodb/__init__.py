@@ -2,10 +2,11 @@
 
 
 from app.dynamodb.model_mappers import (
-    UserMapper, 
-    UsernameMapper, 
+    UserMapper,
+    UsernameMapper,
     UserEmailMapper,
     CommunityMapper,
     CommunityMembershipMapper,
-    CommunityNameMapper
+    CommunityNameMapper,
+    NotificationMapper,
 )
