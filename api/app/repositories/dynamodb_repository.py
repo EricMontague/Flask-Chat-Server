@@ -16,6 +16,7 @@ from app.dynamodb import (
     CommunityMapper,
     CommunityMembershipMapper,
     CommunityNameMapper,
+    NotificationMapper
 )
 from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
 from app.repositories.utils import encode_cursor, decode_cursor
@@ -33,6 +34,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         self._community_mapper = kwargs.get("community_mapper")
         self._community_name_mapper = kwargs.get("community_name_mapper")
         self._community_membership_mapper = kwargs.get("community_membership_mapper")
+        self._notification_mapper = kwargs.get("notification_mapper")
 
     def get_user(self, user_id):
         """Return a user from DynamoDB by id."""
@@ -441,6 +443,55 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response["has_next"] = query_results["LastEvaluatedKey"] is not None
         response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
         return response
+
+    def get_user_notifications(self, user_id, limit, **kwargs):
+        """Return a collection of the user's notifications."""
+        user = self.get_user(user_id)
+        if not user:
+            raise NotFoundException("User not found")
+        cursor = {}
+        if "cursor" in kwargs:
+            cursor = decode_cursor(kwargs["cursor"])
+        user_primary_key = self._user_mapper.key(user_id)
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "PK", 
+                "pk_value": user_primary_key["PK"], 
+                "sk_name": "SK",
+                "sk_value": {"S":PrimaryKeyPrefix.NOTIFICATION},
+            }
+        )
+        
+        if not query_results["Items"]:
+            response = {
+                "models": [],
+                "total": 0
+            }
+        else:
+            response = self._process_query_or_scan_results(
+                query_results, self._notification_mapper, ItemType.NOTIFICATION.name
+            )
+        response["has_next"] = query_results["LastEvaluatedKey"] is not None
+        response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
+        return response
+
+    def get_user_notification(self, user_id, notification_id):
+        """Return an instance of a notification model."""
+        primary_key = self._notification_mapper.key(user_id, notification_id)
+        notification_item = self._dynamodb_client.get_item(primary_key)
+        if not notification_item:
+            return None
+        return self._notification_mapper.deserialize_to_model(notification_item)
+
+    def add_user_notification(self, notification):
+        """Add or replace a notification in DynamoDB."""
+        notification_item = self._notification_mapper.serialize_from_model(
+            notification
+        )
+        response = self._dynamodb_client.put_item(notification_item)
+        return response
         
     def _process_query_or_scan_results(self, results, mapper, item_type):
         next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
@@ -478,5 +529,6 @@ dynamodb_repository = _DynamoDBRepository(
     community_mapper=CommunityMapper(),
     community_name_mapper=CommunityNameMapper(),
     community_membership_mapper=CommunityMembershipMapper(),
+    notification_mapper=NotificationMapper()
 )
 

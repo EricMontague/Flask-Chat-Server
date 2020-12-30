@@ -81,6 +81,17 @@ class AbstractDatabaseRepository(ABC):
     def get_community_members(self, community_id, *args, **kwargs):
         pass
 
+    @abstractmethod
+    def get_user_notifications(self, user_id, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def add_user_notification(self, notification):
+        pass
+
+    @abstractmethod
+    def get_user_notification(self, user_id, notification_id):
+        pass
 
 
 class FileStorageRepository(ABC):
