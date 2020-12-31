@@ -4,6 +4,8 @@ inserted fake data into the database.
 
 
 import random
+from uuid import uuid4
+from datetime import datetime
 from faker import Faker
 from app.clients import dynamodb_client
 from app.repositories import dynamodb_repository
@@ -13,10 +15,19 @@ from app.dynamodb import (
     UserEmailMapper,
     CommunityMapper,
     CommunityNameMapper,
-    CommunityMembershipMapper
+    CommunityMembershipMapper,
+    NotificationMapper
 )
 from app.models.factories import UserFactory, CommunityFactory
-from app.models import UserEmail, Username, CommunityName, CommunityMembership, CommunityTopic
+from app.models import (
+    UserEmail, 
+    Username, 
+    CommunityName, 
+    CommunityMembership, 
+    CommunityTopic, 
+    Notification, 
+    NotificationType
+)
 from app.dynamodb.constants import PrimaryKeyPrefix
 
 
@@ -26,6 +37,7 @@ user_email_mapper = UserEmailMapper()
 community_mapper = CommunityMapper()
 community_name_mapper = CommunityNameMapper()
 community_membership_mapper = CommunityMembershipMapper()
+notification_mapper = NotificationMapper()
 
 
 TOPICS = [topic for topic in CommunityTopic]
@@ -36,15 +48,17 @@ LOCATIONS = [
     {"city" : "San Francisco", "state": "California", "country": "United States"},
     {"city" : "Miami", "state": "Florida", "country": "United States"}
 ]
+NOTIFICATION_TYPES = [notification_type for notification_type in NotificationType]
 
 
 class FakeDataGenerator:
     """Class to generate fake data for the application."""
 
-    def __init__(self, num_users=25, num_communities=25):
+    def __init__(self, num_users=25, num_communities=25, num_notifications=25):
         self._faker = Faker()
         self.num_users = num_users
         self.num_communities = num_communities
+        self.num_notifications = num_notifications
 
     def add_users(self):
         """Add fake user data to the database."""
@@ -73,9 +87,25 @@ class FakeDataGenerator:
             dynamodb_client.batch_write_items(requests)
             remaining_users -= 1
 
+    # After private and group chats are created, make requests to get those too.
+    # this way the target urls in notifications will point to actual resources
     def add_notifications(self):
         """Add fake notification data to the database."""
-        pass
+        results = dynamodb_repository.get_users(25)
+        users = results["models"]
+        remaining_notifications = self.num_notifications
+        while remaining_notifications > 0:
+            random_user = random.choice(users)
+            requests = []
+            notification = self._generate_fake_notification(random_user.id)
+            requests.append(
+                (
+                    "PutRequest",
+                    notification_mapper.serialize_from_model(notification)
+                )
+            )
+            dynamodb_client.batch_write_items(requests)
+            remaining_notifications -= 1
 
     def add_chat_requests(self):
         """Add fake chat request data to the database."""
@@ -164,3 +194,15 @@ class FakeDataGenerator:
             }
         }
         return fake_user_data
+
+    def _generate_fake_notification(self, user_id):
+        """Return an instance of a notification."""
+        created_at = datetime.now()
+        return Notification(
+            created_at.strftime("%Y-%m-%dT%H:%M:%S.%f") + "-" + uuid4().hex,
+            user_id,
+            random.choice(NOTIFICATION_TYPES),
+            self._faker.paragraph()[:60],
+            "https://www.chatapp.com/api/v1/some-resource-collection/resource-id",
+            created_at=created_at
+        )
