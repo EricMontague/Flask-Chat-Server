@@ -158,6 +158,19 @@ class _DynamoDBClient:
             if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 error_message = "Community or user not found"
             return {"error": error_message}
+
+    def create_private_chat(self, items):
+        """Create private chat and private chat member items."""
+        logger.info("Adding new private chat to DynamoDB")
+        parameters = self._build_create_item_parameters(items)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+
+            error_message = "Could not create private chat"
+            return {"error": error_message}
     
     def batch_delete_items(self, keys):
         dynamodb = boto3.resource("dynamodb")
@@ -206,19 +219,19 @@ class _DynamoDBClient:
         )
         return response
 
-    def query(self, limit, start_key, primary_key, index=None):
+    def query(self, limit, start_key, primary_key, **kwargs):
         logger.info("Querying items from DynamoDB")
         results = {"Items": [], "LastEvaluatedKey": None}
-        if index:
-            response = self._query_index(limit, start_key, primary_key, index)
+        if "index" in kwargs:
+            response = self._query_index(limit, start_key, primary_key, **kwargs)
         else:
-            response = self._query_table(limit, start_key, primary_key)
+            response = self._query_table(limit, start_key, primary_key, **kwargs)
 
         results["Items"].extend(response["Items"])
         results["LastEvaluatedKey"] = response.get("LastEvaluatedKey")
         return results
 
-    def _query_index(self, limit, start_key, primary_key, index):
+    def _query_index(self, limit, start_key, primary_key, **kwargs):
         key_condition_expression = f"{primary_key['pk_name']} = :pk"
         expression_attribute_values = {":pk": primary_key["pk_value"]}
         if "sk_name" in primary_key:
@@ -229,23 +242,25 @@ class _DynamoDBClient:
         if start_key:
             response = self._dynamodb.query(
                 TableName=self._table_name,
-                IndexName=index,
+                IndexName=kwargs["index"],
                 Limit=limit,
                 ExclusiveStartKey=start_key,
                 KeyConditionExpression=key_condition_expression,
                 ExpressionAttributeValues=expression_attribute_values,
+                ScanIndexForward=kwargs.get("scan_forward", True)
             )
         else:
             response = self._dynamodb.query(
                 TableName=self._table_name,
-                IndexName=index,
+                IndexName=kwargs["index"],
                 Limit=limit,
                 KeyConditionExpression=key_condition_expression,
                 ExpressionAttributeValues=expression_attribute_values,
+                ScanIndexForward=kwargs.get("scan_forward", True)
             )
         return response
 
-    def _query_table(self, limit, start_key, primary_key):
+    def _query_table(self, limit, start_key, primary_key, **kwargs):
         key_condition_expression = f"{primary_key['pk_name']} = :pk"
         expression_attribute_values = {":pk": primary_key["pk_value"]}
         if "sk_name" in primary_key:
@@ -260,6 +275,7 @@ class _DynamoDBClient:
                 ExclusiveStartKey=start_key,
                 KeyConditionExpression=key_condition_expression,
                 ExpressionAttributeValues=expression_attribute_values,
+                ScanIndexForward=kwargs.get("scan_forward", True)
             )
         else:
             response = self._dynamodb.query(
@@ -267,6 +283,7 @@ class _DynamoDBClient:
                 Limit=limit,
                 KeyConditionExpression=key_condition_expression,
                 ExpressionAttributeValues=expression_attribute_values,
+                ScanIndexForward=kwargs.get("scan_forward", True)
             )
         return response
 
