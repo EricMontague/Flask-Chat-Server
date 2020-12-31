@@ -3,6 +3,8 @@ chats in the application.
 """
 
 
+from dataclasses import dataclass
+from datetime import datetime
 from abc import ABC
 from app.exceptions import (
     ChatCapacityReachedException,
@@ -186,3 +188,14 @@ class GroupChat(Chat):
             self._private,
         )
 
+
+@dataclass(frozen=True)
+class PrivateChatMember:
+    """Class to represent the relationship between a private chat and 
+    a user who is a member of that private chat.
+    """
+
+    private_chat_id: str
+    user_id: str
+    other_user_id: str
+    created_at: datetime = datetime.now()
