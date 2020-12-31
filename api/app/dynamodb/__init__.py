@@ -9,4 +9,6 @@ from app.dynamodb.model_mappers import (
     CommunityMembershipMapper,
     CommunityNameMapper,
     NotificationMapper,
+    MessageMapper,
+    PrivateChatMember,
 )

@@ -2,7 +2,7 @@
 
 
 from app.models.chat_request import ChatRequest, ChatRequestStatus
-from app.models.chat import PrivateChat, GroupChat
+from app.models.chat import PrivateChat, GroupChat, PrivateChatMember
 from app.models.community import (
     Community,
     CommunityTopic, 
