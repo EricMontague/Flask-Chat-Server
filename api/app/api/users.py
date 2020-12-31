@@ -92,7 +92,7 @@ def delete_user(user_id):
     return {}, HTTPStatus.NO_CONTENT
 
 
-@api.route("/users/<user_id>/cover-photo", methods=["PUT"])
+@api.route("/users/<user_id>/cover_photo", methods=["PUT"])
 @handle_file_request("cover_photo")
 @handle_response(None)
 def upload_user_cover_photo(file, user_id):
@@ -105,7 +105,7 @@ def upload_user_cover_photo(file, user_id):
     return {}, HTTPStatus.NO_CONTENT
 
 
-@api.route("/users/<user_id>/profile-photo", methods=["PUT"])
+@api.route("/users/<user_id>/profile_photo", methods=["PUT"])
 @handle_file_request("profile_photo")
 @handle_response(None)
 def upload_user_profile_photo(file, user_id):
@@ -152,3 +152,7 @@ def update_user_notification(notification_data, user_id, notification_id):
     dynamodb_repository.add_user_notification(notification)
     return {}, HTTPStatus.NO_CONTENT
 
+
+@api.route("/users/<user_id>/private_chats")
+def get_user_private_chats(user_id):
+    pass

@@ -129,7 +129,7 @@ def leave_community(community_id, user_id):
     return {}, HTTPStatus.NO_CONTENT
 
 
-@api.route("/communities/<community_id>/cover-photo", methods=["PUT"])
+@api.route("/communities/<community_id>/cover_photo", methods=["PUT"])
 @handle_file_request("cover_photo")
 @handle_response(None)
 def upload_community_cover_photo(file, community_id):
@@ -142,7 +142,7 @@ def upload_community_cover_photo(file, community_id):
     return {}, HTTPStatus.NO_CONTENT
 
 
-@api.route("/communities/<community_id>/profile-photo", methods=["PUT"])
+@api.route("/communities/<community_id>/profile_photo", methods=["PUT"])
 @handle_file_request("profile_photo")
 @handle_response(None)
 def upload_community_profile_photo(file, community_id):
