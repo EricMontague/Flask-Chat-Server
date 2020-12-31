@@ -14,6 +14,9 @@ class ItemType(Enum):
     USERNAME = 5
     COMMUNITY_NAME = 6
     NOTIFICATION = 7
+    PRIVATE_CHAT = 8
+    PRIVATE_CHAT_MEMBER = 9
+    PRIVATE_CHAT_MESSAGE = 10
 
 
 class PrimaryKeyPrefix:
@@ -33,3 +36,4 @@ class PrimaryKeyPrefix:
     MESSAGE = "MESSAGE#"
     CHAT_REQUEST = "CHATREQUEST#"
     PENDING_CHAT_REQUEST = "PENDING#"
+    PRIVATE_CHAT_MESSAGE = "PRIVATE_CHAT_MESSAGE#"
