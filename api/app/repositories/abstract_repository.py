@@ -93,6 +93,30 @@ class AbstractDatabaseRepository(ABC):
     def get_user_notification(self, user_id, notification_id):
         pass
 
+    @abstractmethod
+    def add_private_chat(self, private_chat, primary_user_id, secondary_user_id):
+        pass
+
+    @abstractmethod
+    def get_user_private_chats(self, user_id):
+        pass
+
+    @abstractmethod
+    def get_private_chat_messages(self, private_chat_id):
+        pass
+
+    @abstractmethod
+    def get_private_chat_messages(self, private_chat_id):
+        pass
+
+    @abstractmethod
+    def add_private_chat_message(self, message):
+        pass
+
+    @abstractmethod
+    def remove_message(self, message):
+        pass
+
 
 class FileStorageRepository(ABC):
     """Abstract base class for all repositories that deal with
@@ -108,5 +132,3 @@ class FileStorageRepository(ABC):
     def remove(self, file_id):
         pass
 
-    
-    

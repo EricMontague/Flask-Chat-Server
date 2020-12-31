@@ -2,13 +2,22 @@
 
 
 import os
+from uuid import uuid4
 from http import HTTPStatus
 from pprint import pprint
 from app.repositories.abstract_repository import AbstractDatabaseRepository
 from app.repositories.exceptions import UniqueConstraintException, NotFoundException
 from app.clients import dynamodb_client
-from app.models import UserEmail, Username, CommunityMembership, CommunityName, Image, ImageType
-from app.models.update_models import update_user_model, update_community_model
+from app.models import (
+    UserEmail, 
+    Username, 
+    CommunityMembership, 
+    CommunityName, 
+    Image, 
+    ImageType, 
+    PrivateChatMember
+)
+from app.models.update_models import update_user_model, update_community_model, update_private_chat_model
 from app.dynamodb import (
     UserMapper,
     UsernameMapper,
@@ -16,7 +25,9 @@ from app.dynamodb import (
     CommunityMapper,
     CommunityMembershipMapper,
     CommunityNameMapper,
-    NotificationMapper
+    NotificationMapper,
+    PrivateChatMemberMapper,
+    MessageMapper
 )
 from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
 from app.repositories.utils import encode_cursor, decode_cursor
@@ -35,6 +46,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         self._community_name_mapper = kwargs.get("community_name_mapper")
         self._community_membership_mapper = kwargs.get("community_membership_mapper")
         self._notification_mapper = kwargs.get("notification_mapper")
+        self._private_chat_member_mapper = kwargs.get("private_chat_member_mapper")
+        self._message_mapper = kwargs.get("message_mapper")
 
     def get_user(self, user_id):
         """Return a user from DynamoDB by id."""
@@ -133,15 +146,14 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 "pk_value": user_primary_key["PK"], 
                 "sk_name": "USERS_GSI_SK",
                 "sk_value": {"S":PrimaryKeyPrefix.COMMUNITY},
-            },
-            "UsersIndex"
+            }
         ]
-        self._delete_community_memberships(query_params)
+        self._delete_community_memberships(query_params, index="UsersIndex")
         return response
     
-    def _delete_community_memberships(self, query_params):
+    def _delete_community_memberships(self, query_params, **kwargs):
         while True:
-            query_results = self._dynamodb_client.query(*query_params)
+            query_results = self._dynamodb_client.query(*query_params, **kwargs)
             if not query_results["Items"]:
                 break
 
@@ -186,7 +198,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 "sk_name": "INVERTED_GSI_SK",
                 "sk_value": {"S":PrimaryKeyPrefix.COMMUNITY},
             },
-            "InvertedIndex"
+            index="InvertedIndex"
         )
         
         if not query_results["Items"]:
@@ -362,7 +374,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             limit,
             cursor,
             {"pk_name": "COMMUNITIES_BY_TOPIC_GSI_PK", "pk_value": {"S": partition_key}},
-            "CommunitiesByTopic",
+            index="CommunitiesByTopic",
         )
         return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
 
@@ -383,7 +395,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             primary_key["sk_value"] = {"S": sort_key}
             
         results = self._dynamodb_client.query(
-            limit, cursor, primary_key, "CommunitiesByLocation",
+            limit, cursor, primary_key, index="CommunitiesByLocation",
         )
         return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
 
@@ -461,7 +473,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 "pk_value": user_primary_key["PK"], 
                 "sk_name": "SK",
                 "sk_value": {"S":PrimaryKeyPrefix.NOTIFICATION},
-            }
+            },
+            scan_forward=False
         )
         
         if not query_results["Items"]:
@@ -521,6 +534,94 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     
         return response
 
+    def add_private_chat(self, primary_user_id, secondary_user_id):
+        """Create a private chat member items in DynamoDB."""
+        items = {
+            "primary_member": self._private_chat_member_mapper.serialize_from_model(
+                PrivateChatMember(uuid4().hex, primary_user_id, secondary_user_id)
+            ),
+            "secondary_member": self._private_chat_member_mapper.serialize_from_model(
+                PrivateChatMember(uuid4().hex, secondary_user_id, primary_user_id)
+            )
+        }
+        response = self._dynamodb_client.create_private_chat(items)
+        return response
+        
+    def get_user_private_chats(self, user_id, limit, **kwargs):
+        """Return a collection of users that the given user has DMs with."""
+        user = self.get_user(user_id)
+        if not user:
+            raise NotFoundException("User not found")
+        cursor = {}
+        if "cursor" in kwargs:
+            cursor = decode_cursor(kwargs["cursor"])
+        primary_key = self._user_mapper.key(user_id)
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "PK", 
+                "pk_value": primary_key["PK"], 
+                "sk_name": "SK",
+                "sk_value": {"S":PrimaryKeyPrefix.PRIVATE_CHAT},
+            }
+        )
+        
+        if not query_results["Items"]:
+            response = {
+                "models": [],
+                "total": 0
+            }
+        else:
+            user_keys = []
+            for item in query_results["Items"]:
+                user_key = self._user_mapper.key(
+                    item["other_user_id"]["S"], item["other_user_id"]["S"]
+                )
+                user_keys.append(user_key)
+            batch_results = self._dynamodb_client.batch_get_items(user_keys)
+            response = self._process_batch_results(batch_results, self._user_mapper, ItemType.USER.name)
+        response["has_next"] = query_results["LastEvaluatedKey"] is not None
+        response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
+        return response
+
+    def get_private_chat_messages(self, private_chat_id, limit, **kwargs):
+        """Return a collection of messages from a private chat."""
+        cursor = {}
+        if "cursor" in kwargs:
+            cursor = decode_cursor(kwargs["cursor"])
+        primary_key = {
+            "PK": {"S": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id}
+        }
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "PK", 
+                "pk_value": primary_key["PK"], 
+                "sk_name": "SK",
+                "sk_value": {"S": PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE},
+            }
+        )
+        return self._process_query_or_scan_results(
+            query_results, 
+            self._message_mapper, 
+            ItemType.PRIVATE_CHAT_MESSAGE.name
+        )
+
+    def add_private_chat_message(self, message):
+        """Create or replace a private chat message in DynamoDB."""
+        message_item = self._message_mapper.serialize_from_model(message)
+        response = self._dynamodb_client.put_item(message_item)
+        return response
+        
+    def remove_message(self, message):
+        """Delete a message item from DynamoDB."""
+        primary_key = self._message_mapper.key(message.chat_id, message.id)
+        response = self._dynamodb_client.delete_item(primary_key)
+        return response
+
+
 dynamodb_repository = _DynamoDBRepository(
     dynamodb_client,
     user_mapper=UserMapper(),
@@ -529,6 +630,8 @@ dynamodb_repository = _DynamoDBRepository(
     community_mapper=CommunityMapper(),
     community_name_mapper=CommunityNameMapper(),
     community_membership_mapper=CommunityMembershipMapper(),
-    notification_mapper=NotificationMapper()
+    notification_mapper=NotificationMapper(),
+    private_chat_member_mapper=PrivateChatMemberMapper()
+    message_mapper=MessageMapper()
 )
 
