@@ -21,6 +21,8 @@ from app.models import (
     CommunityTopic,
     Notification,
     NotificationType,
+    PrivateChatMember,
+    Message,
 )
 
 
@@ -200,3 +202,41 @@ class NotificationMapper(ModelMapper):
         type_ = ItemType.NOTIFICATION.name
 
     ENUMS = {"_notification_type": NotificationType}
+
+
+class PrivateChatMemberMapper(ModelMapper):
+    """Class to serialize and deserialize PrivateChatMember models 
+    to and from DynamoDB items.
+    """
+
+    class Meta:
+        model = PrivateChatMember
+        fields = ("private_chat_id", "user_id", "created_at")
+        partition_key_attribute = "user_id"
+        partition_key_prefix = PrimaryKeyPrefix.USER
+        sort_key_attribute = "private_chat_id"
+        sort_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT
+        type_ = ItemType.PRIVATE_CHAT_MEMBER.name
+
+
+class MessageMapper(ModelMapper):
+    """Class to serialize and deserialize Message models 
+    to and from DynamoDB items.
+    """
+
+    class Meta:
+        model = Message
+        fields = (
+            "_id",
+            "_chat_id",
+            "_content",
+            "_created_at",
+            "_reactions",
+            "_read",
+            "_editted",
+        )
+        partition_key_attribute = "_chat_id"
+        partition_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT
+        sort_key_attribute = "_id"
+        sort_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE
+        type_ = ItemType.PRIVATE_CHAT_MESSAGE
