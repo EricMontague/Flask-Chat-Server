@@ -4,7 +4,7 @@ functions responsible for instantiating the application.
 
 
 from flask import Flask
-from app.extensions import bcrypt, ma
+from app.extensions import bcrypt, ma, socketio
 from app.api import api as api_blueprint
 from config import CONFIG_MAPPER
 
@@ -24,6 +24,7 @@ def register_extensions(app):
     """Register the Flask app with various extensions."""
     bcrypt.init_app(app)
     ma.init_app(app)
+    socketio.init_app(app)
 
 
 def register_blueprints(app):
