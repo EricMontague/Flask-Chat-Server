@@ -8,7 +8,9 @@ from datetime import datetime
 class Message:
     """Class to represent a message in a chat."""
 
-    def __init__(self, id, chat_id, content, created_at=datetime.now(), read=False, editted=False):
+    def __init__(
+        self, id, chat_id, content, created_at=datetime.now(), read=False, editted=False
+    ):
         self._id = id
         self._chat_id = chat_id
         self._content = content
@@ -43,6 +45,12 @@ class Message:
         """Add a reaction to the message."""
         self._reactions.add(reaction)
 
+    def has_reactions(self):
+        """Return True if the message has any reactions, otherwise
+        return False.
+        """
+        return len(self._reactions) > 0
+
     def was_read(self):
         """Return True if the message has been read,
         otherwise return False."""
@@ -61,7 +69,11 @@ class Message:
 
     def __repr__(self):
         """Return a representation of a message."""
-        return "Message(id=%r, chat_id=%r, content=%r)" % (self._id, self._chat_id, self._content)
+        return "Message(id=%r, chat_id=%r, content=%r)" % (
+            self._id,
+            self._chat_id,
+            self._content,
+        )
 
 
 class Reaction(Enum):

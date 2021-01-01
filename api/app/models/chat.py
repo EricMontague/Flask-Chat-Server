@@ -82,8 +82,15 @@ class PrivateChat(Chat):
 
     CAPACITY = 2
 
-    def __init__(self, id, name, description):
-        super().__init__(id, name, description)
+    def __init__(self, id, primary_user, secondary_user):
+        self._id = id
+        self._primary_user = primary_user
+        self._secondary_user = secondary_user
+
+    @property
+    def id(self):
+        """Return the chat's id."""
+        return self._id
 
     def get_other_member(self, member_id):
         """Return the other member in the private chat."""
@@ -93,10 +100,10 @@ class PrivateChat(Chat):
 
     def __repr__(self):
         """Return a representatino of a private chat."""
-        return "PrivateChat(id=%r, name=%r, description=%r)" % (
+        return "PrivateChat(id=%r, primary_user=%r, secondary_user=%r)" % (
             self._id,
-            self.name,
-            self.description,
+            self._primary_user,
+            self._secondary_user,
         )
 
 
