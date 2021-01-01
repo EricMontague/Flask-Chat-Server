@@ -179,7 +179,7 @@ class ModelMapper(ABC):
             sk_name: self._serializer_manager.serialize("", sort_key),
         }
 
-    def serialize_from_model(self, model, *kwargs):
+    def serialize_from_model(self, model, **kwargs):
         """Serialize the given model to a DynamoDB item."""
         item = self._serialize(model, **kwargs)
         self._serialize_additional_attributes(item, kwargs.get("additional_attributes", {}))
@@ -317,9 +317,10 @@ class ModelMapper(ABC):
         has taken place.
         """
         for attribute in attributes:
-            value = item[attribute]
-            deserialized_value = self._handle_deserialization(attribute, value, item)
-            set_attribute_or_dict_value(model_or_dict, attribute, deserialized_value)
+            value = item.get(attribute)
+            if value: 
+                deserialized_value = self._handle_deserialization(attribute, value, item)
+                set_attribute_or_dict_value(model_or_dict, attribute, deserialized_value)
 
     def _construct_primary_key(self, model, **kwargs):
         """Return a formatted primary key based on the passed in parameters

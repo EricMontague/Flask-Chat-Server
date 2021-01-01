@@ -23,6 +23,7 @@ from app.models import (
     NotificationType,
     PrivateChatMember,
     Message,
+    Reaction,
 )
 
 
@@ -211,7 +212,7 @@ class PrivateChatMemberMapper(ModelMapper):
 
     class Meta:
         model = PrivateChatMember
-        fields = ("private_chat_id", "user_id", "created_at")
+        fields = ("private_chat_id", "user_id", "other_user_id", "created_at")
         partition_key_attribute = "user_id"
         partition_key_prefix = PrimaryKeyPrefix.USER
         sort_key_attribute = "private_chat_id"
@@ -239,4 +240,7 @@ class MessageMapper(ModelMapper):
         partition_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT
         sort_key_attribute = "_id"
         sort_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE
-        type_ = ItemType.PRIVATE_CHAT_MESSAGE
+        type_ = ItemType.PRIVATE_CHAT_MESSAGE.name
+        attributes_to_monkey_patch = ("_reactions",)
+
+    ENUMS = {"_reactions": Reaction}
