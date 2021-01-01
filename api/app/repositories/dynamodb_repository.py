@@ -15,9 +15,10 @@ from app.models import (
     CommunityName, 
     Image, 
     ImageType, 
-    PrivateChatMember
+    PrivateChatMember,
+    PrivateChat
 )
-from app.models.update_models import update_user_model, update_community_model, update_private_chat_model
+from app.models.update_models import update_user_model, update_community_model
 from app.dynamodb import (
     UserMapper,
     UsernameMapper,
@@ -214,7 +215,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             
             batch_results = self._dynamodb_client.batch_get_items(community_keys)
             
-            response = self._process_batch_results(batch_results, self._community_mapper, ItemType.COMMUNITY.name)
+            response = self._process_batch_results(
+                batch_results, self._community_mapper, ItemType.COMMUNITY.name
+            )
         response["has_next"] = query_results["LastEvaluatedKey"] is not None
         response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
         return response
@@ -365,7 +368,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             results = self._dynamodb_client.get_items(
                 limit, cursor, "CommunitiesByLocation"
             )
-            return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
+            return self._process_query_or_scan_results(
+                results, self._community_mapper, ItemType.COMMUNITY.name
+            )
 
     def get_communities_by_topic(self, limit, topic, cursor={}):
         """Return a collection of community models that have the given topic"""
@@ -376,7 +381,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             {"pk_name": "COMMUNITIES_BY_TOPIC_GSI_PK", "pk_value": {"S": partition_key}},
             index="CommunitiesByTopic",
         )
-        return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
+        return self._process_query_or_scan_results(
+            results, self._community_mapper, ItemType.COMMUNITY.name
+        )
 
     def get_communities_by_location(self, limit, location, cursor={}):
         """Return a collection of community models that are in the given location"""
@@ -397,7 +404,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         results = self._dynamodb_client.query(
             limit, cursor, primary_key, index="CommunitiesByLocation",
         )
-        return self._process_query_or_scan_results(results, self._community_mapper, ItemType.COMMUNITY.name)
+        return self._process_query_or_scan_results(
+            results, self._community_mapper, ItemType.COMMUNITY.name
+        )
 
     def add_community_member(self, community_id, user_id):
         """Add a user to a community."""
@@ -451,7 +460,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             for item in query_results["Items"]
         ]
         batch_results = self._dynamodb_client.batch_get_items(user_keys)
-        response = self._process_batch_results(batch_results, self._user_mapper, ItemType.USER.name)
+        response = self._process_batch_results(
+            batch_results, self._user_mapper, ItemType.USER.name
+        )
         response["has_next"] = query_results["LastEvaluatedKey"] is not None
         response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
         return response
@@ -506,42 +517,15 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response = self._dynamodb_client.put_item(notification_item)
         return response
         
-    def _process_query_or_scan_results(self, results, mapper, item_type):
-        next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
-        models = [
-            mapper.deserialize_to_model(item) 
-            for item in results["Items"]
-            if item["type"]["S"] == item_type
-        ]
-        response = {
-            "models": models,
-            "next": next_cursor,
-            "has_next": results["LastEvaluatedKey"] is not None,
-            "total": len(models),
-        }
-        return response
-
-    def _process_batch_results(self, results, mapper, item_type):
-        models = [
-            mapper.deserialize_to_model(item) 
-            for item in results["Responses"][self._table_name]
-            if item["type"]["S"] == item_type
-        ]
-        response = {
-            "models": models,
-            "total": len(models)
-        }
-    
-        return response
-
     def add_private_chat(self, primary_user_id, secondary_user_id):
         """Create a private chat member items in DynamoDB."""
+        private_chat_id = uuid4().hex
         items = {
             "primary_member": self._private_chat_member_mapper.serialize_from_model(
-                PrivateChatMember(uuid4().hex, primary_user_id, secondary_user_id)
+                PrivateChatMember(private_chat_id, primary_user_id, secondary_user_id)
             ),
             "secondary_member": self._private_chat_member_mapper.serialize_from_model(
-                PrivateChatMember(uuid4().hex, secondary_user_id, primary_user_id)
+                PrivateChatMember(private_chat_id, secondary_user_id, primary_user_id)
             )
         }
         response = self._dynamodb_client.create_private_chat(items)
@@ -580,7 +564,14 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 )
                 user_keys.append(user_key)
             batch_results = self._dynamodb_client.batch_get_items(user_keys)
-            response = self._process_batch_results(batch_results, self._user_mapper, ItemType.USER.name)
+            response = self._process_batch_results(
+                batch_results, 
+                self._user_mapper, 
+                ItemType.USER.name
+            )
+            response["models"] = self._create_private_chats(
+                user, response["models"], query_results["Items"]
+            )
         response["has_next"] = query_results["LastEvaluatedKey"] is not None
         response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
         return response
@@ -601,7 +592,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 "pk_value": primary_key["PK"], 
                 "sk_name": "SK",
                 "sk_value": {"S": PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE},
-            }
+            },
+            scan_forward=False
         )
         return self._process_query_or_scan_results(
             query_results, 
@@ -612,6 +604,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def add_private_chat_message(self, message):
         """Create or replace a private chat message in DynamoDB."""
         message_item = self._message_mapper.serialize_from_model(message)
+        if not message.has_reactions():
+            del message_item["_reactions"]
         response = self._dynamodb_client.put_item(message_item)
         return response
         
@@ -620,6 +614,47 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         primary_key = self._message_mapper.key(message.chat_id, message.id)
         response = self._dynamodb_client.delete_item(primary_key)
         return response
+
+    def _process_query_or_scan_results(self, results, mapper, item_type):
+        next_cursor = encode_cursor(results["LastEvaluatedKey"] or {})
+        models = [
+            mapper.deserialize_to_model(item) 
+            for item in results["Items"]
+            if item["type"]["S"] == item_type
+        ]
+        response = {
+            "models": models,
+            "next": next_cursor,
+            "has_next": results["LastEvaluatedKey"] is not None,
+            "total": len(models),
+        }
+        return response
+
+    def _process_batch_results(self, results, mapper, item_type):
+        models = [
+            mapper.deserialize_to_model(item) 
+            for item in results["Responses"][self._table_name]
+            if item["type"]["S"] == item_type
+        ]
+        response = {
+            "models": models,
+            "total": len(models)
+        }
+    
+        return response
+
+    def _create_private_chats(self, primary_user, secondary_users, private_chat_member_items):
+        user_chat_mapping = {}
+        for item in private_chat_member_items:
+            other_user_id = item["other_user_id"]["S"]
+            chat_id = item["private_chat_id"]["S"]
+            user_chat_mapping[other_user_id] = chat_id
+
+        private_chats = []
+        for secondary_user in secondary_users:
+            private_chat_id = user_chat_mapping[secondary_user.id]
+            private_chats.append(PrivateChat(private_chat_id, primary_user, secondary_user))
+        return private_chats
 
 
 dynamodb_repository = _DynamoDBRepository(
@@ -631,7 +666,7 @@ dynamodb_repository = _DynamoDBRepository(
     community_name_mapper=CommunityNameMapper(),
     community_membership_mapper=CommunityMembershipMapper(),
     notification_mapper=NotificationMapper(),
-    private_chat_member_mapper=PrivateChatMemberMapper()
+    private_chat_member_mapper=PrivateChatMemberMapper(),
     message_mapper=MessageMapper()
 )
 
