@@ -16,7 +16,9 @@ from app.dynamodb import (
     CommunityMapper,
     CommunityNameMapper,
     CommunityMembershipMapper,
-    NotificationMapper
+    NotificationMapper,
+    PrivateChatMemberMapper,
+    MessageMapper
 )
 from app.models.factories import UserFactory, CommunityFactory
 from app.models import (
@@ -26,7 +28,9 @@ from app.models import (
     CommunityMembership, 
     CommunityTopic, 
     Notification, 
-    NotificationType
+    NotificationType,
+    PrivateChatMember,
+    Message
 )
 from app.dynamodb.constants import PrimaryKeyPrefix
 
@@ -38,6 +42,8 @@ community_mapper = CommunityMapper()
 community_name_mapper = CommunityNameMapper()
 community_membership_mapper = CommunityMembershipMapper()
 notification_mapper = NotificationMapper()
+private_chat_member_mapper = PrivateChatMemberMapper()
+message_mapper=MessageMapper()
 
 
 TOPICS = [topic for topic in CommunityTopic]
@@ -54,11 +60,20 @@ NOTIFICATION_TYPES = [notification_type for notification_type in NotificationTyp
 class FakeDataGenerator:
     """Class to generate fake data for the application."""
 
-    def __init__(self, num_users=25, num_communities=25, num_notifications=25):
+    def __init__(
+        self, 
+        num_users=25, 
+        num_communities=25, 
+        num_notifications=25,
+        num_private_chats=25,
+        num_private_chat_messages=40
+    ):
         self._faker = Faker()
         self.num_users = num_users
         self.num_communities = num_communities
         self.num_notifications = num_notifications
+        self.num_private_chats = num_private_chats
+        self.num_private_chat_messages = num_private_chat_messages
 
     def add_users(self):
         """Add fake user data to the database."""
@@ -113,7 +128,7 @@ class FakeDataGenerator:
 
     def add_communities(self):
         """Add fake community data to the database."""
-        results = dynamodb_repository.get_users(25)
+        results = dynamodb_repository.get_users(self.num_users)
         users = results["models"]
         remaining_communities = self.num_communities
         while remaining_communities > 0:
@@ -167,6 +182,45 @@ class FakeDataGenerator:
 
     def add_private_chats(self):
         """Add fake private chat data to the database."""
+        results = dynamodb_repository.get_users(self.num_users)
+        users = results["models"]
+        remaining_private_chats = self.num_private_chats
+        while remaining_private_chats > 0:
+            requests = []
+            chat_members = self._pick_private_chat_members(users)
+            primary = private_chat_member_mapper.serialize_from_model(
+                chat_members[0]
+            )
+            secondary = private_chat_member_mapper.serialize_from_model(
+                chat_members[1]
+            )
+            requests.append(("PutRequest", primary))
+            requests.append(("PutRequest", secondary))
+            dynamodb_client.batch_write_items(requests)
+            remaining_private_chats -= 1
+
+    def add_private_chat_messages(self):
+        """Add fake private chat message data to the database."""
+        results = dynamodb_repository.get_users(self.num_users // 2)
+        users = results["models"]
+        remaining_messages = self.num_private_chat_messages
+        while remaining_messages > 0:
+            requests = []
+            for user in users:
+                results = dynamodb_repository.get_user_private_chats(user.id, 1)
+                chats = results["models"]
+                if not chats:
+                    continue
+                message = self._create_message(chats[0].id)
+                message_item = message_mapper.serialize_from_model(message)
+                if not message.has_reactions():
+                    del message_item["_reactions"]
+                requests.append(("PutRequest", message_item))
+                remaining_messages -= 1
+            dynamodb_client.batch_write_items(requests)
+            
+    def add_group_chat_messages(self):
+        """Add fake group chat message data to the database."""
         pass
 
     def _generate_fake_community_data(self):
@@ -205,4 +259,24 @@ class FakeDataGenerator:
             self._faker.paragraph()[:60],
             "https://www.chatapp.com/api/v1/some-resource-collection/resource-id",
             created_at=created_at
+        )
+
+    def _pick_private_chat_members(self, users):
+        """Choose two random users to form a private chat and
+        return a list of two PrivateChatMember instances.
+        """
+        chat_id = uuid4().hex
+        chat_members = random.sample(users, 2)
+        primary = PrivateChatMember(chat_id, chat_members[0].id, chat_members[1].id)
+        secondary = PrivateChatMember(chat_id, chat_members[1].id, chat_members[0].id)
+        return [primary, secondary]
+
+    def _create_message(self, chat_id):
+        """Return an instance of a message model."""
+        now = datetime.now()
+        return Message(
+            now.isoformat() + "-" + uuid4().hex,
+            chat_id,
+            self._faker.paragraph()[:50],
+            created_at=now
         )
