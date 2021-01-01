@@ -3,6 +3,7 @@
 
 import os
 from http import HTTPStatus
+from app.extensions import socketio
 from app import create_app
 from app.models import (
     ChatRequest,
@@ -93,4 +94,4 @@ def make_shell_context():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.run(app)
