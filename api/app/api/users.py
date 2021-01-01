@@ -89,6 +89,10 @@ def delete_user(user_id):
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
     dynamodb_repository.remove_user(user)
+    profile_photo_id = user.id + "_" + ImageType.USER_PROFILE_PHOTO.name
+    cover_photo_id = user.id + "_" + ImageType.USER_COVER_PHOTO.name
+    s3_repository.remove(profile_photo_id)
+    s3_repository.remove(cover_photo_id)
     return {}, HTTPStatus.NO_CONTENT
 
 
