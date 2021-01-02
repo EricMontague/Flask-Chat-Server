@@ -127,11 +127,11 @@ class CommunityPermission(Enum):
 
 
 @dataclass(frozen=True)
-class CommunityGroupChatRelation:
+class CommunityGroupChat:
     """Class to represent the relationship between group chats and communities."""
 
-    group_chat_id: str
     community_id: str
+    group_chat_id: str
     created_at: datetime = datetime.now()
 
 
