@@ -92,12 +92,6 @@ class PrivateChat(Chat):
         """Return the chat's id."""
         return self._id
 
-    def get_other_member(self, member_id):
-        """Return the other member in the private chat."""
-        for id in self._members:
-            if id != member_id:
-                return self._members[id]
-
     def __repr__(self):
         """Return a representatino of a private chat."""
         return "PrivateChat(id=%r, primary_user=%r, secondary_user=%r)" % (
@@ -112,29 +106,18 @@ class GroupChat(Chat):
     in a specific community
     """
 
-    def __init__(self, id, name, description, capacity, private):
+    def __init__(self, id, community_id, name, description, capacity):
         super().__init__(id, name, description)
         self._capacity = capacity
-        self._private = private
-        self._num_members = 0
-        self._pending_requests = {}
+        self._community_id = community_id
 
     @property
-    def num_members(self):
-        """Return the number of members in the group chat."""
-        return self._num_members
-
-    def num_members_online(self):
-        """Return the number of members who are currently online."""
-        total = 0
-        for id in self._members:
-            if self._members[id].is_online:
-                total += 1
-        return total
+    def community_id(self):
+        """Return the id of the community the group chat belongs to."""
+        return self._community_id
 
     def add_member(self, member):
         """Add a member to the group chat."""
-        self.remove_request(member.id)
         self._members[member.id] = member
 
     def remove_member(self, member_id):
@@ -151,48 +134,17 @@ class GroupChat(Chat):
         """
         return user_id in self._members
 
-    def add_request(self, request):
-        """Add a request to the group chat's dictionary of
-        pending requests.
-        """
-        self._pending_requests[request.user_id] = request
-
-    def remove_request(self, user_id):
-        """Remove a request from the group chat's dictionary
-        of pending requests.
-        """
-        if not self.has_pending_request(user_id):
-            raise ChatRequestNotFoundException(
-                "A request by the given user could not be found"
-            )
-        self._pending_requests.pop(user_id)
-
-    def has_pending_request(self, user_id):
-        """Return True if a user with the given id has a pending
-        request to join the group chat, otherwise return False.
-        """
-        return user_id in self._pending_requests
-
-    def is_full(self):
-        """Return True if the group chat is full, otherwise
-        return False.
-        """
-        return self._capacity == self._num_members
-
-    def is_private(self):
-        """Return True if this group chat is private,
-        otherwise return False.
-        """
-        return self._private
-
     def __repr__(self):
         """Return a representation of a group chat."""
-        return "GroupChat(id=%r, name=%r, description=%r, capacity=%r, private=%r)" % (
-            self._id,
-            self.name,
-            self.description,
-            self._capacity,
-            self._private,
+        return (
+            "GroupChat(id=%r, community_id=%r, name=%r, description=%r, capacity=%r)"
+            % (
+                self._id,
+                self._community_id,
+                self.name,
+                self.description,
+                self._capacity,
+            )
         )
 
 
@@ -206,3 +158,15 @@ class PrivateChatMember:
     user_id: str
     other_user_id: str
     created_at: datetime = datetime.now()
+
+
+@dataclass(frozen=True)
+class GroupChatMember:
+    """Class to represent the relationship between a private chat and 
+    a user who is a member of that private chat.
+    """
+
+    group_chat_id: str
+    user_id: str
+    created_at: datetime = datetime.now()
+
