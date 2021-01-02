@@ -158,3 +158,19 @@ def upload_community_profile_photo(file, community_id):
     dynamodb_repository.update_community_image(community, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
+
+@api.route("/communities/<community_id>/group_chats")
+def get_community_group_chats(community_id):
+    """Return a list of group chat resources in the given community."""
+    pass
+
+
+@api.route("/communities/<community_id>/group_chats", methods=["POST"])
+def create_community_group_chat(community_id):
+    """Create a new group chat resource."""
+    pass
+
+
+@api.route("/communities/<community_id>/group_chats/<group_chat_id>", methods=["PUT"])
+def update_community_group_chat(community_id, group_chat_id):
+    pass

@@ -1,7 +1,6 @@
 """This module contains view functions for accessing user resources."""
 
 
-
 from http import HTTPStatus
 from flask import current_app, url_for, request
 from app.api import api
@@ -10,7 +9,7 @@ from app.helpers import (
     handle_response,
     handle_file_request,
     upload_to_cdn,
-    process_image
+    process_image,
 )
 from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema, NotificationSchema
 from app.repositories import dynamodb_repository, s3_repository
@@ -117,7 +116,9 @@ def upload_user_profile_photo(file, user_id):
     user = dynamodb_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
-    image_data = process_image(user.id, s3_repository, file, ImageType.USER_PROFILE_PHOTO)
+    image_data = process_image(
+        user.id, s3_repository, file, ImageType.USER_PROFILE_PHOTO
+    )
     dynamodb_repository.update_user_image(user, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
@@ -146,9 +147,15 @@ def update_user_notification(notification_data, user_id, notification_id):
     """
     notification = dynamodb_repository.get_user_notification(user_id, notification_id)
     if notification.was_seen() and notification_data.get("_seen") is False:
-        return {"error": "Cannot change notification status from seen to unseen"}, HTTPStatus.UNPROCESSABLE_ENTITY
+        return (
+            {"error": "Cannot change notification status from seen to unseen"},
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+        )
     if notification.was_read() and notification_data.get("_read") is False:
-        return {"error": "Cannot change notification status from read to unread"}, HTTPStatus.UNPROCESSABLE_ENTITY
+        return (
+            {"error": "Cannot change notification status from read to unread"},
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+        )
     if notification_data.get("_seen"):
         notification.mark_as_seen()
     elif notification_data.get("_read"):
@@ -159,4 +166,13 @@ def update_user_notification(notification_data, user_id, notification_id):
 
 @api.route("/users/<user_id>/private_chats")
 def get_user_private_chats(user_id):
+    """Return a list of the user's private chats."""
     pass
+
+
+# A user cannot create a second private chat with the same user
+@api.route("/users/<user_id>/private_chats", methods=["POST"])
+def create_user_private_chat(user_id):
+    """Create a new private chat between two users."""
+    pass
+
