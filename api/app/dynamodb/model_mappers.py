@@ -19,11 +19,14 @@ from app.models import (
     CommunityMembership,
     CommunityName,
     CommunityTopic,
+    CommunityGroupChat,
     Notification,
     NotificationType,
     PrivateChatMember,
     Message,
     Reaction,
+    GroupChatMember,
+    GroupChat,
 )
 
 
@@ -220,6 +223,21 @@ class PrivateChatMemberMapper(ModelMapper):
         type_ = ItemType.PRIVATE_CHAT_MEMBER.name
 
 
+class GroupChatMemberMapper(ModelMapper):
+    """Class to serialize and deserialize GroupChatMember models 
+    to and from DynamoDB items.
+    """
+
+    class Meta:
+        model = GroupChatMember
+        fields = ("group_chat", "user_id", "created_at")
+        partition_key_attribute = "group_chat_id"
+        parition_key_prefix = PrimaryKeyPrefix.GROUP_CHAT
+        sort_key_attribute = "user_id"
+        sort_key_prefix = PrimaryKeyPrefix.USER
+        type_ = ItemType.GROUP_CHAT_MEMBER.name
+
+
 class MessageMapper(ModelMapper):
     """Class to serialize and deserialize Message models 
     to and from DynamoDB items.
@@ -237,10 +255,58 @@ class MessageMapper(ModelMapper):
             "_editted",
         )
         partition_key_attribute = "_chat_id"
-        partition_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT
         sort_key_attribute = "_id"
-        sort_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE
-        type_ = ItemType.PRIVATE_CHAT_MESSAGE.name
         attributes_to_monkey_patch = ("_reactions",)
 
     ENUMS = {"_reactions": Reaction}
+
+
+class PrivateChatMessageMapper(MessageMapper):
+    """Class to serialize and deserialize Message models 
+    to and from DynamoDB items for private chats.
+    """
+
+    class Meta(MessageMapper.Meta):
+        partition_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT
+        sort_key_prefix = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE
+        type_ = ItemType.PRIVATE_CHAT_MESSAGE.name
+
+
+class GroupChatMessageMapper(MessageMapper):
+    """Class to serialize and deserialize Message models 
+    to and from DynamoDB items for group chats.
+    """
+
+    class Meta(MessageMapper.Meta):
+        partition_key_prefix = PrimaryKeyPrefix.GROUP_CHAT
+        sort_key_prefix = PrimaryKeyPrefix.GROUP_CHAT_MESSAGE
+        type_ = ItemType.GROUP_CHAT_MESSAGE.name
+
+
+class CommunityGroupChatMapper(ModelMapper):
+    """Class to serialize and deserialize CommunityGroupChat models 
+    to and from DynamoDB items.
+    """
+
+    class Meta:
+        model = CommunityGroupChat
+        fields = ("community_id", "group_chat_id", "created_at")
+        partition_key_attribute = "community_id"
+        partition_key_prefix = PrimaryKeyPrefix.COMMUNITY
+        sort_key_attribute = "group_chat_id"
+        sort_key_prefix = PrimaryKeyPrefix.GROUP_CHAT
+        type_ = ItemType.COMMUNITY_GROUP_CHAT.name
+
+
+class GroupChatMapper(ModelMapper):
+    """Class to serialize and deserialize GroupChat models 
+    to and from DynamoDB items.
+    """
+
+    class Meta:
+        model = GroupChat
+        fields = ("_id", "_community_id", "name", "description", "capacity")
+        parition_key_attribute = "community_id"
+        partition_key_prefix = PrimaryKeyPrefix.COMMUNITY
+        sort_key_attribute = "_id"
+        sort_key_prefix = PrimaryKeyPrefix.GROUP_CHAT
