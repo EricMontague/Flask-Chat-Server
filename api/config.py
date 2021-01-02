@@ -15,6 +15,7 @@ class BaseConfig:
     RESULTS_PER_PAGE = 20
     ALLOWED_FILE_EXTENSIONS = {"png", "jpg", "jpeg"}
     MAX_CONTENT_LENGTH = 1024 * 1024
+    MAX_GROUP_CHAT_CAPACITY = 10
 
 
 class DevelopmentConfig(BaseConfig):
