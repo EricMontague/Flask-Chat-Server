@@ -6,8 +6,6 @@ from http import HTTPStatus
 from app.extensions import socketio
 from app import create_app
 from app.models import (
-    ChatRequest,
-    ChatRequestStatus,
     PrivateChat,
     GroupChat,
     Community,
@@ -62,7 +60,6 @@ def internal_server_error(error):
     )
 
 
-
 @app.shell_context_processor
 def make_shell_context():
     """Allow models and other objects to be globally
@@ -72,8 +69,6 @@ def make_shell_context():
         dynamodb_repository=dynamodb_repository,
         dynamodb_client=dynamodb_client,
         s3_repository=s3_repository,
-        ChatRequest=ChatRequest,
-        ChatRequestStatus=ChatRequestStatus,
         PrivateChat=PrivateChat,
         GroupChat=GroupChat,
         Community=Community,
