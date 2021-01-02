@@ -1,14 +1,14 @@
 """This package contains the models for the application."""
 
 
-from app.models.chat_request import ChatRequest, ChatRequestStatus
-from app.models.chat import PrivateChat, GroupChat, PrivateChatMember
+from app.models.chat import PrivateChat, GroupChat, PrivateChatMember, GroupChatMember
 from app.models.community import (
     Community,
-    CommunityTopic, 
-    CommunityMembership, 
+    CommunityTopic,
+    CommunityMembership,
     CommunityPermission,
-    CommunityName
+    CommunityName,
+    CommunityGroupChat,
 )
 from app.models.image import Image, ImageType
 from app.models.message import Message, Reaction
