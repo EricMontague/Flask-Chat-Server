@@ -54,10 +54,6 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    def remove_community(self, community):
-        pass
-
-    @abstractmethod
     def get_communities(self, *args, **kwargs):
         pass
 
@@ -106,7 +102,19 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    def get_private_chat_messages(self, private_chat_id):
+    def get_group_chat_message(self, message_id):
+        pass
+
+    @abstractmethod
+    def add_group_chat_message(self, message):
+        pass
+
+    @abstractmethod
+    def remove_group_chat_message(self, message):
+        pass
+
+    @abstractmethod
+    def get_private_chat_message(self, message_id):
         pass
 
     @abstractmethod
@@ -114,7 +122,31 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    def remove_message(self, message):
+    def remove_private_chat_message(self, message):
+        pass
+
+    @abstractmethod
+    def add_group_chat(self, group_chat):
+        pass
+
+    @abstractmethod
+    def update_group_chat(self, group_chat, updated_group_chat_data):
+        pass
+
+    @abstractmethod
+    def remove_group_chat_member(self, group_chat_id, user_id):
+        pass
+
+    @abstractmethod
+    def get_group_chat_messages(self, group_chat_id, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def get_group_chat_members(self, group_chat_id, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def get_community_group_chats(self, community_id, *args, **kwargs):
         pass
 
 
@@ -123,12 +155,15 @@ class FileStorageRepository(ABC):
     storing files and BLOB data.
     """
 
+    @abstractmethod
     def get(self, file_id):
         pass
 
+    @abstractmethod
     def add(self, file_id, file):
         pass
 
+    @abstractmethod
     def remove(self, file_id):
         pass
 
