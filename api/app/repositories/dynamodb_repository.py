@@ -6,8 +6,9 @@ from uuid import uuid4
 from http import HTTPStatus
 from pprint import pprint
 from app.repositories.abstract_repository import AbstractDatabaseRepository
-from app.repositories.exceptions import UniqueConstraintException, NotFoundException
+from app.repositories.exceptions import UniqueConstraintException, NotFoundException, DatabaseException
 from app.clients import dynamodb_client
+from app.clients.dynamodb_client import ErrorType
 from app.models import (
     UserEmail, 
     Username, 
@@ -29,7 +30,6 @@ from app.dynamodb import (
     CommunityMapper,
     CommunityMembershipMapper,
     CommunityNameMapper,
-    CommunityGroupChatMapper,
     NotificationMapper,
     PrivateChatMemberMapper,
     PrivateChatMessageMapper,
@@ -53,7 +53,6 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         self._community_mapper = kwargs.get("community_mapper")
         self._community_name_mapper = kwargs.get("community_name_mapper")
         self._community_membership_mapper = kwargs.get("community_membership_mapper")
-        self._community_group_chat_mapper = kwargs.get("community_group_chat_mapper")
         self._notification_mapper = kwargs.get("notification_mapper")
         self._private_chat_member_mapper = kwargs.get("private_chat_member_mapper")
         self._private_chat_message_mapper = kwargs.get("private_chat_message_mapper")
@@ -340,32 +339,6 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response = self._dynamodb_client.put_item(community_item)
         return response
 
-    def remove_community(self, community):
-        """Delete a community from DynamoDB."""
-        keys = {
-            "community": self._community_mapper.key(community.id, community.id),
-            "community_name": self._community_name_mapper.key(
-                community.name, community.name
-            ),
-        }
-        response = self._dynamodb_client.delete_community(keys)
-        primary_key = self._community_mapper.key(community.id)
-        
-        limit = 25
-        cursor = {}
-        query_params = [
-            limit, 
-            cursor,
-            {
-                "pk_name": "PK", 
-                "pk_value": primary_key["PK"], 
-                "sk_name": "SK",
-                "sk_value": {"S":PrimaryKeyPrefix.USER},
-            }
-        ]
-        self._delete_community_memberships(query_params)
-        return response
-
     def get_communities(self, limit, **kwargs):
         """Return a collection of community models."""
         cursor = {}
@@ -432,11 +405,16 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
         keys = {
             "community_key": self._community_mapper.key(community_id, community_id),
-            "user_key": self._user_mapper.key(user_id, user_id),
+            "user_key": self._user_mapper.key(user_id, user_id)
         }
         response = self._dynamodb_client.add_community_member(keys, item)
         if "error" in response:
-            raise NotFoundException(response["error"])
+            if response["error_type"] == ErrorType.UNIQUE_CONSTRAINT:
+                raise UniqueConstraintException(response["error"])
+            elif response["error_type"] == ErrorType.NOT_FOUND:
+                raise NotFoundException(response["error"])
+            else:
+                raise DatabaseException(response["error"])
         return True
 
     def remove_community_member(self, community_id, user_id):
@@ -528,9 +506,10 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response = self._dynamodb_client.put_item(notification_item)
         return response
 
+    # Shouldn't be able to have more than one private chat with another user
     def add_private_chat(self, primary_user_id, secondary_user_id):
         """Create a private chat member items in DynamoDB."""
-        private_chat_id = uuid4().hex
+        private_chat_id = sorted([primary_user_id, secondary_user_id])[0]
         primary_additional_attributes = {
             "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id,
             "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + primary_user_id
@@ -550,7 +529,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             )
         }
         response = self._dynamodb_client.create_private_chat(items)
-        return response
+        if "error" in response:
+            raise UniqueConstraintException(response["error"])
         
     def get_user_private_chats(self, user_id, limit, **kwargs):
         """Return a collection of users that the given user has DMs with."""
@@ -638,7 +618,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         
     def get_private_chat_message(self, private_chat_id, message_id):
         """Return an instance of a Message model."""
-        primary_key = self._private_chat_message_mapper(private_chat_id, message_id)
+        primary_key = self._private_chat_message_mapper.key(private_chat_id, message_id)
         item = self._dynamodb_client.get_item(primary_key)
         if not item:
             return None
@@ -650,7 +630,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
     def remove_private_chat_message(self, message):
         """Delete a private chat message item from DynamoDB."""
-        return self._remove_chat_message(message, self._private_chat_message_mapper)
+        if not self._remove_chat_message(message, self._private_chat_message_mapper):
+            raise NotFoundException("Private chat message not found")
 
     def _add_chat_message(self, message, mapper):
         """Add a chat message to DynamoDB."""
@@ -663,25 +644,21 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def _remove_chat_message(self, message, mapper):
         """Delete a chat message from DynamoDB."""
         primary_key = mapper.key(message.chat_id, message.id)
-        response = self._dynamodb_client.delete_item(primary_key)
-        return response
+        return self._dynamodb_client.delete_item(primary_key)
 
     def add_group_chat(self, user_id, group_chat):
         """Create a new group chat."""
         chat_member_item = self._group_chat_member_mapper.serialize_from_model(
             GroupChatMember(group_chat.id, user_id)
         )
-        community_group_chat_item = self._community_group_chat_mapper.serialize_from_model(
-            CommunityGroupChat(group_chat.community_id, group_chat.id)
-        )
         group_chat_item = self._group_chat_mapper.serialize_from_model(group_chat)
         items = {
             "chat_member": chat_member_item,
-            "community_group_chat": community_group_chat_item,
             "group_chat": group_chat_item
         }
         response = self._dynamodb_client.create_group_chat(items)
-        return response
+        if "error" in response:
+            raise UniqueConstraintException(response["error"])
 
     def update_group_chat(self, group_chat, updated_group_chat_data):
         """Update group chat attributes."""
@@ -690,13 +667,32 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         group_chat_item = self._group_chat_mapper.serialize_from_model(group_chat)
         response = self._dynamodb_client.put_item(group_chat_item)
         return response
+    
+    def add_group_chat_member(self, community_id, group_chat_id, user_id):
+        """Add a new user to a group chat."""
+        item = self._group_chat_member_mapper.serialize_from_model(
+            GroupChatMember(group_chat_id, user_id)
+        )
+        keys = {
+            "group_chat_key": self._group_chat_mapper.key(community_id, group_chat_id),
+            "user_key": self._user_mapper.key(user_id, user_id)
+        }
+        response = self._dynamodb_client.add_group_chat_member(keys, item)
+        if "error" in response:
+            if response["error_type"] == ErrorType.UNIQUE_CONSTRAINT:
+                raise UniqueConstraintException(response["error"])
+            elif response["error_type"] == ErrorType.NOT_FOUND:
+                raise NotFoundException(response["error"])
+            else:
+                raise DatabaseException(response["error"])
+        return True
 
     def remove_group_chat_member(self, group_chat_id, user_id):
         """Remove a GroupChatMember item from DynamoDB."""
         primary_key = self._group_chat_member_mapper.key(group_chat_id, user_id)
-        response = self._dynamodb_client.delete_item(primary_key)
-        return response
-
+        if not self._dynamodb_client.delete_item(primary_key):
+            raise NotFoundException("User or group chat not found")
+    
     def get_group_chat_message(self, group_chat_id, message_id):
         """Return an instance of a Message model."""
         primary_key = self._group_chat_message_mapper.key(group_chat_id, message_id)
@@ -848,10 +844,9 @@ dynamodb_repository = _DynamoDBRepository(
     community_mapper=CommunityMapper(),
     community_name_mapper=CommunityNameMapper(),
     community_membership_mapper=CommunityMembershipMapper(),
-    community_group_chat_mapper=CommunityGroupChatMapper(),
     notification_mapper=NotificationMapper(),
     private_chat_member_mapper=PrivateChatMemberMapper(),
-    private_message_mapper=PrivateChatMessageMapper(),
+    private_chat_message_mapper=PrivateChatMessageMapper(),
     group_chat_message_mapper=GroupChatMessageMapper(),
     group_chat_member_mapper=GroupChatMemberMapper(),
     group_chat_mapper=GroupChatMapper()

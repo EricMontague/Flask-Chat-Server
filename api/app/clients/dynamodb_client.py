@@ -7,6 +7,7 @@ import os
 import logging
 import logging.config
 import boto3
+from enum import Enum
 from config import PROJECT_ROOT_DIRECTORY
 from pathlib import Path
 from pprint import pprint
@@ -16,6 +17,14 @@ from botocore.exceptions import ClientError
 
 logging.config.fileConfig(PROJECT_ROOT_DIRECTORY + "/logging.conf")
 logger = logging.getLogger("dynamoDBClient")
+
+
+
+class ErrorType(Enum):
+    """Class to represent types of errors."""
+    NOT_FOUND = 0
+    UNIQUE_CONSTRAINT = 1
+    OTHER = 2
 
 
 class _DynamoDBClient:
@@ -140,11 +149,18 @@ class _DynamoDBClient:
             logger.error(f"{err.response['Error']['Message']}")
             pprint(err.response)
             error_message = "Could not add user to community"
-            if err.response["CancellationReasons"][0]["Code"] == "ConditionalCheckFailed":
-                error_message = "User could not be found"
-            elif err.response["CancellationReasons"][1]["Code"] == "ConditionalCheckFailed":
-                error_message = "Community could not be found"
-            return {"error": error_message}
+            error_type = ErrorType.OTHER
+            if err.response["Error"]["Code"] == "TransactionCanceledException":
+                if err.response["CancellationReasons"][0]["Code"] == "ConditionalCheckFailed":
+                    error_message = "User could not be found"
+                    error_type = ErrorType.NOT_FOUND
+                elif err.response["CancellationReasons"][1]["Code"] == "ConditionalCheckFailed":
+                    error_message = "Community could not be found"
+                    error_type = ErrorType.NOT_FOUND
+                elif err.response["CancellationReasons"][2]["Code"] == "ConditionalCheckFailed":
+                    error_message = "User is already a member of this community"
+                    error_type = ErrorType.UNIQUE_CONSTRAINT
+            return {"error": error_message, "error_type": error_type}
 
     def remove_community_member(self, key):
         """Delete a community membership item from DynamoDB."""
@@ -160,7 +176,7 @@ class _DynamoDBClient:
             return {"error": error_message}
 
     def create_private_chat(self, items):
-        """Create private chat and private chat member items."""
+        """Add private chat and private chat member items to DynamoDB"""
         logger.info("Adding new private chat to DynamoDB")
         parameters = self._build_create_item_parameters(items)
         try:
@@ -170,8 +186,54 @@ class _DynamoDBClient:
             logger.error(f"{err.response['Error']['Message']}")
 
             error_message = "Could not create private chat"
+            if err.response["Error"]["Code"] == "TransactionCanceledException":
+                if (
+                    err.response["CancellationReasons"][0]["Code"]
+                    == "ConditionalCheckFailed"
+                ):
+                    error_message = "Users already have a private chat together"
+            
             return {"error": error_message}
     
+    def create_group_chat(self, items):
+        """Add group chat, group chat member, and community group chat items
+        to DynamoDB.
+        """
+        logger.info("Adding new group chat to DynamoDB")
+        parameters = self._build_create_item_parameters(items)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+
+            error_message = "Could not create group chat"
+            return {"error": error_message}
+
+    def add_group_chat_member(self, keys, item):
+        """Add a group chat member item to DynamoDB."""
+        parameters = self._build_add_group_chat_member_parameters(keys, item)
+        try:
+            return self._execute_transact_write(parameters)
+        except ClientError as err:
+            logger.error(f"{err.response['Error']['Code']}")
+            logger.error(f"{err.response['Error']['Message']}")
+            pprint(err.response)
+
+            error_message = "Could not add user to group chat"
+            error_type = ErrorType.OTHER
+            if err.response["Error"]["Code"] == "TransactionCanceledException":
+                if err.response["CancellationReasons"][0]["Code"] == "ConditionalCheckFailed":
+                    error_message = "User could not be found"
+                    error_type = ErrorType.NOT_FOUND
+                elif err.response["CancellationReasons"][1]["Code"] == "ConditionalCheckFailed":
+                    error_message = "Group chat could not be found"
+                    error_type = ErrorType.NOT_FOUND
+                elif err.response["CancellationReasons"][2]["Code"] == "ConditionalCheckFailed":
+                    error_message = "User is already a member of this group chat"
+                    error_type = ErrorType.UNIQUE_CONSTRAINT
+            return {"error": error_message, "error_type": error_type}
+
     def batch_delete_items(self, keys):
         dynamodb = boto3.resource("dynamodb")
         table = dynamodb.Table(self._table_name)
@@ -200,24 +262,39 @@ class _DynamoDBClient:
         response = self._dynamodb.get_item(TableName=self._table_name, Key=key,)
         return response.get("Item")
 
-    def put_item(self, item):
+    def put_item(self, item, use_condition_expression=False):
         """Replace an entire item in the table or create a new item
         if it exists. Returns the response from DynamoDB afterwards
         """
-        response = self._dynamodb.put_item(
-            TableName=self._table_name,
-            Item=item
-        )
-        return response
+        if use_condition_expression:
+            try:
+                response = self._dynamodb.put_item(
+                    TableName=self._table_name,
+                    Item=item,
+                    ConditionExpression="attribute_not_exists(PK) AND attribute_not_exists(SK)"
+                )
+            except ClientError as err:
+                logger.error(f"{err.response['Error']['Code']}")
+                logger.error(f"{err.response['Error']['Message']}")
+                return False
+        else:
+            response = self._dynamodb.put_item(
+                TableName=self._table_name,
+                Item=item
+            )
+        return True
         
     def delete_item(self, key):
         """Delete an item from DynamoDB and return the response."""
-        response = self._dynamodb.delete_item(
-            TableName=self._table_name,
-            Key=key,
-            ConditionExpression="attribute_exists(PK) AND attribute_exists(SK)",
-        )
-        return response
+        try:
+            response = self._dynamodb.delete_item(
+                TableName=self._table_name,
+                Key=key,
+                ConditionExpression="attribute_exists(PK) AND attribute_exists(SK)",
+            )
+        except ClientError as err:
+            return False
+        return True
 
     def query(self, limit, start_key, primary_key, **kwargs):
         logger.info("Querying items from DynamoDB")
@@ -436,17 +513,47 @@ class _DynamoDBClient:
                 "ConditionCheck": {
                     "Key": keys["user_key"],
                     "TableName": self._table_name,
-                    "ConditionExpression": f"attribute_exists(PK) AND attribute_exists(SK)",
+                    "ConditionExpression": "attribute_exists(PK) AND attribute_exists(SK)",
                 }
             },
             {
                 "ConditionCheck": {
                     "Key": keys["community_key"],
                     "TableName": self._table_name,
-                    "ConditionExpression": f"attribute_exists(PK) AND attribute_exists(SK)",
+                    "ConditionExpression": "attribute_exists(PK) AND attribute_exists(SK)",
                 }
             },
-            {"Put": {"Item": item, "TableName": self._table_name,}},
+            {
+                "Put": {
+                    "Item": item, "TableName": self._table_name,
+                    "ConditionExpression": "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+                }
+            },
+        ]
+        return parameters
+    
+    def _build_add_group_chat_member_parameters(self, keys, item):
+        parameters = [
+            {
+                "ConditionCheck": {
+                    "Key": keys["user_key"],
+                    "TableName": self._table_name,
+                    "ConditionExpression": "attribute_exists(PK) AND attribute_exists(SK)",
+                }
+            },
+            {
+                "ConditionCheck": {
+                    "Key": keys["group_chat_key"],
+                    "TableName": self._table_name,
+                    "ConditionExpression": "attribute_exists(PK) AND attribute_exists(SK)",
+                }
+            },
+            {
+                "Put": {
+                    "Item": item, "TableName": self._table_name,
+                    "ConditionExpression": "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+                }
+            },
         ]
         return parameters
 
