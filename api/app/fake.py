@@ -18,7 +18,7 @@ from app.dynamodb import (
     CommunityMembershipMapper,
     NotificationMapper,
     PrivateChatMemberMapper,
-    MessageMapper
+    PrivateChatMessageMapper
 )
 from app.models.factories import UserFactory, CommunityFactory
 from app.models import (
@@ -43,7 +43,7 @@ community_name_mapper = CommunityNameMapper()
 community_membership_mapper = CommunityMembershipMapper()
 notification_mapper = NotificationMapper()
 private_chat_member_mapper = PrivateChatMemberMapper()
-message_mapper=MessageMapper()
+private_chat_message_mapper = PrivateChatMessageMapper()
 
 
 TOPICS = [topic for topic in CommunityTopic]
@@ -187,15 +187,23 @@ class FakeDataGenerator:
         remaining_private_chats = self.num_private_chats
         while remaining_private_chats > 0:
             requests = []
-            chat_members = self._pick_private_chat_members(users)
-            primary = private_chat_member_mapper.serialize_from_model(
-                chat_members[0]
+            primary_user, secondary_user = self._pick_private_chat_members(users)
+            primary_additional_attributes = {
+                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + primary_user.private_chat_id,
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + primary_user.user_id
+            }
+            secondary_additional_attributes = {
+                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + secondary_user.private_chat_id,
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + secondary_user.user_id
+            }
+            primary_item = private_chat_member_mapper.serialize_from_model(
+                primary_user, additional_attributes=primary_additional_attributes
             )
-            secondary = private_chat_member_mapper.serialize_from_model(
-                chat_members[1]
+            secondary_item = private_chat_member_mapper.serialize_from_model(
+                secondary_user, additional_attributes=secondary_additional_attributes
             )
-            requests.append(("PutRequest", primary))
-            requests.append(("PutRequest", secondary))
+            requests.append(("PutRequest", primary_item))
+            requests.append(("PutRequest", secondary_item))
             dynamodb_client.batch_write_items(requests)
             remaining_private_chats -= 1
 
@@ -212,7 +220,7 @@ class FakeDataGenerator:
                 if not chats:
                     continue
                 message = self._create_message(chats[0].id)
-                message_item = message_mapper.serialize_from_model(message)
+                message_item = private_chat_message_mapper.serialize_from_model(message)
                 if not message.has_reactions():
                     del message_item["_reactions"]
                 requests.append(("PutRequest", message_item))
