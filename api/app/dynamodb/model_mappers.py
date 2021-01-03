@@ -232,7 +232,7 @@ class GroupChatMemberMapper(ModelMapper):
         model = GroupChatMember
         fields = ("group_chat", "user_id", "created_at")
         partition_key_attribute = "group_chat_id"
-        parition_key_prefix = PrimaryKeyPrefix.GROUP_CHAT
+        partition_key_prefix = PrimaryKeyPrefix.GROUP_CHAT
         sort_key_attribute = "user_id"
         sort_key_prefix = PrimaryKeyPrefix.USER
         type_ = ItemType.GROUP_CHAT_MEMBER.name
@@ -305,8 +305,9 @@ class GroupChatMapper(ModelMapper):
 
     class Meta:
         model = GroupChat
-        fields = ("_id", "_community_id", "name", "description", "capacity")
-        parition_key_attribute = "community_id"
+        fields = ("_id", "_community_id", "name", "description", "_capacity")
+        partition_key_attribute = "_community_id"
         partition_key_prefix = PrimaryKeyPrefix.COMMUNITY
         sort_key_attribute = "_id"
         sort_key_prefix = PrimaryKeyPrefix.GROUP_CHAT
+        type_ = ItemType.GROUP_CHAT.name
