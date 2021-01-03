@@ -76,21 +76,6 @@ def update_community(community_data, community_id):
     return {}, HTTPStatus.NO_CONTENT
 
 
-@api.route("/communities/<community_id>", methods=["DELETE"])
-@handle_response(None)
-def delete_community(community_id):
-    """Delete a community resource."""
-    community = dynamodb_repository.get_community(community_id)
-    if not community:
-        return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
-    dynamodb_repository.remove_community(community)
-    profile_photo_id = community.id + "_" + ImageType.COMMUNITY_PROFILE_PHOTO.name
-    cover_photo_id = community.id + "_" + ImageType.COMMUNITY_COVER_PHOTO.name
-    s3_repository.remove(profile_photo_id)
-    s3_repository.remove(cover_photo_id)
-    return {}, HTTPStatus.NO_CONTENT
-
-
 @api.route("/communities/<community_id>/members")
 @handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
