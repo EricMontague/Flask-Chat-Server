@@ -37,3 +37,4 @@ venv/
 .pytest_cache
 .aws/
 fake_data.py
+sockets.py
