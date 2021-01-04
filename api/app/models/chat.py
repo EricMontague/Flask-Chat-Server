@@ -106,9 +106,8 @@ class GroupChat(Chat):
     in a specific community
     """
 
-    def __init__(self, id, community_id, name, description, capacity):
+    def __init__(self, id, community_id, name, description):
         super().__init__(id, name, description)
-        self._capacity = capacity
         self._community_id = community_id
 
     @property
@@ -137,13 +136,12 @@ class GroupChat(Chat):
     def __repr__(self):
         """Return a representation of a group chat."""
         return (
-            "GroupChat(id=%r, community_id=%r, name=%r, description=%r, capacity=%r)"
+            "GroupChat(id=%r, community_id=%r, name=%r, description=%r)"
             % (
                 self._id,
                 self._community_id,
                 self.name,
-                self.description,
-                self._capacity,
+                self.description
             )
         )
 
