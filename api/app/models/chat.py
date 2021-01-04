@@ -18,9 +18,7 @@ class Chat(ABC):
     """Abstract base class that represents a chat."""
 
     def __init__(self, id, name, description):
-        self._id = id
-        self.name = name
-        self.description = description
+        
         self._messages = {}
         self._members = {}
 
@@ -65,11 +63,6 @@ class Chat(ABC):
         self._messages[message_id].add_reaction(reaction)
 
     @property
-    def id(self):
-        """Return the chat id."""
-        return self._id
-
-    @property
     def messages(self):
         """Return a list of the chat's messages sorted
         from most recent to least recent.
@@ -101,37 +94,26 @@ class PrivateChat(Chat):
         )
 
 
-class GroupChat(Chat):
+class GroupChat:
     """Class to represent a group chat between one or more users
     in a specific community
     """
 
     def __init__(self, id, community_id, name, description):
-        super().__init__(id, name, description)
+        self._id = id
+        self.name = name
+        self.description = description
         self._community_id = community_id
+
+    @property
+    def id(self):
+        """Return the chat id."""
+        return self._id
 
     @property
     def community_id(self):
         """Return the id of the community the group chat belongs to."""
         return self._community_id
-
-    def add_member(self, member):
-        """Add a member to the group chat."""
-        self._members[member.id] = member
-
-    def remove_member(self, member_id):
-        """Remove a member with the given id from the group chat."""
-        if not self.is_member(member_id):
-            raise ChatMemberNotFoundException(
-                "The given user is not a member of this chat"
-            )
-        self._members.pop(member_id)
-
-    def is_member(self, user_id):
-        """Return True if there is a user with the given id
-        in the group chat, otherwise return False.
-        """
-        return user_id in self._members
 
     def __repr__(self):
         """Return a representation of a group chat."""
