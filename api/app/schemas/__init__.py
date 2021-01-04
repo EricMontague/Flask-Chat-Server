@@ -11,3 +11,4 @@ from app.schemas.community import CommunitySchema
 from app.schemas.notification import NotificationSchema
 from app.schemas.message import PrivateChatMessageSchema
 from app.schemas.private_chat import PrivateChatSchema
+from app.schemas.group_chat import GroupChatSchema
