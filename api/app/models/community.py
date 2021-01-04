@@ -126,14 +126,6 @@ class CommunityPermission(Enum):
     DELETE_COMMUNITY = 3
 
 
-@dataclass(frozen=True)
-class CommunityGroupChat:
-    """Class to represent the relationship between group chats and communities."""
-
-    community_id: str
-    group_chat_id: str
-    created_at: datetime = datetime.now()
-
 
 class CommunityTopic(Enum):
     """Class to represent a topic for a community."""
