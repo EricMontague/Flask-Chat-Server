@@ -156,6 +156,11 @@ def create_community_group_chat(community_id):
     pass
 
 
+@api.route("/communities/<community_id>/group_chats/<group_chat_id>")
+def get_community_group_chat(community_id, group_chat_id):
+    pass
+
+
 @api.route("/communities/<community_id>/group_chats/<group_chat_id>", methods=["PUT"])
 def update_community_group_chat(community_id, group_chat_id):
     pass
