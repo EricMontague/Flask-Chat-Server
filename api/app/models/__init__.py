@@ -7,8 +7,7 @@ from app.models.community import (
     CommunityTopic,
     CommunityMembership,
     CommunityPermission,
-    CommunityName,
-    CommunityGroupChat,
+    CommunityName
 )
 from app.models.image import Image, ImageType
 from app.models.message import Message, Reaction

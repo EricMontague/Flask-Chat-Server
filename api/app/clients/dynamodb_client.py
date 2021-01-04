@@ -9,9 +9,7 @@ import logging.config
 import boto3
 from enum import Enum
 from config import PROJECT_ROOT_DIRECTORY
-from pathlib import Path
 from pprint import pprint
-from app.dynamodb.expressions import UpdateExpression, UpdateAction
 from botocore.exceptions import ClientError
 
 

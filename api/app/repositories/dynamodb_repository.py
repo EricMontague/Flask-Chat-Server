@@ -13,8 +13,7 @@ from app.models import (
     UserEmail, 
     Username, 
     CommunityMembership, 
-    CommunityName,
-    CommunityGroupChat, 
+    CommunityName, 
     Image, 
     ImageType, 
     PrivateChatMember,
@@ -23,7 +22,7 @@ from app.models import (
     GroupChat
 )
 from app.models.update_models import update_user_model, update_community_model
-from app.dynamodb import (
+from app.dynamodb_mappers import (
     UserMapper,
     UsernameMapper,
     UserEmailMapper,
@@ -37,7 +36,7 @@ from app.dynamodb import (
     GroupChatMemberMapper,
     GroupChatMapper
 )
-from app.dynamodb.constants import PrimaryKeyPrefix, ItemType
+from app.dynamodb_mappers.constants import PrimaryKeyPrefix, ItemType
 from app.repositories.utils import encode_cursor, decode_cursor
 
 
@@ -144,43 +143,64 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             "user_email": self._user_email_mapper.key(user.email, user.email),
         }
         response = self._dynamodb_client.delete_user(keys)
+        # self._user_on_delete_cascade( user.id)
+        return response
 
-        # Make use of threading here later so this doesn't block
-        user_primary_key = self._user_mapper.key(user.id)
+    def _user_on_delete_cascade(self, limit, cursor, user_id):
         limit = 25
         cursor = {}
-        query_params = [
-            limit,
-            cursor,
-            {
-                "pk_name": "USERS_GSI_PK", 
-                "pk_value": user_primary_key["PK"], 
-                "sk_name": "USERS_GSI_SK",
-                "sk_value": {"S":PrimaryKeyPrefix.COMMUNITY},
-            }
+        user_primary_key = self._user_mapper.key(user_id, user_id)
+        delete_params = [
+            (PrimaryKeyPrefix.COMMUNITY,  True, "community_id", "user_id"), 
+            (PrimaryKeyPrefix.GROUP_CHAT, True, "group_chat_id", "user_id"),
+            (PrimaryKeyPrefix.PRIVATE_CHAT, False, "user_id", "private_chat_id"), 
+            (PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE, True, "private_chat_id", "message_id"),
+            (PrimaryKeyPrefix.GROUP_CHAT_MESSAGE, True, "group_chat_id", "message_id"), 
+            (PrimaryKeyPrefix.NOTIFICATION, False, "user_id", "notification_id")
         ]
-        self._delete_community_memberships(query_params, index="UsersIndex")
-        return response
-    
-    def _delete_community_memberships(self, query_params, **kwargs):
+        for params in delete_params:
+            sort_key_prefix, use_index, partition_key_attribute, sort_key_attribute = params
+            query_params = [
+                limit,
+                cursor,
+                {
+                    "pk_name": "USERS_GSI_PK" if use_index else "PK",
+                    "pk_value": user_primary_key["PK"],
+                    "sk_name": "USERS_GSI_SK" if use_index else "SK",
+                    "sk_value": {"S": sort_key_prefix}
+                }
+            ]
+            index = "UsersIndex" if use_index else None
+            self._on_delete_cascade(
+                query_params, 
+                index=index,
+                partition_key_attribute=partition_key_attribute,
+                sort_key_attribute=sort_key_attribute
+            )
+
+    def _on_delete_cascade(self, query_params, **kwargs):
         while True:
-            query_results = self._dynamodb_client.query(*query_params, **kwargs)
+            query_results = self._dynamodb_client.query(*query_params, index=kwargs["index"])
             if not query_results["Items"]:
                 break
+            
+            keys_to_delete = self._extract_keys_to_delete(query_results, **kwargs)
 
-            # Delete all community membership items
-            membership_keys = [
-                {
-                    "PK": PrimaryKeyPrefix.COMMUNITY + item["community_id"]["S"],
-                    "SK": PrimaryKeyPrefix.USER + item["user_id"]["S"]
-                }
-                for item in query_results["Items"]
-            ]
-
-            self._dynamodb_client.batch_delete_items(membership_keys)
+            self._dynamodb_client.batch_delete_items(keys_to_delete)
             if not query_results["LastEvaluatedKey"]:
                 break
-         
+    
+    def _extract_keys_to_delete(self, query_results, **kwargs):
+        keys_to_delete = []
+        for item in query_results["Items"]:
+            partition_key_attribute = kwargs["pk_attribute"]
+            sort_key_attribute = kwargs["sk_attribute"]
+            keys_to_delete.append({
+                "PK": PrimaryKeyPrefix.COMMUNITY + item[partition_key_attribute]["S"],
+                "SK": PrimaryKeyPrefix.USER + item[sort_key_attribute]["S"]
+            })
+        return keys_to_delete
+
     def get_users(self, limit, encoded_start_key=None):
         """Return a collection of user models."""
         decoded_start_key = {}
@@ -635,7 +655,13 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
     def _add_chat_message(self, message, mapper):
         """Add a chat message to DynamoDB."""
-        message_item = mapper.serialize_from_model(message)
+        additional_attributes = {"USERS_GSI_PK": PrimaryKeyPrefix.USER + message.user_id}
+        if mapper == self._private_chat_message_mapper:
+            gsi_sort_key = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE + message.id
+        else:
+            gsi_sort_key = PrimaryKeyPrefix.GROUP_CHAT_MESSAGE + message.id
+        additional_attributes["USERS_GSI_SK"] = gsi_sort_key
+        message_item = mapper.serialize_from_model(message, additional_attributes=additional_attributes)
         if not message.has_reactions():
             del message_item["_reactions"]
         response = self._dynamodb_client.put_item(message_item)
@@ -648,8 +674,12 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
     def add_group_chat(self, user_id, group_chat):
         """Create a new group chat."""
+        membership_additional_attributes={
+            "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + user_id,
+            "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat.id
+        }
         chat_member_item = self._group_chat_member_mapper.serialize_from_model(
-            GroupChatMember(group_chat.id, user_id)
+            GroupChatMember(group_chat.id, user_id), additional_attributes=membership_additional_attributes
         )
         group_chat_item = self._group_chat_mapper.serialize_from_model(group_chat)
         items = {
@@ -670,8 +700,13 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     
     def add_group_chat_member(self, community_id, group_chat_id, user_id):
         """Add a new user to a group chat."""
+        membership_additional_attributes={
+            "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + user_id,
+            "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat_id
+        }
         item = self._group_chat_member_mapper.serialize_from_model(
-            GroupChatMember(group_chat_id, user_id)
+            GroupChatMember(group_chat_id, user_id),
+            additional_attributes=membership_additional_attributes
         )
         keys = {
             "group_chat_key": self._group_chat_mapper.key(community_id, group_chat_id),
