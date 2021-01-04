@@ -19,6 +19,9 @@ from app.dynamodb_mappers import (
     NotificationMapper,
     PrivateChatMemberMapper,
     PrivateChatMessageMapper,
+    GroupChatMemberMapper,
+    GroupChatMapper,
+    GroupChatMessageMapper
 )
 from app.models.factories import UserFactory, CommunityFactory
 from app.models import (
@@ -31,6 +34,8 @@ from app.models import (
     NotificationType,
     PrivateChatMember,
     Message,
+    GroupChat,
+    GroupChatMember
 )
 from app.dynamodb_mappers.constants import PrimaryKeyPrefix
 
@@ -44,6 +49,9 @@ community_membership_mapper = CommunityMembershipMapper()
 notification_mapper = NotificationMapper()
 private_chat_member_mapper = PrivateChatMemberMapper()
 private_chat_message_mapper = PrivateChatMessageMapper()
+group_chat_member_mapper = GroupChatMemberMapper()
+group_chat_mapper = GroupChatMapper()
+group_chat_message_mapper = GroupChatMessageMapper()
 
 
 TOPICS = [topic for topic in CommunityTopic]
@@ -57,6 +65,8 @@ LOCATIONS = [
 NOTIFICATION_TYPES = [notification_type for notification_type in NotificationType]
 
 
+# This should only be used with DynamoDB Local due to the high consumption of RCUs and WCUs
+# this causes
 class FakeDataGenerator:
     """Class to generate fake data for the application."""
 
@@ -67,6 +77,8 @@ class FakeDataGenerator:
         num_notifications=25,
         num_private_chats=25,
         num_private_chat_messages=40,
+        num_group_chats=25,
+        num_group_chat_messages=40
     ):
         self._faker = Faker()
         self.num_users = num_users
@@ -74,6 +86,8 @@ class FakeDataGenerator:
         self.num_notifications = num_notifications
         self.num_private_chats = num_private_chats
         self.num_private_chat_messages = num_private_chat_messages
+        self.num_group_chats = num_group_chats
+        self.num_group_chat_messages = num_group_chat_messages
 
     def add_users(self):
         """Add fake user data to the database."""
@@ -182,13 +196,46 @@ class FakeDataGenerator:
 
     def add_group_chats(self):
         """Add fake group chat data to the database."""
-        pass
+        group_chat_ids = []
+        user_results = dynamodb_repository.get_users(self.num_users)
+        community_results = dynamodb_repository.get_communities(self.num_communities)
+        users = user_results["models"]
+        communities = community_results["models"]
+        remaining_group_chats = self.num_group_chats
+        
+        while remaining_group_chats > 0:
+            requests = []
+            members = random.sample(users,3)
+            random_community = random.choice(communities)
+            group_chat = GroupChat(
+                uuid4().hex, 
+                random_community.id, 
+                self._faker.paragraph()[:24], 
+                self._faker.paragraph()[:80]
+            )
+            group_chat_ids.append(group_chat.id)
+            group_chat_item = group_chat_mapper.serialize_from_model(group_chat)
+            requests.append(("PutRequest", group_chat_item))
+            for member in members:
+                membership_additional_attributes={
+                    "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + member.id,
+                    "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat.id
+                }
+                chat_member_item = group_chat_member_mapper.serialize_from_model(
+                    GroupChatMember(group_chat.id, member.id), 
+                    additional_attributes=membership_additional_attributes
+                )
+                requests.append(("PutRequest", chat_member_item))
+            dynamodb_client.batch_write_items(requests)
+            remaining_group_chats -= 1
+        self.add_group_chat_messages(group_chat_ids)
 
     def add_private_chats(self):
         """Add fake private chat data to the database."""
         results = dynamodb_repository.get_users(self.num_users)
         users = results["models"]
         remaining_private_chats = self.num_private_chats
+        
         while remaining_private_chats > 0:
             requests = []
             primary_user, secondary_user = self._pick_private_chat_members(users)
@@ -212,7 +259,7 @@ class FakeDataGenerator:
             requests.append(("PutRequest", secondary_item))
             dynamodb_client.batch_write_items(requests)
             remaining_private_chats -= 1
-
+        
     def add_private_chat_messages(self):
         """Add fake private chat message data to the database."""
         results = dynamodb_repository.get_users(self.num_users // 2)
@@ -225,7 +272,7 @@ class FakeDataGenerator:
                 chats = results["models"]
                 if not chats:
                     continue
-                message = self._create_message(chats[0].id)
+                message = self._create_message(chats[0].id, user.id)
                 message_item = private_chat_message_mapper.serialize_from_model(message)
                 if not message.has_reactions():
                     del message_item["_reactions"]
@@ -233,9 +280,26 @@ class FakeDataGenerator:
                 remaining_messages -= 1
             dynamodb_client.batch_write_items(requests)
 
-    def add_group_chat_messages(self):
+    def add_group_chat_messages(self, group_chat_ids):
         """Add fake group chat message data to the database."""
-        pass
+        communities = dynamodb_repository.get_communities(self.num_communities)
+        remaining_messages = self.num_group_chat_messages
+        while remaining_messages > 0:
+            requests = []
+            random_community = random.choice(communities)
+            group_chat_id = random.choice(group_chat_ids)
+            results = dynamodb_repository.get_group_chat_members(
+                random_community.id, group_chat_id, self.num_users
+            )
+            users = results["models"]
+            random_user = random.choice(users)
+            message = self._create_message(group_chat_id, random_user.id)
+            message_item = group_chat_message_mapper.serialize_from_model(message)
+            if not message.has_reactions():
+                del message_item["_reactions"]
+            requests.append(("PutRequest", message_item))
+            dynamodb_client.batch_write_items(requests)
+            remaining_messages -= 1
 
     def _generate_fake_community_data(self):
         """Return fake community data as a dictionary."""
@@ -285,12 +349,13 @@ class FakeDataGenerator:
         secondary = PrivateChatMember(chat_id, chat_members[1].id, chat_members[0].id)
         return [primary, secondary]
 
-    def _create_message(self, chat_id):
+    def _create_message(self, chat_id, user_id):
         """Return an instance of a message model."""
         now = datetime.now()
         return Message(
             now.isoformat() + "-" + uuid4().hex,
             chat_id,
+            user_id,
             self._faker.paragraph()[:50],
             created_at=now,
         )
