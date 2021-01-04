@@ -9,10 +9,11 @@ class Message:
     """Class to represent a message in a chat."""
 
     def __init__(
-        self, id, chat_id, content, created_at=datetime.now(), read=False, editted=False
+        self, id, chat_id, user_id, content, created_at=datetime.now(), read=False, editted=False
     ):
         self._id = id
         self._chat_id = chat_id
+        self._user_id = user_id
         self._content = content
         self._created_at = created_at
         self._reactions = set()
@@ -28,6 +29,11 @@ class Message:
     def chat_id(self):
         """Return the id of the chat the message belongs to."""
         return self._chat_id
+
+    @property
+    def user_id(self):
+        """Return the id of the user the message belongs to."""
+        return self.user_id
 
     @property
     def content(self):
