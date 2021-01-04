@@ -9,30 +9,30 @@ from datetime import datetime
 from faker import Faker
 from app.clients import dynamodb_client
 from app.repositories import dynamodb_repository
-from app.dynamodb import (
-    UserMapper, 
-    UsernameMapper, 
+from app.dynamodb_mappers import (
+    UserMapper,
+    UsernameMapper,
     UserEmailMapper,
     CommunityMapper,
     CommunityNameMapper,
     CommunityMembershipMapper,
     NotificationMapper,
     PrivateChatMemberMapper,
-    PrivateChatMessageMapper
+    PrivateChatMessageMapper,
 )
 from app.models.factories import UserFactory, CommunityFactory
 from app.models import (
-    UserEmail, 
-    Username, 
-    CommunityName, 
-    CommunityMembership, 
-    CommunityTopic, 
-    Notification, 
+    UserEmail,
+    Username,
+    CommunityName,
+    CommunityMembership,
+    CommunityTopic,
+    Notification,
     NotificationType,
     PrivateChatMember,
-    Message
+    Message,
 )
-from app.dynamodb.constants import PrimaryKeyPrefix
+from app.dynamodb_mappers.constants import PrimaryKeyPrefix
 
 
 user_mapper = UserMapper()
@@ -48,11 +48,11 @@ private_chat_message_mapper = PrivateChatMessageMapper()
 
 TOPICS = [topic for topic in CommunityTopic]
 LOCATIONS = [
-    {"city" : "New York", "state": "New York", "country": "United States"},
-    {"city" : "Philadelphia", "state": "Pennsylvania", "country": "United States"},
-    {"city" : "Chicago", "state": "Illinois", "country": "United States"},
-    {"city" : "San Francisco", "state": "California", "country": "United States"},
-    {"city" : "Miami", "state": "Florida", "country": "United States"}
+    {"city": "New York", "state": "New York", "country": "United States"},
+    {"city": "Philadelphia", "state": "Pennsylvania", "country": "United States"},
+    {"city": "Chicago", "state": "Illinois", "country": "United States"},
+    {"city": "San Francisco", "state": "California", "country": "United States"},
+    {"city": "Miami", "state": "Florida", "country": "United States"},
 ]
 NOTIFICATION_TYPES = [notification_type for notification_type in NotificationType]
 
@@ -61,12 +61,12 @@ class FakeDataGenerator:
     """Class to generate fake data for the application."""
 
     def __init__(
-        self, 
-        num_users=25, 
-        num_communities=25, 
+        self,
+        num_users=25,
+        num_communities=25,
         num_notifications=25,
         num_private_chats=25,
-        num_private_chat_messages=40
+        num_private_chat_messages=40,
     ):
         self._faker = Faker()
         self.num_users = num_users
@@ -84,21 +84,24 @@ class FakeDataGenerator:
             user = UserFactory.create_user(user_data)
             user_email = UserEmail(user.id, user.email)
             username = Username(user.id, user.username)
-            additional_attributes={
+            additional_attributes = {
                 "USERS_GSI_PK": PrimaryKeyPrefix.USER + user.id,
-                "USERS_GSI_SK": user.username
+                "USERS_GSI_SK": user.username,
             }
             requests.append(
                 (
-                    "PutRequest", 
+                    "PutRequest",
                     user_mapper.serialize_from_model(
-                        user, 
-                        additional_attributes=additional_attributes
-                    )
+                        user, additional_attributes=additional_attributes
+                    ),
                 )
             )
-            requests.append(("PutRequest", user_email_mapper.serialize_from_model(user_email)))
-            requests.append(("PutRequest", username_mapper.serialize_from_model(username)))
+            requests.append(
+                ("PutRequest", user_email_mapper.serialize_from_model(user_email))
+            )
+            requests.append(
+                ("PutRequest", username_mapper.serialize_from_model(username))
+            )
             dynamodb_client.batch_write_items(requests)
             remaining_users -= 1
 
@@ -114,17 +117,10 @@ class FakeDataGenerator:
             requests = []
             notification = self._generate_fake_notification(random_user.id)
             requests.append(
-                (
-                    "PutRequest",
-                    notification_mapper.serialize_from_model(notification)
-                )
+                ("PutRequest", notification_mapper.serialize_from_model(notification))
             )
             dynamodb_client.batch_write_items(requests)
             remaining_notifications -= 1
-
-    def add_chat_requests(self):
-        """Add fake chat request data to the database."""
-        pass
 
     def add_communities(self):
         """Add fake community data to the database."""
@@ -138,41 +134,49 @@ class FakeDataGenerator:
             community = CommunityFactory.create_community(community_data)
             community_name = CommunityName(community.id, community.name)
             community_membership = CommunityMembership(
-                community.id, 
-                random_user.id, 
-                is_founder=True
+                community.id, random_user.id, is_founder=True
             )
-            membership_additional_attributes={
+            membership_additional_attributes = {
                 "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + random_user.id,
-                "INVERTED_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
             }
-            community_additional_attributes={
-                "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC + community.topic.name,
-                "COMMUNITIES_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id,
-                "COMMUNITIES_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY + community.location.country,
+            community_additional_attributes = {
+                "COMMUNITIES_BY_TOPIC_GSI_PK": PrimaryKeyPrefix.TOPIC
+                + community.topic.name,
+                "COMMUNITIES_BY_TOPIC_GSI_SK": PrimaryKeyPrefix.COMMUNITY
+                + community.id,
+                "COMMUNITIES_BY_LOCATION_GSI_PK": PrimaryKeyPrefix.COUNTRY
+                + community.location.country,
                 "COMMUNITIES_BY_LOCATION_GSI_SK": (
-                    PrimaryKeyPrefix.STATE + community.location.state 
-                    + PrimaryKeyPrefix.CITY + community.location.city
-                )
+                    PrimaryKeyPrefix.STATE
+                    + community.location.state
+                    + PrimaryKeyPrefix.CITY
+                    + community.location.city
+                ),
             }
             requests.append(
                 (
                     "PutRequest",
                     community_mapper.serialize_from_model(
                         community, additional_attributes=community_additional_attributes
-
-                    )
+                    ),
                 )
             )
             requests.append(
                 (
                     "PutRequest",
                     community_membership_mapper.serialize_from_model(
-                        community_membership, additional_attributes=membership_additional_attributes
-                    )
+                        community_membership,
+                        additional_attributes=membership_additional_attributes,
+                    ),
                 )
             )
-            requests.append(("PutRequest", community_name_mapper.serialize_from_model(community_name)))
+            requests.append(
+                (
+                    "PutRequest",
+                    community_name_mapper.serialize_from_model(community_name),
+                )
+            )
             dynamodb_client.batch_write_items(requests)
             remaining_communities -= 1
 
@@ -189,12 +193,14 @@ class FakeDataGenerator:
             requests = []
             primary_user, secondary_user = self._pick_private_chat_members(users)
             primary_additional_attributes = {
-                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + primary_user.private_chat_id,
-                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + primary_user.user_id
+                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT
+                + primary_user.private_chat_id,
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + primary_user.user_id,
             }
             secondary_additional_attributes = {
-                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + secondary_user.private_chat_id,
-                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + secondary_user.user_id
+                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT
+                + secondary_user.private_chat_id,
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + secondary_user.user_id,
             }
             primary_item = private_chat_member_mapper.serialize_from_model(
                 primary_user, additional_attributes=primary_additional_attributes
@@ -226,7 +232,7 @@ class FakeDataGenerator:
                 requests.append(("PutRequest", message_item))
                 remaining_messages -= 1
             dynamodb_client.batch_write_items(requests)
-            
+
     def add_group_chat_messages(self):
         """Add fake group chat message data to the database."""
         pass
@@ -237,7 +243,7 @@ class FakeDataGenerator:
             "name": self._faker.name(),
             "description": self._faker.paragraph()[:280],
             "topic": random.choice(TOPICS),
-            "location": random.choice(LOCATIONS)
+            "location": random.choice(LOCATIONS),
         }
         return fake_community_data
 
@@ -252,8 +258,8 @@ class FakeDataGenerator:
             "location": {
                 "city": self._faker.city(),
                 "state": self._faker.state(),
-                "country": "United States"
-            }
+                "country": "United States",
+            },
         }
         return fake_user_data
 
@@ -266,7 +272,7 @@ class FakeDataGenerator:
             random.choice(NOTIFICATION_TYPES),
             self._faker.paragraph()[:60],
             "https://www.chatapp.com/api/v1/some-resource-collection/resource-id",
-            created_at=created_at
+            created_at=created_at,
         )
 
     def _pick_private_chat_members(self, users):
@@ -286,5 +292,5 @@ class FakeDataGenerator:
             now.isoformat() + "-" + uuid4().hex,
             chat_id,
             self._faker.paragraph()[:50],
-            created_at=now
+            created_at=now,
         )
