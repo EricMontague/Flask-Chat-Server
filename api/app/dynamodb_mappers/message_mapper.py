@@ -19,6 +19,7 @@ class MessageMapper(ModelMapper):
         fields = (
             "_id",
             "_chat_id",
+            "_user_id",
             "_content",
             "_created_at",
             "_reactions",
