@@ -30,8 +30,8 @@ class _DynamoDBClient:
     DynamoDB resource.
     """
 
-    def __init__(self):
-        self._dynamodb = boto3.client("dynamodb")
+    def __init__(self, endpoint_url=None):
+        self._dynamodb = boto3.client("dynamodb", endpoint_url=endpoint_url)
         self._table_name = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
 
     def create_user(self, items):
@@ -233,7 +233,7 @@ class _DynamoDBClient:
             return {"error": error_message, "error_type": error_type}
 
     def batch_delete_items(self, keys):
-        dynamodb = boto3.resource("dynamodb")
+        dynamodb = boto3.resource("dynamodb", endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL"))
         table = dynamodb.Table(self._table_name)
         with table.batch_writer() as batch:
             for key in keys:
@@ -297,7 +297,7 @@ class _DynamoDBClient:
     def query(self, limit, start_key, primary_key, **kwargs):
         logger.info("Querying items from DynamoDB")
         results = {"Items": [], "LastEvaluatedKey": None}
-        if "index" in kwargs:
+        if kwargs.get("index") is not None:
             response = self._query_index(limit, start_key, primary_key, **kwargs)
         else:
             response = self._query_table(limit, start_key, primary_key, **kwargs)
@@ -382,8 +382,8 @@ class _DynamoDBClient:
                 RequestItems={self._table_name: batch_request}
             )
         except ClientError as err:
-            # logger.error(err.response["Error"]["Code"])
-            # logger.error(err.response["Error"]["Message"])
+            logger.error(err.response["Error"]["Code"])
+            logger.error(err.response["Error"]["Message"])
             pprint(err.response)
             response = {"error": "Batch write was unsuccessful"}
         return response
@@ -556,4 +556,4 @@ class _DynamoDBClient:
         return parameters
 
 
-dynamodb_client = _DynamoDBClient()
+dynamodb_client = _DynamoDBClient(endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL"))
