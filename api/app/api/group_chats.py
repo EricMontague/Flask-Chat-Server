@@ -16,6 +16,11 @@ def create_group_chat_message(group_chat_id):
     pass
 
 
+@api.route("/group_chats/<group_chat_id>/messages/<message_id>")
+def get_group_chat_message(group_chat_id, message_id):
+    pass
+
+
 @api.route("/group_chats/<group_chat_id>/messages/<message_id>", methods=["PATCH"])
 def update_group_chat_message(group_chat_id, message_id):
     pass

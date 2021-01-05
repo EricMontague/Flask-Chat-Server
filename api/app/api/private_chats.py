@@ -12,6 +12,11 @@ def get_private_chat_messages(private_chat_id):
     pass
 
 
+@api.route("/private_chats/<private_chat_id>/messages/<message_id>")
+def get_private_chat_message(private_chat_id, message_id):
+    pass
+
+
 @api.route("/private_chats/<private_chat_id>/messages", methods=["POST"])
 def create_private_chat_message(private_chat_id):
     pass
