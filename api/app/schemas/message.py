@@ -43,6 +43,10 @@ class PrivateChatMessageSchema(MessageSchema):
     class Meta:
         unknown = EXCLUDE
 
+    self_url = ma.URLFor(
+        "api.get_private_chat_message", private_chat_id="<_chat_id>", message_id="<_id>"
+    )
+
 
 class GroupChatMessageSchema(MessageSchema):
     """Class to serialize and deserialize message models for
@@ -54,4 +58,8 @@ class GroupChatMessageSchema(MessageSchema):
 
     class Meta:
         unknown = EXCLUDE
+
+    self_url = ma.URLFor(
+        "api.get_group_chat_message", group_chat_id="<_chat_id>", message_id="<_id>"
+    )
 
