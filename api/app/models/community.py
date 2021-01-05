@@ -4,7 +4,6 @@
 from datetime import datetime
 from dataclasses import dataclass
 from enum import Enum
-from app.exceptions import CommunityMemberNotFoundException
 
 
 class Community:
@@ -29,8 +28,6 @@ class Community:
         self.cover_photo = cover_photo
         self.location = location
         self._created_at = created_at
-        self._members = {}
-        self._group_chats = {}
 
     @property
     def id(self):
@@ -41,42 +38,6 @@ class Community:
     def founded_on(self):
         """Return the datetime when the community was created."""
         return self._created_at
-
-    @property
-    def num_members(self):
-        """Return the number of members in the community."""
-        return len(self._members)
-
-    @property
-    def num_group_chats(self):
-        """Return the number of group chats in the community."""
-        return len(self._group_chats)
-
-    def num_members_online(self):
-        """Return the total number of community members online."""
-        total = 0
-        for id in self._members:
-            if self._members[id].is_online:
-                total += 1
-        return total
-
-    def add_member(self, member):
-        """Add a member to the community."""
-        self._members[member.id] = member
-
-    def remove_member(self, member_id):
-        """Remove a member from the community."""
-        if not self.is_member(member_id):
-            raise CommunityMemberNotFoundException(
-                "User is not a member of this community"
-            )
-        self._members.pop(member_id)
-
-    def is_member(self, member_id):
-        """Return True if the user is a member of this community,
-        otherwise return False.
-        """
-        return member_id in self._members
 
     def __repr__(self):
         """Return a representation of a community. Some attributes are not
@@ -124,7 +85,6 @@ class CommunityPermission(Enum):
     CREATE_COMMUNITY = 1
     EDIT_COMMUNITY = 2
     DELETE_COMMUNITY = 3
-
 
 
 class CommunityTopic(Enum):
