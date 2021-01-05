@@ -143,23 +143,24 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             "user_email": self._user_email_mapper.key(user.email, user.email),
         }
         response = self._dynamodb_client.delete_user(keys)
-        # self._user_on_delete_cascade( user.id)
+        self._user_on_delete_cascade(user.id)
         return response
 
-    def _user_on_delete_cascade(self, limit, cursor, user_id):
+    def _user_on_delete_cascade(self, user_id):
         limit = 25
         cursor = {}
         user_primary_key = self._user_mapper.key(user_id, user_id)
+        # TODO - Also delete the PrivateChatMember items for the other user in the chat with the deleted user
         delete_params = [
-            (PrimaryKeyPrefix.COMMUNITY,  True, "community_id", "user_id"), 
-            (PrimaryKeyPrefix.GROUP_CHAT, True, "group_chat_id", "user_id"),
-            (PrimaryKeyPrefix.PRIVATE_CHAT, False, "user_id", "private_chat_id"), 
-            (PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE, True, "private_chat_id", "message_id"),
-            (PrimaryKeyPrefix.GROUP_CHAT_MESSAGE, True, "group_chat_id", "message_id"), 
-            (PrimaryKeyPrefix.NOTIFICATION, False, "user_id", "notification_id")
+            (PrimaryKeyPrefix.COMMUNITY,  PrimaryKeyPrefix.USER, True, "community_id", "user_id"), 
+            (PrimaryKeyPrefix.GROUP_CHAT, PrimaryKeyPrefix.USER, True, "group_chat_id", "user_id"),
+            (PrimaryKeyPrefix.USER, PrimaryKeyPrefix.PRIVATE_CHAT, False, "user_id", "private_chat_id"), 
+            (PrimaryKeyPrefix.PRIVATE_CHAT, PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE, True, "_chat_id", "_id"),
+            (PrimaryKeyPrefix.GROUP_CHAT, PrimaryKeyPrefix.GROUP_CHAT_MESSAGE, True, "_chat_id", "_id"), 
+            (PrimaryKeyPrefix.USER, PrimaryKeyPrefix.NOTIFICATION, False, "_user_id", "_id")
         ]
         for params in delete_params:
-            sort_key_prefix, use_index, partition_key_attribute, sort_key_attribute = params
+            pk_prefix, sk_prefix, use_index, partition_key_attribute, sort_key_attribute = params
             query_params = [
                 limit,
                 cursor,
@@ -167,15 +168,17 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                     "pk_name": "USERS_GSI_PK" if use_index else "PK",
                     "pk_value": user_primary_key["PK"],
                     "sk_name": "USERS_GSI_SK" if use_index else "SK",
-                    "sk_value": {"S": sort_key_prefix}
+                    "sk_value": {"S": sk_prefix}
                 }
             ]
             index = "UsersIndex" if use_index else None
             self._on_delete_cascade(
                 query_params, 
                 index=index,
-                partition_key_attribute=partition_key_attribute,
-                sort_key_attribute=sort_key_attribute
+                pk_prefix=pk_prefix,
+                sk_prefix=sk_prefix,
+                pk_attribute=partition_key_attribute,
+                sk_attribute=sort_key_attribute
             )
 
     def _on_delete_cascade(self, query_params, **kwargs):
@@ -196,8 +199,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             partition_key_attribute = kwargs["pk_attribute"]
             sort_key_attribute = kwargs["sk_attribute"]
             keys_to_delete.append({
-                "PK": PrimaryKeyPrefix.COMMUNITY + item[partition_key_attribute]["S"],
-                "SK": PrimaryKeyPrefix.USER + item[sort_key_attribute]["S"]
+                "PK": kwargs["pk_prefix"] + item[partition_key_attribute]["S"],
+                "SK": kwargs["sk_prefix"] + item[sort_key_attribute]["S"]
             })
         return keys_to_delete
 
@@ -768,6 +771,10 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             self._group_chat_message_mapper, 
             ItemType.GROUP_CHAT_MESSAGE.name
         )
+    
+    def get_user_group_chats(self, user_id, limit, **kwargs):
+        """Return a collection of a user's group chats."""
+        pass
 
     def get_group_chat_members(self, community_id, group_chat_id, limit, **kwargs):
         """Return a collection of users who are in the given group chat."""
