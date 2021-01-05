@@ -4,9 +4,9 @@ actual serialization and deserialization of models and items.
 
 
 from datetime import datetime, date, time
-from app.dynamodb.exceptions import UnserialializableTypeException
+from app.dynamodb_mappers.mapper_core.exceptions import UnserialializableTypeException
 from boto3.dynamodb.types import TypeSerializer, TypeDeserializer
-from app.dynamodb.utils import (
+from app.dynamodb_mappers.mapper_core.utils import (
     TypeValidator, 
     DateTimeParser, 
     get_enum_member, 
