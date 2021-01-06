@@ -2,6 +2,7 @@
 
 
 from http import HTTPStatus
+from uuid import uuid4
 from flask import url_for, current_app
 from app.api import api
 from app.helpers import (
@@ -15,9 +16,10 @@ from app.schemas import (
     UrlParamsSchema,
     CommunityUrlParamsSchema,
     UserSchema,
+    GroupChatSchema
 )
 from app.models.factories import CommunityFactory
-from app.models import ImageType
+from app.models import ImageType, GroupChat
 from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from werkzeug.utils import secure_filename
@@ -82,8 +84,9 @@ def update_community(community_data, community_id):
 def get_community_members(url_params, community_id):
     """Return a list of users that belong to the given community."""
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_community_members(community_id, per_page)
+        results = dynamodb_repository.get_community_members(community_id, per_page, cursor=cursor)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -145,22 +148,74 @@ def upload_community_profile_photo(file, community_id):
 
 
 @api.route("/communities/<community_id>/group_chats")
-def get_community_group_chats(community_id):
+@handle_request(UrlParamsSchema())
+@handle_response(GroupChatSchema(many=True))
+def get_community_group_chats(url_params, community_id):
     """Return a list of group chat resources in the given community."""
-    pass
+    per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
+    try:
+        results = dynamodb_repository.get_community_group_chats(community_id, per_page, cursor=cursor)
+    except NotFoundException as err:
+        return {"error": str(err)}, HTTPStatus.NOT_FOUND
+    except DatabaseException as err:
+        return {"error": str(err)}, HTTPStatus.BAD_REQUEST
+    return results, HTTPStatus.OK
 
 
 @api.route("/communities/<community_id>/group_chats", methods=["POST"])
-def create_community_group_chat(community_id):
+@handle_request(GroupChatSchema())
+@handle_response(GroupChatSchema())
+def create_community_group_chat(group_chat_data, community_id):
     """Create a new group chat resource."""
-    pass
+    community = dynamodb_repository.get_community(community_id)
+    if not community:
+        return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
+    user_id = "AWTT"
+    # user_id = g.current_user.id
+    group_chat = GroupChat(uuid4().hex, community_id, group_chat_data["name"], group_chat_data["description"])
+    dynamodb_repository.add_group_chat(user_id, community_id, group_chat)
+    headers = {
+        "Location": url_for(
+            "api.get_community_group_chat", community_id=community_id, group_chat_id=group_chat.id
+        )
+    }
+    return (group_chat, HTTPStatus.CREATED, headers)
 
 
 @api.route("/communities/<community_id>/group_chats/<group_chat_id>")
+@handle_response(GroupChatSchema())
 def get_community_group_chat(community_id, group_chat_id):
-    pass
+    """Return a group chat resource."""
+    group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
+    if not group_chat:
+        return {"error": "Group chat not found"}, HTTPStatus.NOT_FOUND
+    return group_chat, HTTPStatus.OK
 
 
 @api.route("/communities/<community_id>/group_chats/<group_chat_id>", methods=["PUT"])
-def update_community_group_chat(community_id, group_chat_id):
-    pass
+@handle_request(GroupChatSchema())
+@handle_response(None)
+def update_community_group_chat(group_chat_data, community_id, group_chat_id):
+    """Update a group chat resource."""
+    group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
+    if not group_chat:
+        return {"error": "Group chat not found"}, HTTPStatus.NOT_FOUND
+    dynamodb_repository.update_group_chat(group_chat, group_chat_data)
+    return {}, HTTPStatus.NO_CONTENT
+
+
+@api.route("communities/<community_id>/group_chats/<group_chat_id>/members")
+@handle_request(UrlParamsSchema())
+@handle_response(UserSchema(many=True))
+def get_community_group_chat_members(url_params,community_id, group_chat_id):
+    """Return a list of group chat members."""
+    per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
+    try:
+        results = dynamodb_repository.get_group_chat_members(community_id, group_chat_id, per_page, cursor=cursor)
+    except NotFoundException as err:
+        return {"error": str(err)}, HTTPStatus.NOT_FOUND
+    except DatabaseException as err:
+        return {"error": str(err)}, HTTPStatus.BAD_REQUEST
+    return results, HTTPStatus.OK

@@ -11,9 +11,9 @@ from app.helpers import (
     upload_to_cdn,
     process_image,
 )
-from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema, NotificationSchema
+from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema, NotificationSchema, GroupChatSchema, PrivateChatSchema
 from app.repositories import dynamodb_repository, s3_repository
-from app.repositories.exceptions import DatabaseException, NotFoundException
+from app.repositories.exceptions import DatabaseException, NotFoundException, UniqueConstraintException
 from app.models.factories import UserFactory
 from app.models import ImageType
 
@@ -21,10 +21,10 @@ from app.models import ImageType
 @api.route("/users")
 @handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
-def get_users(pagination):
+def get_users(url_params):
     """Return a list of user resources."""
-    per_page = pagination.get("per_page", current_app.config["RESULTS_PER_PAGE"])
-    cursor = pagination.get("next_cursor", {})
+    per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
     results = dynamodb_repository.get_users(per_page, cursor)
     return results, HTTPStatus.OK
 
@@ -35,8 +35,11 @@ def get_users(pagination):
 def get_user_communities(url_params, user_id):
     """Return a list of the user's communities."""
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_user_communities(user_id, per_page)
+        results = dynamodb_repository.get_user_communities(
+            user_id, per_page, cursor=cursor
+        )
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -129,8 +132,11 @@ def upload_user_profile_photo(file, user_id):
 def get_user_notifications(url_params, user_id):
     """Return a list of notification resources."""
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_user_notifications(user_id, per_page)
+        results = dynamodb_repository.get_user_notifications(
+            user_id, per_page, cursor=cursor
+        )
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -138,6 +144,7 @@ def get_user_notifications(url_params, user_id):
     return results, HTTPStatus.OK
 
 
+# Socket ?
 @api.route("/users/<user_id>/notifications/<notification_id>", methods=["PATCH"])
 @handle_request(NotificationSchema())
 @handle_response(None)
@@ -165,14 +172,49 @@ def update_user_notification(notification_data, user_id, notification_id):
 
 
 @api.route("/users/<user_id>/private_chats")
-def get_user_private_chats(user_id):
-    """Return a list of the user's private chats."""
-    pass
+@handle_request(UrlParamsSchema())
+@handle_response(PrivateChatSchema(many=True))
+def get_user_private_chats(url_params, user_id):
+    """Return a list of private chats the user is a part of."""
+    per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
+    try:
+        results = dynamodb_repository.get_user_private_chats(user_id, per_page, cursor=cursor)
+    except NotFoundException as err:
+        return {"error": str(err)}, HTTPStatus.NOT_FOUND
+    except DatabaseException as err:
+        return {"error": str(err)}, HTTPStatus.BAD_REQUEST
+    return results, HTTPStatus.OK 
 
 
-# A user cannot create a second private chat with the same user
-@api.route("/users/<user_id>/private_chats", methods=["POST"])
-def create_user_private_chat(user_id):
+# When authentication is added, the current user will have already been fetched from DynamoDB
+# and is guaranteed to exist in the database
+@api.route("/users/<user_id>/private_chats/<other_user_id>", methods=["PUT"])
+@handle_response(UserSchema())
+def create_user_private_chat(user_id, other_user_id):
     """Create a new private chat between two users."""
-    pass
+    other_user = dynamodb_repository.get_user(other_user_id)
+    if not other_user:
+        return {"error": "Other user could not be found"}, HTTPStatus.NOT_FOUND
+    try:
+        dynamodb_repository.add_private_chat(user_id, other_user_id)
+    except UniqueConstraintException as err:
+        return {"error": str(err)}, HTTPStatus.BAD_REQUEST
+    headers = {"Location": url_for("api.get_user", user_id=other_user_id)}
+    return {}, HTTPStatus.OK, headers
+    
 
+@api.route("/users/<user_id>/group_chats")
+@handle_request(UrlParamsSchema())
+@handle_response(GroupChatSchema(many=True))
+def get_user_group_chats(url_params, user_id):
+    """Return a list of group chat resources that the user is a member of."""
+    per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
+    cursor = url_params.get("next_cursor")
+    try:
+        results = dynamodb_repository.get_user_group_chats(user_id, per_page, cursor=cursor)
+    except NotFoundException as err:
+        return {"error": str(err)}, HTTPStatus.NOT_FOUND
+    except DatabaseException as err:
+        return {"error": str(err)}, HTTPStatus.BAD_REQUEST
+    return results, HTTPStatus.OK
