@@ -36,6 +36,7 @@ class UserSchema(ma.Schema):
     communities_url= ma.URLFor("api.get_user_communities", user_id="<_id>")
     notifications_url = ma.URLFor("api.get_user_notifications", user_id="<_id>")
     private_chats_url = ma.URLFor("api.get_user_private_chats", user_id="<_id>")
+    group_chats_url = ma.URLFor("api.get_user_group_chats", user_id="<_id>")
 
     @pre_load
     def strip_unwanted_fields(self, data, many, **kwargs):

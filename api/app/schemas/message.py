@@ -29,7 +29,7 @@ class MessageSchema(ma.Schema):
     resource_type = ma.Str(dump_only=True, default="Message")
 
     # Links
-    sender_url = ma.URLFor("api.get_user", user_id="<_user_id>")
+    user_url = ma.URLFor("api.get_user", user_id="<_user_id>")
 
 
 class PrivateChatMessageSchema(MessageSchema):

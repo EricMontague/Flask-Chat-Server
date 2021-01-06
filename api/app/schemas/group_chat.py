@@ -19,16 +19,16 @@ class GroupChatSchema(ma.Schema):
     _id = ma.UUID(dump_only=True, data_key="id")
     _community_id = ma.UUID(dump_only=True, data_key="community_id")
     name = ma.Str(required=True, validate=validate.Length(min=1, max=32))
-    decription = ma.Str(required=True, validate=validate.Length(min=1, max=140))
+    description = ma.Str(required=True, validate=validate.Length(min=1, max=140))
     resource_type = ma.Str(default="GroupChat", dump_only=True)
 
     # Links
     self_url = ma.URLFor(
-        "api.get_community_group_chat", community_id="<_community_id>", group_chat_id="<_group_chat_id"
+        "api.get_community_group_chat", community_id="<_community_id>", group_chat_id="<_id>"
     )
     messages_url = ma.URLFor("api.get_group_chat_messages", group_chat_id="<_id>")
     community_url = ma.URLFor("api.get_community", community_id="<_id>")
-    members_url = ma.URLFor("api.get_group_chat_members", group_chat_id="<_id>")
+    members_url = ma.URLFor("api.get_community_group_chat_members", community_id="<_community_id>", group_chat_id="<_id>")
 
 
     @pre_load
