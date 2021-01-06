@@ -217,7 +217,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def get_user_communities(self, user_id, limit, **kwargs):
         """Return a collection of the user's communities."""
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         user = self.get_user(user_id)
         if not user:
@@ -365,7 +365,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def get_communities(self, limit, **kwargs):
         """Return a collection of community models."""
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         if "topic" in kwargs:
             return self.get_communities_by_topic(limit, kwargs["topic"], cursor=cursor)
@@ -451,7 +451,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def get_community_members(self, community_id, limit, **kwargs):
         """Return a collection of users who are in the given community."""
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         community = self.get_community(community_id)
         if not community:
@@ -485,7 +485,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if not user:
             raise NotFoundException("User not found")
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         user_primary_key = self._user_mapper.key(user_id)
         query_results = self._dynamodb_client.query(
@@ -561,7 +561,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if not user:
             raise NotFoundException("User not found")
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         primary_key = self._user_mapper.key(user_id)
         query_results = self._dynamodb_client.query(
@@ -617,7 +617,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if not chat_query_results["Items"]:
             raise NotFoundException("Private chat not found")
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         message_primary_key = {
             "PK": {"S": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id}
@@ -674,15 +674,24 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         """Delete a chat message from DynamoDB."""
         primary_key = mapper.key(message.chat_id, message.id)
         return self._dynamodb_client.delete_item(primary_key)
+    
+    def get_group_chat(self, community_id, group_chat_id):
+        """Return a group chat model."""
+        primary_key = self._group_chat_mapper.key(community_id, group_chat_id)
+        group_chat_item = self._dynamodb_client.get_item(primary_key)
+        if not group_chat_item:
+            return None
+        return self._group_chat_mapper.deserialize_to_model(group_chat_item)
 
-    def add_group_chat(self, user_id, group_chat):
+    def add_group_chat(self, user_id, community_id, group_chat):
         """Create a new group chat."""
         membership_additional_attributes={
             "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + user_id,
             "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat.id
         }
         chat_member_item = self._group_chat_member_mapper.serialize_from_model(
-            GroupChatMember(group_chat.id, user_id), additional_attributes=membership_additional_attributes
+            GroupChatMember(group_chat.id, user_id, community_id), 
+            additional_attributes=membership_additional_attributes
         )
         group_chat_item = self._group_chat_mapper.serialize_from_model(group_chat)
         items = {
@@ -708,7 +717,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat_id
         }
         item = self._group_chat_member_mapper.serialize_from_model(
-            GroupChatMember(group_chat_id, user_id),
+            GroupChatMember(group_chat_id, user_id, community_id),
             additional_attributes=membership_additional_attributes
         )
         keys = {
@@ -750,7 +759,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def get_group_chat_messages(self, group_chat_id, limit, **kwargs):
         """Return a collection of group chat messages."""
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         primary_key = {
             "PK": {"S": PrimaryKeyPrefix.GROUP_CHAT + group_chat_id}
@@ -766,15 +775,55 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             },
             scan_forward=False
         )
-        return self._process_query_or_scan_results(
-            query_results, 
-            self._group_chat_message_mapper, 
-            ItemType.GROUP_CHAT_MESSAGE.name
-        )
+        if not query_results["Items"]:
+            response = {
+                "models": [],
+                "total": 0
+            }
+        else:
+            response = self._process_query_or_scan_results(
+                query_results, 
+                self._group_chat_message_mapper, 
+                ItemType.GROUP_CHAT_MESSAGE.name
+            )
+        response["has_next"] = query_results["LastEvaluatedKey"] is not None
+        response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
+        return response
     
     def get_user_group_chats(self, user_id, limit, **kwargs):
         """Return a collection of a user's group chats."""
-        pass
+        user = self.get_user(user_id)
+        if not user:
+            raise NotFoundException("User not found")
+        cursor = {}
+        if kwargs.get("cursor"):
+            cursor = decode_cursor(kwargs["cursor"])
+        primary_key = self._user_mapper.key(user_id)
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "INVERTED_GSI_PK",
+                "pk_value": primary_key["PK"],
+                "sk_name": "INVERTED_GSI_SK",
+                "sk_value": {"S": PrimaryKeyPrefix.GROUP_CHAT}
+            },
+            index="InvertedIndex"
+        )
+        if not query_results["Items"]:
+            response = {"total": 0, "models": []}
+        else:
+            group_chat_keys = [
+                self._group_chat_mapper.key(item["community_id"]["S"], item["group_chat_id"]["S"])
+                for item in query_results["Items"]
+            ]
+            batch_results = self._dynamodb_client.batch_get_items(group_chat_keys)
+            response = self._process_batch_results(
+                batch_results, self._group_chat_mapper, ItemType.GROUP_CHAT.name
+            )
+        response["has_next"] = query_results["LastEvaluatedKey"] is not None
+        response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
+        return response
 
     def get_group_chat_members(self, community_id, group_chat_id, limit, **kwargs):
         """Return a collection of users who are in the given group chat."""
@@ -783,7 +832,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if not group_chat_item:
             raise NotFoundException("Group chat not found")
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         query_results = self._dynamodb_client.query(
             limit,
@@ -815,7 +864,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def get_community_group_chats(self, community_id, limit, **kwargs):
         """Return a collection of the community's group chats.""" 
         cursor = {}
-        if "cursor" in kwargs:
+        if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
         community = self.get_community(community_id)
         if not community:
