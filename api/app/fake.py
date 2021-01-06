@@ -286,7 +286,7 @@ class FakeDataGenerator:
                     "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat.id,
                 }
                 chat_member_item = group_chat_member_mapper.serialize_from_model(
-                    GroupChatMember(group_chat.id, member.id),
+                    GroupChatMember(group_chat.id, member.id, random_community.id),
                     additional_attributes=membership_additional_attributes,
                 )
                 requests.append(("PutRequest", chat_member_item))

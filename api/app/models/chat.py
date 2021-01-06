@@ -52,14 +52,11 @@ class GroupChat:
 
     def __repr__(self):
         """Return a representation of a group chat."""
-        return (
-            "GroupChat(id=%r, community_id=%r, name=%r, description=%r)"
-            % (
-                self._id,
-                self._community_id,
-                self.name,
-                self.description
-            )
+        return "GroupChat(id=%r, community_id=%r, name=%r, description=%r)" % (
+            self._id,
+            self._community_id,
+            self.name,
+            self.description,
         )
 
 
@@ -83,5 +80,6 @@ class GroupChatMember:
 
     group_chat_id: str
     user_id: str
+    community_id: str
     created_at: datetime = datetime.now()
 
