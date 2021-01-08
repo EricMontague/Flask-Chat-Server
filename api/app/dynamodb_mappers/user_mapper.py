@@ -10,6 +10,7 @@ from app.dynamodb_mappers.common_mappers import ImageMapper, LocationMapper
 from app.models import User, Username, UserEmail, Role, RoleName, RolePermission
 
 
+
 class RoleMapper(ModelMapper):
     """Class to serialize and deserialize role models to and from
     DynamoDB items.
