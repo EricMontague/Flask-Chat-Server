@@ -16,6 +16,8 @@ class BaseConfig:
     ALLOWED_FILE_EXTENSIONS = {"png", "jpg", "jpeg"}
     MAX_CONTENT_LENGTH = 1024 * 1024
     MAX_GROUP_CHAT_CAPACITY = 10
+    ACCESS_TOKEN_LIFESPAN = 60 * 60 # 1 hour
+    REFRESH_TOKEN_LIFESPAN = 60 * 60 * 24 * 7 # 7 days
 
 
 class DevelopmentConfig(BaseConfig):
