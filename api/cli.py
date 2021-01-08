@@ -22,9 +22,8 @@ def aws():
 def create_table():
     """Create the single DynamoDB application table"""
     try:
-        table = create_dynamodb_table()
-        print(f"Successfully created table - {table.table_name}")
-        print(f"Status - {table.table_status}\n")
+        response = create_dynamodb_table()
+        print(f"Successfully created table - {response['TableDescription']['TableName']}")
     except ClientError as err:
         print(err, "\n")
 

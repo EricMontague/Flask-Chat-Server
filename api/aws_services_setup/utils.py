@@ -11,7 +11,7 @@ from aws_services_setup.global_secondary_indexes import GSI_LIST
 TABLE_NAME = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
 BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME", "chat-app-images")
 BUCKET_LOCATION = os.environ.get("AWS_S3_BUCKET_LOCATION", "us-east-2")
-dynamodb = boto3.resource(
+dynamodb_client = boto3.client(
     "dynamodb", endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL", "http://localhost:8000")
 )
 s3_client = boto3.client("s3")
@@ -19,7 +19,7 @@ s3_client = boto3.client("s3")
 
 def create_dynamodb_table():
     """Create the application's single table in DynamoDB."""
-    table = dynamodb.create_table(
+    table = dynamodb_client.create_table(
         TableName=TABLE_NAME,
         KeySchema=[
             {"AttributeName": "PK", "KeyType": "HASH"},
@@ -43,15 +43,21 @@ def create_dynamodb_table():
             "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_WCU", 25),
         },
     )
+
+    # Setup TTL
+    dynamodb_client.update_time_to_live(
+        TableName=TABLE_NAME,
+        TimeToLiveSpecification={
+            "Enabled": True, "AttributeName": "expires_on_date"
+        }
+    )
     return table
 
 
 def delete_dynamodb_table():
     """Delete the application's single table from DynamoDB"""
-    table = dynamodb.Table(TABLE_NAME)
-    response = table.delete()
-    return response
-
+    return dynamodb_client.delete_table(TableName=TABLE_NAME)
+    
 
 def create_s3_bucket():
     """Create a bucket in S3."""
