@@ -1,6 +1,8 @@
 """This module contains the user model."""
 
 
+import jwt
+from app.models.token import Token
 from app import bcrypt
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -79,6 +81,38 @@ class User:
         role that the user has.
         """
         return self.role.has_permissions(permissions)
+
+    @classmethod
+    def encode_token(self, claims, secret, expires_after, token_type):
+        """Return a JWT with the given payload."""
+        utcnow = datetime.utcnow()
+        expiration_date = utcnow + timedelta(seconds=expires_after)
+        claims.update({"exp": int(expiration_date.timestamp())})
+        claims.update({"iat": int(utcnow.timestamp())})
+        encoded_token = jwt.encode(claims, secret, algorithm="HS256")
+        return Token(
+            claims["user_id"], 
+            encoded_token, 
+            claims["exp"],
+            claims["iat"],
+            token_type
+        )
+
+    @classmethod
+    def decode_token(self, encoded_token, secret, token_type):
+        """Decode an encoded JWT and return the decoded token."""
+        decoded_token = None
+        try:
+            decoded_token = jwt.decode(encoded_token, secret, algorithms="HS256")
+        except jwt.InvalidTokenError:
+            return None
+        return Token(
+            decoded_token["user_id"],
+            encoded_token,
+            decoded_token["exp"],
+            decoded_token["iat"],
+            token_type
+        )
 
     def __repr__(self):
         """Return a representation of a user."""
