@@ -23,3 +23,4 @@ from app.dynamodb_mappers.message_mapper import (
     GroupChatMessageMapper,
 )
 from app.dynamodb_mappers.notification_mapper import NotificationMapper
+from app.dynamodb_mappers.token_mapper import TokenMapper
