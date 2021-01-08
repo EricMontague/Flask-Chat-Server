@@ -34,7 +34,8 @@ from app.dynamodb_mappers import (
     PrivateChatMessageMapper,
     GroupChatMessageMapper,
     GroupChatMemberMapper,
-    GroupChatMapper
+    GroupChatMapper,
+    TokenMapper
 )
 from app.dynamodb_mappers.constants import PrimaryKeyPrefix, ItemType
 from app.repositories.utils import encode_cursor, decode_cursor
@@ -58,6 +59,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         self._group_chat_message_mapper = kwargs.get("group_chat_message_mapper")
         self._group_chat_member_mapper = kwargs.get("group_chat_member_mapper")
         self._group_chat_mapper = kwargs.get("group_chat_mapper")
+        self._token_mapper = kwargs.get("token_mapper")
 
     def get_user(self, user_id):
         """Return a user from DynamoDB by id."""
@@ -180,6 +182,15 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 pk_attribute=partition_key_attribute,
                 sk_attribute=sort_key_attribute
             )
+
+    def get_token(self, user_id, token_type):
+        pass
+
+    def add_token(self, token):
+        pass
+
+    def remove_token(self, token):
+        pass
 
     def _on_delete_cascade(self, query_params, **kwargs):
         while True:
@@ -940,6 +951,7 @@ dynamodb_repository = _DynamoDBRepository(
     private_chat_message_mapper=PrivateChatMessageMapper(),
     group_chat_message_mapper=GroupChatMessageMapper(),
     group_chat_member_mapper=GroupChatMemberMapper(),
-    group_chat_mapper=GroupChatMapper()
+    group_chat_mapper=GroupChatMapper(),
+    token_mapper=TokenMapper()
 )
 

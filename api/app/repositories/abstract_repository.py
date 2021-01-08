@@ -18,6 +18,18 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
+    def get_token(self, user_id, token_type):
+        pass
+
+    @abstractmethod
+    def add_token(self, token):
+        pass
+
+    @abstractmethod
+    def remove_token(self, token):
+        pass
+
+    @abstractmethod
     def update_user(self, user, attributes_to_update, *args, **kwargs):
         pass
 
