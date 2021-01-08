@@ -3,7 +3,7 @@
 
 import os
 from http import HTTPStatus
-from app.extensions import socketio
+from flask_socketio import SocketIO
 from app import create_app
 from app.models import (
     PrivateChat,
@@ -22,13 +22,15 @@ from app.models import (
     RoleName,
     User,
     Location,
+    Token,
+    TokenType
 )
 from app.clients import dynamodb_client
 from app.repositories import dynamodb_repository, s3_repository
 from flask import jsonify
 
 app = create_app(os.environ.get("FLASK_CONFIG", "development"))
-
+socketio = SocketIO(app,logger=True, engineio_logger=True)
 
 # Blueprints can't handle 404 errors since this error occurs at the routing
 # level before the blueprint is determined
@@ -85,6 +87,8 @@ def make_shell_context():
         RoleName=RoleName,
         User=User,
         Location=Location,
+        Token=Token,
+        TokenType=TokenType
     )
 
 
