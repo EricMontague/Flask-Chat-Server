@@ -57,20 +57,6 @@ def get_user(user_id):
     return user, HTTPStatus.OK
 
 
-@api.route("/users", methods=["POST"])
-@handle_request(UserSchema())
-@handle_response(UserSchema())
-def create_user(user_data):
-    """Create a new user resource."""
-    user = UserFactory.create_user(user_data)
-    try:
-        dynamodb_repository.add_user(user)
-    except DatabaseException as err:
-        return {"error": str(err)}, HTTPStatus.BAD_REQUEST
-    headers = {"Location": url_for("api.get_user", user_id=user.id)}
-    return user, HTTPStatus.CREATED, headers
-
-
 @api.route("/users/<user_id>", methods=["PUT"])
 @handle_request(UserSchema(partial=["password"]))
 @handle_response(None)
