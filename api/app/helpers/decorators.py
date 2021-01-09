@@ -3,10 +3,12 @@
 
 import functools
 from http import HTTPStatus
-from flask import request, make_response, current_app
+from flask import request, make_response, current_app, g
 from marshmallow import ValidationError
 from app.helpers.files import is_allowed_file_extension
+from app.repositories import dynamodb_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
+from app.models import User, TokenType
 
 
 def handle_get_request(schema, url_params):
@@ -155,6 +157,48 @@ def handle_file_request(expected_filename):
     return decorator
 
 
+def is_blacklisted(decoded_token):
+    token = dynamodb_repository.get_token(
+        decoded_token.user_id, decoded_token.raw_jwt, TokenType.ACCESS_TOKEN
+    )
+    return token.is_blacklisted
+
+
+def jwt_required(func):
+    """Decorator used to protect routes that require an authenticated user."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        auth_headers = request.headers.get("Authorization")
+        if not auth_headers:
+            return (
+                {"error": "Missing token in authorization headers"},
+                HTTPStatus.UNAUTHORIZED,
+            )
+        auth_type = "Bearer"
+        bearer_start_index = auth_headers.find(auth_type)
+        raw_jwt = auth_headers[bearer_start_index + len(auth_type) :].strip()
+        if not raw_jwt:
+            return (
+                {"error": "Missing token in authorization headers"},
+                HTTPStatus.UNAUTHORIZED,
+            )
+        decoded_token = User.decode_token(
+            raw_jwt, current_app.config["SECRET_KEY"], TokenType.ACCESS_TOKEN
+        )
+        if not decoded_token:
+            return {"error": "Invalid access token"}, HTTPStatus.UNAUTHORIZED
+
+        if is_blacklisted(decoded_token):
+            return {"error": "Invalid access token"}, HTTPStatus.UNAUTHORIZED
+        current_user = dynamodb_repository.get_user(decoded_token.user_id)
+        if not current_user:
+            return {"error": "User not found"}
+        g.current_user = current_user
+        return func(*args, **kwargs)
+
+    return wrapper
+
 
 def get_collection(view_func):
     """Decorator to be used with a view function returns a collection of resources."""
@@ -162,7 +206,11 @@ def get_collection(view_func):
     @functools.wraps(view_func)
     def wrapper(*args, **kwargs):
         repo_method, url_params = view_func(*args, **kwargs)
-        return repo_method(url_params["per_page"], cursor=url_params["cursor"]), HTTPStatus.OK
+        return (
+            repo_method(url_params["per_page"], cursor=url_params["cursor"]),
+            HTTPStatus.OK,
+        )
+
     return wrapper
 
 
@@ -173,33 +221,37 @@ def get_subcollection(view_func):
     def wrapper(*args, **kwargs):
         repo_method, repo_method_args, url_params = view_func(*args, **kwargs)
         try:
-            results = repo_method(*repo_method_args, url_params["per_page"], cursor=url_params["cursor"])
+            results = repo_method(
+                *repo_method_args, url_params["per_page"], cursor=url_params["cursor"]
+            )
         except NotFoundException as err:
             return {"error": str(err)}, HTTPStatus.NOT_FOUND
         except DatabaseException as err:
             return {"error": str(err)}, HTTPStatus.BAD_REQUEST
         return results, HTTPStatus.OK
+
     return wrapper
 
-    
+
 def get_resource(not_found_message):
     """Decorator to be used with a view function that returns a single resource."""
 
     def decorator(view_func):
-
         @functools.wraps(view_func)
         def wrapper(*args, **kwargs):
             resource = view_func(*args, **kwargs)
             if not resource:
                 return {"error": not_found_message}, HTTPStatus.NOT_FOUND
             return resource, HTTPStatus.OK
+
         return wrapper
+
     return decorator
 
 
 def create_resource(view_func):
     """Decorator to be used with a view function that creates a resource."""
-   
+
     @functools.wraps(view_func)
     def wrapper(*args, **kwargs):
         repo_method, new_resource, new_resource_url = view_func(*args, **kwargs)
@@ -209,22 +261,24 @@ def create_resource(view_func):
             return {"error": str(err)}, HTTPStatus.BAD_REQUEST
         headers = {"Location": new_resource_url}
         return new_resource, HTTPStatus.CREATED, headers
+
     return wrapper
-    
+
 
 def update_resource(not_found_message):
     """Decorator to be used with a view function that updates resources."""
 
     def decorator(view_func):
-
         @functools.wraps(view_func)
         def wrapper(*args, **kwargs):
             resource, updated_resource_data, repo_method = view_func(*args, **kwargs)
             if not resource:
-                return {"error": not_found_message }, HTTPStatus.NOT_FOUND
+                return {"error": not_found_message}, HTTPStatus.NOT_FOUND
             repo_method(resource, updated_resource_data)
             return {}, HTTPStatus.NO_CONTENT
+
         return wrapper
+
     return decorator
 
 
@@ -232,7 +286,6 @@ def delete_resource(not_found_message):
     """Decorator to be used with a view function that deletes resources."""
 
     def decorator(view_func):
-
         @functools.wraps(view_func)
         def wrapper(*args, **kwargs):
             resource, repo_method = view_func(*args, **kwargs)
@@ -240,5 +293,8 @@ def delete_resource(not_found_message):
                 return {"error": not_found_message}, HTTPStatus.NOT_FOUND
             repo_method(resource)
             return {}, HTTPStatus.NO_CONTENT
+
         return wrapper
+
     return decorator
+
