@@ -10,7 +10,7 @@ class TokenType(Enum):
     """Enum to represent different types of JWTs."""
 
     ACCESS_TOKEN = 1
-    REFERSH_TOKEN = 2
+    REFRESH_TOKEN = 2
 
 
 @dataclass
@@ -21,6 +21,6 @@ class Token:
     raw_jwt: str
     expires_on_date: int # In Unix epoch time format
     issued_at: int # In Unix epoch time format
-    token_type: TokenType
+    token_type: Enum
     is_blacklisted: bool = False
     
