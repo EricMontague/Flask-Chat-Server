@@ -83,10 +83,10 @@ class User:
         return self.role.has_permissions(permissions)
 
     @classmethod
-    def encode_token(self, claims, secret, expires_after, token_type):
+    def encode_token(self, claims, secret, expires_in, token_type):
         """Return a JWT with the given payload."""
         utcnow = datetime.utcnow()
-        expiration_date = utcnow + timedelta(seconds=expires_after)
+        expiration_date = utcnow + timedelta(seconds=expires_in)
         claims.update({"exp": int(expiration_date.timestamp())})
         claims.update({"iat": int(utcnow.timestamp())})
         encoded_token = jwt.encode(claims, secret, algorithm="HS256")
