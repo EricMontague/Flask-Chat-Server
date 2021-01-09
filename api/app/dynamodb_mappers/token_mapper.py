@@ -27,8 +27,8 @@ class TokenMapper(ModelMapper):
         partition_key_attribute = "user_id"
         partition_key_prefix = PrimaryKeyPrefix.USER
         sort_key_attribute = "raw_jwt"
-        sort_key_prefix = PrimaryKeyPrefix.ACCESS_TOKEN
-        type_ = ItemType.JWT
+        sort_key_prefix = PrimaryKeyPrefix.JWT_ACCESS_TOKEN
+        type_ = ItemType.JWT_ACCESS_TOKEN
 
     ENUMS = {"token_type": TokenType}
 
