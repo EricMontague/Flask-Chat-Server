@@ -19,7 +19,8 @@ from app.models import (
     PrivateChatMember,
     PrivateChat,
     GroupChatMember,
-    GroupChat
+    GroupChat,
+    TokenType
 )
 from app.models.update_models import update_user_model, update_community_model
 from app.dynamodb_mappers import (
@@ -183,14 +184,84 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 sk_attribute=sort_key_attribute
             )
 
-    def get_token(self, user_id, token_type):
-        pass
+    def get_user_token(self, user_id, token_type):
+        """Return a user's JWT based on the token type."""
+        limit = 10
+        cursor = []
+        primary_key = self._token_mapper.key(user_id)
+        if token_type == TokenType.ACCESS_TOKEN:
+            sort_key_prefix = PrimaryKeyPrefix.JWT_ACCESS_TOKEN
+        else:
+            sort_key_prefix = PrimaryKeyPrefix.JWT_REFRESH_TOKEN
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "PK",
+                "pk_value": primary_key["PK"],
+                "sk_name": "SK",
+                "sk_value": {"S": sort_key_prefix}
+            }
+        )
+        if not query_results["Items"]:
+            return None
+        return self._token_mapper.deserialize_to_model(query_results["Items"][0])
+
+    def get_user_tokens(self, user_id):
+        """Return both of a user's access and refresh tokens."""
+        limit = 10
+        cursor = {}
+        primary_key = self._token_mapper.key(user_id)
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "PK",
+                "pk_value": primary_key["PK"],
+                "sk_name": "SK",
+                "sk_value": {"S": "JWT"}
+            }
+        )
+        if not query_results["Items"]:
+            return []
+        
+        token1 = self._token_mapper.deserialize_to_model(query_results["Items"][0])
+        if len(query_results["Items"]) == 2:
+            token2 = self._token_mapper.deserialize_to_model(query_results["Items"][1])            
+            return [token1, token2]
+        return [token1]
+
+    def get_token(self, user_id, raw_jwt, token_type):
+        """Return a token from DynamoDB."""
+        if token_type == TokenType.ACCESS_TOKEN:
+            sort_key_prefix = PrimaryKeyPrefix.JWT_ACCESS_TOKEN
+        else:
+            sort_key_prefix = PrimaryKeyPrefix.JWT_REFRESH_TOKEN
+        primary_key = self._token_mapper.key(user_id, raw_jwt, sort_key_prefix=sort_key_prefix)
+        token_item = self._dynamodb_client.get_item(primary_key)
+        if not token_item:
+            return None
+        return self._token_mapper.deserialize_to_model(token_item)
 
     def add_token(self, token):
-        pass
-
+        """Add a token to DynamoDB."""
+        if token.token_type == TokenType.ACCESS_TOKEN:
+            item_type = ItemType.JWT_ACCESS_TOKEN.name
+            sort_key_prefix = PrimaryKeyPrefix.JWT_ACCESS_TOKEN
+        else:
+            item_type = ItemType.JWT_REFRESH_TOKEN.name
+            sort_key_prefix = PrimaryKeyPrefix.JWT_REFRESH_TOKEN
+        token_item = self._token_mapper.serialize_from_model(
+            token, item_type=item_type, sort_key_prefix=sort_key_prefix
+        )
+        return self._dynamodb_client.put_item(token_item)
+        
     def remove_token(self, token):
-        pass
+        """Mark a token as blacklisted. Each token has a TTL set on it and
+        DynamoDB will delete the token once it reaches its expiration date,
+        """
+        token.is_blacklisted = True
+        return self.add_token(token)
 
     def _on_delete_cascade(self, query_params, **kwargs):
         while True:
