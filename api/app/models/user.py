@@ -2,7 +2,7 @@
 
 
 import jwt
-from app.models.token import Token
+from app.models.token import Token, TokenType
 from app import bcrypt
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -83,8 +83,12 @@ class User:
         return self.role.has_permissions(permissions)
 
     @classmethod
-    def encode_token(self, claims, secret, expires_in, token_type):
+    def encode_token(self, claims, secret, expires_in):
         """Return a JWT with the given payload."""
+        if "user_id" not in claims:
+            raise ValueError("User Id missing from token claims")
+        if "token_type" not in claims:
+            raise ValueError("Token type missing from token claims")
         utcnow = datetime.utcnow()
         expiration_date = utcnow + timedelta(seconds=expires_in)
         claims.update({"exp": int(expiration_date.timestamp())})
@@ -95,11 +99,11 @@ class User:
             encoded_token, 
             claims["exp"],
             claims["iat"],
-            token_type
+            TokenType[claims["token_type"]]
         )
 
     @classmethod
-    def decode_token(self, encoded_token, secret, token_type):
+    def decode_token(self, encoded_token, secret):
         """Decode an encoded JWT and return the decoded token."""
         decoded_token = None
         try:
@@ -111,7 +115,7 @@ class User:
             encoded_token,
             decoded_token["exp"],
             decoded_token["iat"],
-            token_type
+            TokenType[decoded_token["token_type"]]
         )
 
     def __repr__(self):
