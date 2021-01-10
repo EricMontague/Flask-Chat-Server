@@ -10,15 +10,17 @@ from app.helpers import (
     handle_file_request,
     upload_to_cdn,
     process_image,
+    jwt_required
 )
 from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema, NotificationSchema, GroupChatSchema, PrivateChatSchema
 from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException, UniqueConstraintException
 from app.models.factories import UserFactory
-from app.models import ImageType
+from app.models import ImageType, TokenType
 
 
 @api.route("/users")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
 def get_users(url_params):
