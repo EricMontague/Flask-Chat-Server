@@ -14,7 +14,19 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
+    def get_user_by_email(self, email):
+        pass
+
+    @abstractmethod
     def add_user(self, user):
+        pass
+
+    @abstractmethod
+    def get_user_token(self, user_id):
+        pass
+
+    @abstractmethod
+    def get_user_tokens(self, user_id):
         pass
 
     @abstractmethod
