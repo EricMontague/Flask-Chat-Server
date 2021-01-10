@@ -157,47 +157,52 @@ def handle_file_request(expected_filename):
     return decorator
 
 
-def is_blacklisted(decoded_token):
-    token = dynamodb_repository.get_token(
-        decoded_token.user_id, decoded_token.raw_jwt, TokenType.ACCESS_TOKEN
-    )
+def is_blacklisted(decoded_token, token_type):
+    """Return True if the given token is blacklisted."""
+    token = dynamodb_repository.get_token(decoded_token.raw_jwt, token_type)
+    if not token:
+        return True
     return token.is_blacklisted
 
 
-def jwt_required(func):
+def jwt_required(token_type):
     """Decorator used to protect routes that require an authenticated user."""
+    
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            auth_headers = request.headers.get("Authorization")
+            if not auth_headers:
+                return (
+                    {"error": "Missing token in authorization headers"},
+                    HTTPStatus.UNAUTHORIZED,
+                )
+            auth_type = "Bearer"
+            bearer_start_index = auth_headers.find(auth_type)
+            raw_jwt = auth_headers[bearer_start_index + len(auth_type) :].strip()
+            if not raw_jwt:
+                return (
+                    {"error": "Missing token in authorization headers"},
+                    HTTPStatus.UNAUTHORIZED,
+                )
+            decoded_token = User.decode_token(raw_jwt, current_app.config["SECRET_KEY"])
+            if not decoded_token:
+                return {"error": f"Invalid {token_type.name.replace('_', ' ').lower()}"}, HTTPStatus.UNAUTHORIZED
 
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        auth_headers = request.headers.get("Authorization")
-        if not auth_headers:
-            return (
-                {"error": "Missing token in authorization headers"},
-                HTTPStatus.UNAUTHORIZED,
-            )
-        auth_type = "Bearer"
-        bearer_start_index = auth_headers.find(auth_type)
-        raw_jwt = auth_headers[bearer_start_index + len(auth_type) :].strip()
-        if not raw_jwt:
-            return (
-                {"error": "Missing token in authorization headers"},
-                HTTPStatus.UNAUTHORIZED,
-            )
-        decoded_token = User.decode_token(
-            raw_jwt, current_app.config["SECRET_KEY"], TokenType.ACCESS_TOKEN
-        )
-        if not decoded_token:
-            return {"error": "Invalid access token"}, HTTPStatus.UNAUTHORIZED
+            if decoded_token.token_type != token_type:
+                return {"error": "Incorrect token type provided"}, HTTPStatus.UNAUTHORIZED
 
-        if is_blacklisted(decoded_token):
-            return {"error": "Invalid access token"}, HTTPStatus.UNAUTHORIZED
-        current_user = dynamodb_repository.get_user(decoded_token.user_id)
-        if not current_user:
-            return {"error": "User not found"}
-        g.current_user = current_user
-        return func(*args, **kwargs)
+            if is_blacklisted(decoded_token, token_type):
+                return {"error": f"Invalid {token_type.name.replace('_', ' ').lower()}"}, HTTPStatus.UNAUTHORIZED
+            current_user = dynamodb_repository.get_user(decoded_token.user_id)
+            if not current_user:
+                return {"error": "User not found"}
+            g.current_user = current_user
+            g.decoded_token = decoded_token
+            return func(*args, **kwargs)
 
-    return wrapper
+        return wrapper
+    return decorator
 
 
 def get_collection(view_func):
