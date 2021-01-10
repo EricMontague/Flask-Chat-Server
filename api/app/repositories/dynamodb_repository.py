@@ -69,6 +69,25 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if not user_item:
             return None
         return self._user_mapper.deserialize_to_model(user_item)
+    
+    def get_user_by_email(self, email):
+        """Return a user from DynamoDB by email."""
+        limit = 25
+        cursor = {}
+        primary_key = self._user_email_mapper.key(email, email)
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {   
+                "pk_name": "PK",
+                "pk_value": primary_key["PK"],
+                "sk_name": "SK",
+                "sk_value": {"S": PrimaryKeyPrefix.USER_EMAIL}
+            }
+        )
+        if not query_results["Items"]:
+            return None
+        return self.get_user(query_results["Items"][0]["user_id"]["S"])
 
     def add_user(self, user):
         """Add a new user to DynamoDB."""
@@ -162,6 +181,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             (PrimaryKeyPrefix.GROUP_CHAT, PrimaryKeyPrefix.GROUP_CHAT_MESSAGE, True, "_chat_id", "_id"), 
             (PrimaryKeyPrefix.USER, PrimaryKeyPrefix.NOTIFICATION, False, "_user_id", "_id")
         ]
+        tokens = self.get_user_tokens(user_id)
+        for token in tokens:
+            self.remove_token(token)
         for params in delete_params:
             pk_prefix, sk_prefix, use_index, partition_key_attribute, sort_key_attribute = params
             query_params = [
@@ -231,17 +253,29 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             return [token1, token2]
         return [token1]
 
-    def get_token(self, user_id, raw_jwt, token_type):
+    def get_token(self, raw_jwt, token_type):
         """Return a token from DynamoDB."""
         if token_type == TokenType.ACCESS_TOKEN:
-            sort_key_prefix = PrimaryKeyPrefix.JWT_ACCESS_TOKEN
+            partition_key_prefix = PrimaryKeyPrefix.JWT_ACCESS_TOKEN
         else:
-            sort_key_prefix = PrimaryKeyPrefix.JWT_REFRESH_TOKEN
-        primary_key = self._token_mapper.key(user_id, raw_jwt, sort_key_prefix=sort_key_prefix)
-        token_item = self._dynamodb_client.get_item(primary_key)
-        if not token_item:
+            partition_key_prefix = PrimaryKeyPrefix.JWT_REFRESH_TOKEN
+        limit = 25
+        cursor = {}
+        primary_key = self._token_mapper.key(raw_jwt, partition_key_prefix=partition_key_prefix)
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {
+                "pk_name": "INVERTED_GSI_PK",
+                "pk_value": primary_key["PK"],
+                "sk_name": "INVERTED_GSI_SK",
+                "sk_value": {"S": PrimaryKeyPrefix.USER}
+            },
+            index="InvertedIndex"
+        )
+        if not query_results["Items"]:
             return None
-        return self._token_mapper.deserialize_to_model(token_item)
+        return self._token_mapper.deserialize_to_model(query_results["Items"][0])
 
     def add_token(self, token):
         """Add a token to DynamoDB."""
@@ -251,8 +285,15 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         else:
             item_type = ItemType.JWT_REFRESH_TOKEN.name
             sort_key_prefix = PrimaryKeyPrefix.JWT_REFRESH_TOKEN
+        additional_attributes = {
+            "INVERTED_GSI_PK": sort_key_prefix + token.raw_jwt,
+            "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + token.user_id
+        }
         token_item = self._token_mapper.serialize_from_model(
-            token, item_type=item_type, sort_key_prefix=sort_key_prefix
+            token, 
+            item_type=item_type, 
+            sort_key_prefix=sort_key_prefix,
+            additional_attributes=additional_attributes
         )
         return self._dynamodb_client.put_item(token_item)
         
