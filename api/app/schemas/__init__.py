@@ -12,3 +12,4 @@ from app.schemas.notification import NotificationSchema
 from app.schemas.message import PrivateChatMessageSchema, GroupChatMessageSchema
 from app.schemas.private_chat import PrivateChatSchema
 from app.schemas.group_chat import GroupChatSchema
+from app.schemas.role import RoleSchema
