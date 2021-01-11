@@ -8,18 +8,18 @@ from app.models import (
     Role,
     RoleName,
     RolePermission,
-    CommunityPermission,
     Location,
     Image,
     Community,
-    CommunityTopic
+    CommunityTopic,
 )
 from app.models.image import (
-    default_community_avatar, 
+    default_community_avatar,
     default_community_cover_photo,
-    default_user_avatar, 
-    default_user_cover_photo
+    default_user_avatar,
+    default_user_cover_photo,
 )
+from app.models.role import regular_user_role
 
 
 class UserFactory:
@@ -30,11 +30,7 @@ class UserFactory:
         """Return a new user model."""
         user_data_copy = deepcopy(user_data)
         user_data_copy["id"] = uuid4().hex
-        permissions = {
-            perm for perm in RolePermission if perm != RolePermission.BAN_USERS
-        }
-        role = Role(RoleName.REGULAR_USER, permissions)
-        user_data_copy["role"] = role
+        user_data_copy["role"] = regular_user_role
         user_data_copy["location"] = Location(**user_data_copy.pop("location"))
         password = user_data_copy.pop("password")
         user = User(
@@ -49,13 +45,14 @@ class UserFactory:
 class CommunityFactory:
     """Class to create community objects."""
 
-
     @staticmethod
     def create_community(community_data):
         """Return a new Community model."""
         community_data_copy = deepcopy(community_data)
         community_data_copy["id"] = uuid4().hex
-        community_data_copy["location"] = Location(**community_data_copy.pop("location"))
+        community_data_copy["location"] = Location(
+            **community_data_copy.pop("location")
+        )
         community = Community(
             **community_data_copy,
             avatar=default_community_avatar,
