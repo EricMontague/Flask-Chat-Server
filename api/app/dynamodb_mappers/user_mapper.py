@@ -10,7 +10,6 @@ from app.dynamodb_mappers.common_mappers import ImageMapper, LocationMapper
 from app.models import User, Username, UserEmail, Role, RoleName, RolePermission
 
 
-
 class RoleMapper(ModelMapper):
     """Class to serialize and deserialize role models to and from
     DynamoDB items.
@@ -44,6 +43,7 @@ class UserMapper(ModelMapper):
             "avatar",
             "cover_photo",
             "is_online",
+            "is_banned",
         )
         type_ = ItemType.USER.name
         partition_key_attribute = "_id"
