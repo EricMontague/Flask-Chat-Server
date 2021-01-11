@@ -6,6 +6,15 @@ from app.models.user import User
 from app.models.image import Image, ImageType
 from app.models.location import Location
 from app.models.community import CommunityTopic
+from app.models.role import RoleName, RolePermission
+
+
+def update_user_role(updated_user, role_attributes):
+    updated_user.role.name = role_attributes.get("name", updated_user.role.name)
+    if role_attributes.get("permissions"):
+        updated_user.reset_permissions()
+        for permission in role_attributes["permissions"]:
+            updated_user.add_permission(permission)
 
 
 def update_user_model(old_user, updated_user_data):
@@ -16,6 +25,8 @@ def update_user_model(old_user, updated_user_data):
             updated_user.location.state = updated_user_data["location"]["state"]
             updated_user.location.city = updated_user_data["location"]["city"]
             updated_user.location.country = updated_user_data["location"]["country"]
+        elif attribute == "role":
+            update_user_role(updated_user, updated_user_data["role"])
         else:
             setattr(updated_user, attribute, updated_user_data[attribute])
     return updated_user
