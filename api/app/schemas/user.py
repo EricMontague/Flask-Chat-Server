@@ -53,6 +53,6 @@ class UserSchema(ma.Schema):
         serialized data.
         """
         if hasattr(original_model, "role"):
-            data["is_admin"] = original_model.role.name.name == "ADMIN"
+            data["is_admin"] = original_model.is_admin()
         return data
 
