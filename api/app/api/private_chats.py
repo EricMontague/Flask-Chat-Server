@@ -9,10 +9,12 @@ from app.api import api
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from app.schemas import UrlParamsSchema, PrivateChatMessageSchema
-from app.helpers import handle_request, handle_response
+from app.helpers import handle_request, handle_response, jwt_required
+from app.models import TokenType
 
 
 @api.route("/private_chats/<private_chat_id>/messages")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(PrivateChatMessageSchema(many=True))
 def get_private_chat_messages(url_params, private_chat_id):
@@ -31,6 +33,7 @@ def get_private_chat_messages(url_params, private_chat_id):
 
 
 @api.route("/private_chats/<private_chat_id>/messages/<message_id>")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(PrivateChatMessageSchema())
 def get_private_chat_message(private_chat_id, message_id):
     """Return a private chat message resource."""
