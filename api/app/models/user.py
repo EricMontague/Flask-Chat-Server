@@ -3,6 +3,7 @@
 
 import jwt
 from app.models.token import Token, TokenType
+from app.models.role import PermissionsError, RoleName
 from app import bcrypt
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -25,6 +26,7 @@ class User:
         avatar=None,
         cover_photo=None,
         is_online=True,
+        is_banned=False,
     ):
         self._id = id
         self.username = username
@@ -39,6 +41,7 @@ class User:
         self.cover_photo = cover_photo
         self.role = role
         self.is_online = is_online
+        self.is_banned = is_banned
 
     @property
     def id(self):
@@ -73,14 +76,34 @@ class User:
         self._last_seen_at = datetime.now()
         self.is_online = True
 
-    # TODO - Need to decide whether I need a different method for community
-    # specific permissions
-    def has_permissions(self, permissions):
-        """Return True if the user has the given permissions,
+    def has_permission(self, permission):
+        """Return True if the user has the given permission,
         otherwise return False. Permissions are determined by the
         role that the user has.
         """
-        return self.role.has_permissions(permissions)
+        if self.is_banned:
+            return False
+        return self.role.has_permissions(permission)
+
+    def add_permission(self, permission):
+        """Grant the given permission to the user"""
+        if self.is_banned:
+            raise PermissionsError("Cannot change the permissions of a banned user")
+        self.role.add_permission(permission)
+
+    def remove_permission(self, permission):
+        """Remove the given permission from the user."""
+        if self.is_banned:
+            raise PermissionsError("Cannot change the permissions of a banned user")
+        self.role.remove_permission(permission)
+
+    def reset_permissions(self):
+        """Remove all of a user's permissions."""
+        self.role.reset_permissions()
+
+    def is_admin(self):
+        """Return True if the user has admin priveleges, else return False."""
+        return self.role.name == RoleName.ADMIN
 
     @classmethod
     def encode_token(self, claims, secret, expires_in):
@@ -95,11 +118,11 @@ class User:
         claims.update({"iat": int(utcnow.timestamp())})
         encoded_token = jwt.encode(claims, secret, algorithm="HS256")
         return Token(
-            claims["user_id"], 
-            encoded_token, 
+            claims["user_id"],
+            encoded_token,
             claims["exp"],
             claims["iat"],
-            TokenType[claims["token_type"]]
+            TokenType[claims["token_type"]],
         )
 
     @classmethod
@@ -115,7 +138,7 @@ class User:
             encoded_token,
             decoded_token["exp"],
             decoded_token["iat"],
-            TokenType[decoded_token["token_type"]]
+            TokenType[decoded_token["token_type"]],
         )
 
     def __repr__(self):
