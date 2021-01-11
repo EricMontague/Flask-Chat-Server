@@ -2,7 +2,7 @@
 
 
 from http import HTTPStatus
-from flask import current_app, url_for, request
+from flask import current_app, url_for, request, g
 from app.api import api
 from app.helpers import (
     handle_request,
@@ -19,6 +19,7 @@ from app.models.factories import UserFactory
 from app.models import ImageType, TokenType
 
 
+
 @api.route("/users")
 @jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
@@ -32,6 +33,7 @@ def get_users(url_params):
 
 
 @api.route("/users/<user_id>/communities")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(CommunitySchema(many=True))
 def get_user_communities(url_params, user_id):
@@ -50,6 +52,7 @@ def get_user_communities(url_params, user_id):
 
 
 @api.route("/users/<user_id>")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(UserSchema())
 def get_user(user_id):
     """Return a single user by id."""
@@ -59,7 +62,30 @@ def get_user(user_id):
     return user, HTTPStatus.OK
 
 
+@api.route("/users/username/<username>")
+@jwt_required(TokenType.ACCESS_TOKEN)
+@handle_response(UserSchema())
+def get_user_by_username(username):
+    """Return a single user by username."""
+    user = dynamodb_repository.get_user_by_username(username)
+    if not user:
+        return {"error": "User not found"}, HTTPStatus.NOT_FOUND
+    return user, HTTPStatus.OK
+
+
+@api.route("/users/email/<email>")
+@jwt_required(TokenType.ACCESS_TOKEN)
+@handle_response(UserSchema())
+def get_user_by_email(email):
+    """Return a single user by email."""
+    user = dynamodb_repository.get_user_by_email(email)
+    if not user:
+        return {"error": "User not found"}, HTTPStatus.NOT_FOUND
+    return user, HTTPStatus.OK
+
+
 @api.route("/users/<user_id>", methods=["PUT"])
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UserSchema(partial=["password"]))
 @handle_response(None)
 def update_user(user_data, user_id):
@@ -72,6 +98,7 @@ def update_user(user_data, user_id):
 
 
 @api.route("/users/<user_id>", methods=["DELETE"])
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(None)
 def delete_user(user_id):
     """Delete a user resource."""
@@ -87,6 +114,7 @@ def delete_user(user_id):
 
 
 @api.route("/users/<user_id>/cover_photo", methods=["PUT"])
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_file_request("cover_photo")
 @handle_response(None)
 def upload_user_cover_photo(file, user_id):
@@ -100,6 +128,7 @@ def upload_user_cover_photo(file, user_id):
 
 
 @api.route("/users/<user_id>/profile_photo", methods=["PUT"])
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_file_request("profile_photo")
 @handle_response(None)
 def upload_user_profile_photo(file, user_id):
@@ -115,6 +144,7 @@ def upload_user_profile_photo(file, user_id):
 
 
 @api.route("/users/<user_id>/notifications")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(NotificationSchema(many=True))
 def get_user_notifications(url_params, user_id):
@@ -134,6 +164,7 @@ def get_user_notifications(url_params, user_id):
 
 # Socket ?
 @api.route("/users/<user_id>/notifications/<notification_id>", methods=["PATCH"])
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(NotificationSchema())
 @handle_response(None)
 def update_user_notification(notification_data, user_id, notification_id):
@@ -160,6 +191,7 @@ def update_user_notification(notification_data, user_id, notification_id):
 
 
 @api.route("/users/<user_id>/private_chats")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(PrivateChatSchema(many=True))
 def get_user_private_chats(url_params, user_id):
@@ -178,9 +210,11 @@ def get_user_private_chats(url_params, user_id):
 # When authentication is added, the current user will have already been fetched from DynamoDB
 # and is guaranteed to exist in the database
 @api.route("/users/<user_id>/private_chats/<other_user_id>", methods=["PUT"])
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(UserSchema())
 def create_user_private_chat(user_id, other_user_id):
     """Create a new private chat between two users."""
+    # user_id = g.current_user.id
     other_user = dynamodb_repository.get_user(other_user_id)
     if not other_user:
         return {"error": "Other user could not be found"}, HTTPStatus.NOT_FOUND
@@ -193,6 +227,7 @@ def create_user_private_chat(user_id, other_user_id):
     
 
 @api.route("/users/<user_id>/group_chats")
+@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(GroupChatSchema(many=True))
 def get_user_group_chats(url_params, user_id):
