@@ -18,6 +18,10 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
+    def get_user_by_username(self, username):
+        pass
+
+    @abstractmethod
     def add_user(self, user):
         pass
 

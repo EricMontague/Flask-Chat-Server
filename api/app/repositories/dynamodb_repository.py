@@ -69,12 +69,19 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if not user_item:
             return None
         return self._user_mapper.deserialize_to_model(user_item)
+
+    def get_user_by_username(self, username):
+        """Return a user from DynamoDB by username."""
+        return self._get_user_by(username, self._username_mapper, PrimaryKeyPrefix.USERNAME)
     
     def get_user_by_email(self, email):
         """Return a user from DynamoDB by email."""
+        return self._get_user_by(email, self._user_email_mapper, PrimaryKeyPrefix.USER_EMAIL)
+    
+    def _get_user_by(self, attribute, mapper, sk_prefix):
         limit = 25
         cursor = {}
-        primary_key = self._user_email_mapper.key(email, email)
+        primary_key = mapper.key(attribute, attribute)
         query_results = self._dynamodb_client.query(
             limit,
             cursor,
@@ -82,7 +89,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 "pk_name": "PK",
                 "pk_value": primary_key["PK"],
                 "sk_name": "SK",
-                "sk_value": {"S": PrimaryKeyPrefix.USER_EMAIL}
+                "sk_value": {"S": sk_prefix}
             }
         )
         if not query_results["Items"]:
