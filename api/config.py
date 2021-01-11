@@ -18,6 +18,7 @@ class BaseConfig:
     MAX_GROUP_CHAT_CAPACITY = 10
     ACCESS_TOKEN_LIFESPAN = 60 * 60 # 1 hour
     REFRESH_TOKEN_LIFESPAN = 60 * 60 * 24 * 7 # 7 days
+    ADMIN_EMAIL = "brad@gmail.com"
 
 
 class DevelopmentConfig(BaseConfig):
