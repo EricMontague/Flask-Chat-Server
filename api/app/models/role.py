@@ -11,23 +11,32 @@ class Role:
         self.name = name
         self._permissions = permissions
 
-    def has_permissions(self, permissions):
+    def has_permission(self, permission):
         """Return True if this role grants a user
-        the given permissions, else return False.
+        the given permission, else return False.
         """
-        return permissions in self._permissions
+        return permission in self._permissions
 
-    def add_permissions(self, permissions):
-        """Add the given permissions to the set of
+    def add_permission(self, permission):
+        """Add the given permission to the set of
         permissions that the role has.
         """
-        self._permissions.add(permissions)
+        self._permissions.add(permission)
 
-    def remove_permissions(self, permissions):
-        """Remove the given permissions from the set
+    def remove_permission(self, permission):
+        """Remove the given permission from the set
         of permissions that the role has.
         """
-        self._permissions.remove(permissions)
+        self._permissions.remove(permission)
+
+    def reset_permissions(self):
+        """Remove all permissions."""
+        self._permissions = set()
+
+    @property
+    def permissions(self):
+        """Return a list of the user's permissions."""
+        return list(self._permissions)
 
     def __repr__(self):
         """Return a representation of a role model."""
@@ -41,12 +50,9 @@ class RolePermission(Enum):
 
     READ_CHAT_MESSAGE = 1
     WRITE_CHAT_MESSAGE = 2
-    EDIT_CHAT_MESSAGE = 3
-    DELETE_CHAT_MESSAGE = 4
-    CREATE_CHAT = 5
-    EDIT_CHAT = 6
-    DELETE_CHAT = 7
-    BAN_USERS = 8
+    CREATE_CHAT = 3
+    CREATE_COMMUNITY = 4
+    BAN_USER = 5
 
 
 class RoleName(Enum):
@@ -56,3 +62,16 @@ class RoleName(Enum):
     MODERATOR = 2
     ADMIN = 3
 
+
+regular_user_role = Role(
+    RoleName.REGULAR_USER, 
+    {perm for perm in RolePermission if perm != RolePermission.BAN_USER}
+)
+admin_user_role =  Role(
+    RoleName.ADMIN, 
+    {perm for perm in RolePermission}
+)
+
+
+class PermissionsError(Exception):
+    """Raises when an error occurs involving a user's permissions."""
