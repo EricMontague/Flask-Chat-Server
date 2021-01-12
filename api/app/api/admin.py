@@ -13,6 +13,7 @@ from app.schemas import RoleSchema
 
 @api.route("/users/<user_id>/role")
 @jwt_required(TokenType.ACCESS_TOKEN)
+@admin_required
 @handle_response(RoleSchema())
 def get_user_role(user_id):
     """Return a user's role and permissions"""
@@ -34,7 +35,7 @@ def update_user_permissions(role_data, user_id):
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
     updated_user_data = {
         "role": {
-            "permissions": role_data.get("permissions", [])
+            "permissions": role_data.get("_permissions", [])
         }
     }
     
