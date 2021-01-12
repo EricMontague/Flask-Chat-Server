@@ -50,9 +50,12 @@ class RolePermission(Enum):
 
     READ_CHAT_MESSAGE = 1
     WRITE_CHAT_MESSAGE = 2
-    CREATE_CHAT = 3
-    CREATE_COMMUNITY = 4
-    BAN_USER = 5
+    CREATE_GROUP_CHAT = 3
+    JOIN_GROUP_CHAT = 4
+    CREATE_PRIVATE_CHAT = 5
+    CREATE_COMMUNITY = 6
+    JOIN_COMMUNITY = 7
+    BAN_USER = 8
 
 
 class RoleName(Enum):
