@@ -165,7 +165,9 @@ def permission_required(permission):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not g.current_user.has_permission(permission):
-                return {"error": "Insufficient permissions"}, HTTPStatus.FORBIDDEN
+                return {
+                "error": "You do not have the required permissions to access this endpoint"
+            }, HTTPStatus.FORBIDDEN
             return func(*args, **kwargs)
 
         return wrapper
@@ -180,7 +182,9 @@ def admin_required(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if not g.current_user.is_admin():
-            return {"error": "Insufficient permissions"}, HTTPStatus.FORBIDDEN
+            return {
+                "error": "You do not have the required permissions to access this endpoint"
+            }, HTTPStatus.FORBIDDEN
         return func(*args, **kwargs)
 
     return wrapper
