@@ -70,6 +70,10 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
+    def get_community_by_name(self, community_name):
+        pass
+
+    @abstractmethod
     def add_community(self, community, founder_id):
         pass
 

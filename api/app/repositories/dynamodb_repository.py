@@ -393,6 +393,27 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             return None
         return self._community_mapper.deserialize_to_model(community_item)
 
+    def get_community_by_name(self, community_name):
+        """Return a community from DynamoDB by name."""
+        limit = 25
+        cursor = {}
+        primary_key = self._community_name_mapper.key(community_name, community_name)
+        
+        query_results = self._dynamodb_client.query(
+            limit,
+            cursor,
+            {   
+                "pk_name": "PK",
+                "pk_value": primary_key["PK"],
+                "sk_name": "SK",
+                "sk_value": {"S": PrimaryKeyPrefix.COMMUNITY_NAME}
+            }
+        )
+        
+        if not query_results["Items"]:
+            return None
+        return self.get_community(query_results["Items"][0]["community_id"]["S"])
+
     def add_community(self, community, founder_id):
         """Add a new community to DynamoDB."""
         community_name = CommunityName(community.id, community.name)
@@ -424,6 +445,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
                 community_membership, additional_attributes=membership_additional_attributes
             ),
         }
+        
         response = self._dynamodb_client.create_community(items)
         if "error" in response:
             raise UniqueConstraintException(response["error"])
