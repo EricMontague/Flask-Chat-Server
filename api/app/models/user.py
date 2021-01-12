@@ -83,7 +83,7 @@ class User:
         """
         if self.is_banned:
             return False
-        return self.role.has_permissions(permission)
+        return self.role.has_permission(permission)
 
     def add_permission(self, permission):
         """Grant the given permission to the user"""
