@@ -2,7 +2,7 @@
 
 
 from http import HTTPStatus
-from flask import current_app, url_for, request, g
+from flask import current_app, url_for, request, g, render_template
 from app.api import api
 from app.helpers import (
     handle_request,
@@ -10,14 +10,26 @@ from app.helpers import (
     handle_file_request,
     upload_to_cdn,
     process_image,
-    jwt_required
+    jwt_required,
+    permission_required
 )
-from app.schemas import UserSchema, UrlParamsSchema, CommunitySchema, NotificationSchema, GroupChatSchema, PrivateChatSchema
+from app.schemas import (
+    UserSchema, 
+    UrlParamsSchema, 
+    CommunitySchema, 
+    NotificationSchema, 
+    GroupChatSchema, 
+    PrivateChatSchema
+)
 from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException, UniqueConstraintException
 from app.models.factories import UserFactory
-from app.models import ImageType, TokenType
+from app.models import ImageType, TokenType, RolePermission
 
+
+@api.route("/testing_chat")
+def testing_chat():
+    return render_template("chat.html")
 
 
 @api.route("/users")
@@ -211,6 +223,7 @@ def get_user_private_chats(url_params, user_id):
 # and is guaranteed to exist in the database
 @api.route("/users/<user_id>/private_chats/<other_user_id>", methods=["PUT"])
 @jwt_required(TokenType.ACCESS_TOKEN)
+@permission_required(RolePermission.CREATE_PRIVATE_CHAT)
 @handle_response(UserSchema())
 def create_user_private_chat(user_id, other_user_id):
     """Create a new private chat between two users."""
