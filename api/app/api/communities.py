@@ -3,14 +3,15 @@
 
 from http import HTTPStatus
 from uuid import uuid4
-from flask import url_for, current_app
+from flask import url_for, current_app, g
 from app.api import api
 from app.helpers import (
     handle_request,
     handle_response,
     handle_file_request,
     process_image,
-    jwt_required
+    jwt_required,
+    permission_required
 )
 from app.schemas import (
     CommunitySchema,
@@ -20,7 +21,7 @@ from app.schemas import (
     GroupChatSchema
 )
 from app.models.factories import CommunityFactory
-from app.models import ImageType, GroupChat, TokenType
+from app.models import ImageType, GroupChat, TokenType, RolePermission
 from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from werkzeug.utils import secure_filename
@@ -55,15 +56,28 @@ def get_community(community_id):
     return community, HTTPStatus.OK
 
 
+@api.route("/communities/name/<community_name>")
+@jwt_required(TokenType.ACCESS_TOKEN)
+@handle_response(CommunitySchema())
+def get_community_by_name(community_name):
+    """Get a community resource by name."""
+    print(community_name)
+    community = dynamodb_repository.get_community_by_name(community_name)
+    if not community:
+        return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
+    return community, HTTPStatus.OK
+
+
 @api.route("/communities", methods=["POST"])
 @jwt_required(TokenType.ACCESS_TOKEN)
+@permission_required(RolePermission.CREATE_COMMUNITY)
 @handle_request(CommunitySchema())
 @handle_response(CommunitySchema())
 def create_community(community_data):
     """Create a new community resource."""
     community = CommunityFactory.create_community(community_data)
     try:
-        dynamodb_repository.add_community(community, "RandomUserIdForNow")
+        dynamodb_repository.add_community(community, g.current_user.id)
     except DatabaseException as err:
         return {"error": str(err)}, HTTPStatus.BAD_REQUEST
     headers = {"Location": url_for("api.get_community", community_id=community.id)}
@@ -102,6 +116,7 @@ def get_community_members(url_params, community_id):
 
 @api.route("/communities/<community_id>/members/<user_id>", methods=["PUT"])
 @jwt_required(TokenType.ACCESS_TOKEN)
+@permission_required(RolePermission.JOIN_COMMUNITY)
 @handle_response(None)
 def join_community(community_id, user_id):
     """Add a new member to a community."""
@@ -174,6 +189,7 @@ def get_community_group_chats(url_params, community_id):
 
 @api.route("/communities/<community_id>/group_chats", methods=["POST"])
 @jwt_required(TokenType.ACCESS_TOKEN)
+@permission_required(RolePermission.CREATE_GROUP_CHAT)
 @handle_request(GroupChatSchema())
 @handle_response(GroupChatSchema())
 def create_community_group_chat(group_chat_data, community_id):
