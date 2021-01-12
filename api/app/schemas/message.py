@@ -21,8 +21,7 @@ class MessageSchema(ma.Schema):
     _created_at = ma.DateTime(dump_only=True, data_key="timestamp")
     _reactions = ma.List(
         EnumField(Reaction),
-        dump_only=True,
-        validate=validate.OneOf([reaction.name for reaction in Reaction]),
+        dump_only=True
     )
     _read = ma.Boolean(required=True)
     _editted = ma.Boolean(dump_only=True)
