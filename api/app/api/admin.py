@@ -5,14 +5,14 @@ from http import HTTPStatus
 from flask import request
 from app.api import api
 from app.repositories import dynamodb_repository
-from app.helpers import jwt_required, admin_required, handle_request, handle_response
-from app.models import TokenType, RolePermission
+from app.decorators.request_response import handle_request, handle_response
+from app.decorators.auth import admin_required
+from app.models import RolePermission
 from app.models.role import PermissionsError
 from app.schemas import RoleSchema
 
 
 @api.route("/users/<user_id>/role")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @admin_required
 @handle_response(RoleSchema())
 def get_user_role(user_id):
@@ -24,10 +24,8 @@ def get_user_role(user_id):
 
 
 @api.route("/users/<user_id>/permissions", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @admin_required
 @handle_request(RoleSchema())
-@handle_response(None)
 def update_user_permissions(role_data, user_id):
     """Update permissions for a user."""
     user = dynamodb_repository.get_user(user_id)
@@ -47,7 +45,6 @@ def update_user_permissions(role_data, user_id):
     
 
 @api.route("/users/<user_id>/ban", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @admin_required
 def ban_user(user_id):
     """Ban a user from accessing the api."""
@@ -61,7 +58,6 @@ def ban_user(user_id):
 
 
 @api.route("/users/<user_id>/ban", methods=["DELETE"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @admin_required
 def unban_user(user_id):
     """Unban a user from accessing the api."""

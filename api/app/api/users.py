@@ -2,17 +2,10 @@
 
 
 from http import HTTPStatus
-from flask import current_app, url_for, request, g, render_template
+from flask import current_app, url_for, request, g
 from app.api import api
-from app.helpers import (
-    handle_request,
-    handle_response,
-    handle_file_request,
-    upload_to_cdn,
-    process_image,
-    jwt_required,
-    permission_required
-)
+from app.decorators.request_response import handle_request, handle_response, handle_file_request
+from app.decorators.auth import permission_required
 from app.schemas import (
     UserSchema, 
     UrlParamsSchema, 
@@ -21,19 +14,14 @@ from app.schemas import (
     GroupChatSchema, 
     PrivateChatSchema
 )
+from app.api.helpers import process_image, upload_to_cdn
 from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException, UniqueConstraintException
 from app.models.factories import UserFactory
-from app.models import ImageType, TokenType, RolePermission
-
-
-@api.route("/testing_chat")
-def testing_chat():
-    return render_template("chat.html")
+from app.models import ImageType, RolePermission
 
 
 @api.route("/users")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
 def get_users(url_params):
@@ -45,7 +33,6 @@ def get_users(url_params):
 
 
 @api.route("/users/<user_id>/communities")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(CommunitySchema(many=True))
 def get_user_communities(url_params, user_id):
@@ -64,7 +51,6 @@ def get_user_communities(url_params, user_id):
 
 
 @api.route("/users/<user_id>")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(UserSchema())
 def get_user(user_id):
     """Return a single user by id."""
@@ -75,7 +61,6 @@ def get_user(user_id):
 
 
 @api.route("/users/username/<username>")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(UserSchema())
 def get_user_by_username(username):
     """Return a single user by username."""
@@ -86,7 +71,6 @@ def get_user_by_username(username):
 
 
 @api.route("/users/email/<email>")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(UserSchema())
 def get_user_by_email(email):
     """Return a single user by email."""
@@ -97,9 +81,7 @@ def get_user_by_email(email):
 
 
 @api.route("/users/<user_id>", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UserSchema(partial=["password"]))
-@handle_response(None)
 def update_user(user_data, user_id):
     """Replace a user resource."""
     user = dynamodb_repository.get_user(user_id)
@@ -110,8 +92,6 @@ def update_user(user_data, user_id):
 
 
 @api.route("/users/<user_id>", methods=["DELETE"])
-@jwt_required(TokenType.ACCESS_TOKEN)
-@handle_response(None)
 def delete_user(user_id):
     """Delete a user resource."""
     user = dynamodb_repository.get_user(user_id)
@@ -126,9 +106,7 @@ def delete_user(user_id):
 
 
 @api.route("/users/<user_id>/cover_photo", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_file_request("cover_photo")
-@handle_response(None)
 def upload_user_cover_photo(file, user_id):
     """Add or replace the user's cover photo."""
     user = dynamodb_repository.get_user(user_id)
@@ -140,9 +118,7 @@ def upload_user_cover_photo(file, user_id):
 
 
 @api.route("/users/<user_id>/profile_photo", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_file_request("profile_photo")
-@handle_response(None)
 def upload_user_profile_photo(file, user_id):
     """Add or a replace the user's profile photo."""
     user = dynamodb_repository.get_user(user_id)
@@ -156,7 +132,6 @@ def upload_user_profile_photo(file, user_id):
 
 
 @api.route("/users/<user_id>/notifications")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(NotificationSchema(many=True))
 def get_user_notifications(url_params, user_id):
@@ -176,9 +151,7 @@ def get_user_notifications(url_params, user_id):
 
 # Socket ?
 @api.route("/users/<user_id>/notifications/<notification_id>", methods=["PATCH"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(NotificationSchema())
-@handle_response(None)
 def update_user_notification(notification_data, user_id, notification_id):
     """Update a user's notification. The two attributes to updated are whether the
     notification has been read or whether it has been seen.
@@ -203,7 +176,6 @@ def update_user_notification(notification_data, user_id, notification_id):
 
 
 @api.route("/users/<user_id>/private_chats")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(PrivateChatSchema(many=True))
 def get_user_private_chats(url_params, user_id):
@@ -222,7 +194,6 @@ def get_user_private_chats(url_params, user_id):
 # When authentication is added, the current user will have already been fetched from DynamoDB
 # and is guaranteed to exist in the database
 @api.route("/users/<user_id>/private_chats/<other_user_id>", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @permission_required(RolePermission.CREATE_PRIVATE_CHAT)
 @handle_response(UserSchema())
 def create_user_private_chat(user_id, other_user_id):
@@ -240,7 +211,6 @@ def create_user_private_chat(user_id, other_user_id):
     
 
 @api.route("/users/<user_id>/group_chats")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(GroupChatSchema(many=True))
 def get_user_group_chats(url_params, user_id):

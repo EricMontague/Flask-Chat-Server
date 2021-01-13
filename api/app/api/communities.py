@@ -5,14 +5,9 @@ from http import HTTPStatus
 from uuid import uuid4
 from flask import url_for, current_app, g
 from app.api import api
-from app.helpers import (
-    handle_request,
-    handle_response,
-    handle_file_request,
-    process_image,
-    jwt_required,
-    permission_required
-)
+from app.decorators.request_response import handle_request, handle_response, handle_file_request
+from app.decorators.auth import permission_required 
+from app.api.helpers import process_image
 from app.schemas import (
     CommunitySchema,
     UrlParamsSchema,
@@ -21,14 +16,13 @@ from app.schemas import (
     GroupChatSchema
 )
 from app.models.factories import CommunityFactory
-from app.models import ImageType, GroupChat, TokenType, RolePermission
+from app.models import ImageType, GroupChat, RolePermission
 from app.repositories import dynamodb_repository, s3_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from werkzeug.utils import secure_filename
 
 
 @api.route("/communities")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(CommunityUrlParamsSchema())
 @handle_response(CommunitySchema(many=True))
 def get_communities(url_params):
@@ -46,7 +40,6 @@ def get_communities(url_params):
 
 
 @api.route("/communities/<community_id>")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(CommunitySchema())
 def get_community(community_id):
     """Get a community resource."""
@@ -57,7 +50,6 @@ def get_community(community_id):
 
 
 @api.route("/communities/name/<community_name>")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(CommunitySchema())
 def get_community_by_name(community_name):
     """Get a community resource by name."""
@@ -69,7 +61,6 @@ def get_community_by_name(community_name):
 
 
 @api.route("/communities", methods=["POST"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @permission_required(RolePermission.CREATE_COMMUNITY)
 @handle_request(CommunitySchema())
 @handle_response(CommunitySchema())
@@ -85,9 +76,7 @@ def create_community(community_data):
 
 
 @api.route("/communities/<community_id>", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(CommunitySchema())
-@handle_response(None)
 def update_community(community_data, community_id):
     """Replace a community resource."""
     community = dynamodb_repository.get_community(community_id)
@@ -98,7 +87,6 @@ def update_community(community_data, community_id):
 
 
 @api.route("/communities/<community_id>/members")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
 def get_community_members(url_params, community_id):
@@ -115,9 +103,7 @@ def get_community_members(url_params, community_id):
 
 
 @api.route("/communities/<community_id>/members/<user_id>", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @permission_required(RolePermission.JOIN_COMMUNITY)
-@handle_response(None)
 def join_community(community_id, user_id):
     """Add a new member to a community."""
     try:
@@ -130,8 +116,6 @@ def join_community(community_id, user_id):
 
 
 @api.route("/communities/<community_id>/members/<user_id>", methods=["DELETE"])
-@jwt_required(TokenType.ACCESS_TOKEN)
-@handle_response(None)
 def leave_community(community_id, user_id):
     try:
         dynamodb_repository.remove_community_member(community_id, user_id)
@@ -143,9 +127,7 @@ def leave_community(community_id, user_id):
 
 
 @api.route("/communities/<community_id>/cover_photo", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_file_request("cover_photo")
-@handle_response(None)
 def upload_community_cover_photo(file, community_id):
     """Add or replace the community's cover photo."""
     community = dynamodb_repository.get_community(community_id)
@@ -157,9 +139,7 @@ def upload_community_cover_photo(file, community_id):
 
 
 @api.route("/communities/<community_id>/profile_photo", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_file_request("profile_photo")
-@handle_response(None)
 def upload_community_profile_photo(file, community_id):
     """Add or a replace the community's profile photo."""
     community = dynamodb_repository.get_community(community_id)
@@ -171,7 +151,6 @@ def upload_community_profile_photo(file, community_id):
 
 
 @api.route("/communities/<community_id>/group_chats")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(GroupChatSchema(many=True))
 def get_community_group_chats(url_params, community_id):
@@ -188,7 +167,6 @@ def get_community_group_chats(url_params, community_id):
 
 
 @api.route("/communities/<community_id>/group_chats", methods=["POST"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @permission_required(RolePermission.CREATE_GROUP_CHAT)
 @handle_request(GroupChatSchema())
 @handle_response(GroupChatSchema())
@@ -208,7 +186,6 @@ def create_community_group_chat(group_chat_data, community_id):
 
 
 @api.route("/communities/<community_id>/group_chats/<group_chat_id>")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(GroupChatSchema())
 def get_community_group_chat(community_id, group_chat_id):
     """Return a group chat resource."""
@@ -219,9 +196,7 @@ def get_community_group_chat(community_id, group_chat_id):
 
 
 @api.route("/communities/<community_id>/group_chats/<group_chat_id>", methods=["PUT"])
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(GroupChatSchema())
-@handle_response(None)
 def update_community_group_chat(group_chat_data, community_id, group_chat_id):
     """Update a group chat resource."""
     group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
@@ -232,7 +207,6 @@ def update_community_group_chat(group_chat_data, community_id, group_chat_id):
 
 
 @api.route("communities/<community_id>/group_chats/<group_chat_id>/members")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
 def get_community_group_chat_members(url_params,community_id, group_chat_id):
