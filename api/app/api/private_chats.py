@@ -9,12 +9,10 @@ from app.api import api
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from app.schemas import UrlParamsSchema, PrivateChatMessageSchema
-from app.helpers import handle_request, handle_response, jwt_required
-from app.models import TokenType
+from app.decorators.request_response import handle_request, handle_response
 
 
 @api.route("/private_chats/<private_chat_id>/messages")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_request(UrlParamsSchema())
 @handle_response(PrivateChatMessageSchema(many=True))
 def get_private_chat_messages(url_params, private_chat_id):
@@ -33,7 +31,6 @@ def get_private_chat_messages(url_params, private_chat_id):
 
 
 @api.route("/private_chats/<private_chat_id>/messages/<message_id>")
-@jwt_required(TokenType.ACCESS_TOKEN)
 @handle_response(PrivateChatMessageSchema())
 def get_private_chat_message(private_chat_id, message_id):
     """Return a private chat message resource."""
@@ -45,29 +42,3 @@ def get_private_chat_message(private_chat_id, message_id):
     return chat_message, HTTPStatus.OK
 
 
-# Socket - Creates a notification too
-@api.route("/private_chats/<private_chat_id>/messages", methods=["POST"])
-def create_private_chat_message(private_chat_id):
-    pass
-
-
-# Socket
-# A message that has been marked as read should not be able to be marked as unread
-@api.route("/private_chats/<private_chat_id>/messages/<message_id>", methods=["PATCH"])
-def update_private_chat_message(private_chat_id, message_id):
-    pass
-
-
-# Socket
-@api.route("/private_chats/<private_chat_id>/messages/<message_id>", methods=["DELETE"])
-def delete_private_chat_message(private_chat_id, message_id):
-    pass
-
-
-# Socket
-# A user shouldn't have more than one reaction per message
-@api.route(
-    "/private_chats/<private_chat_id>/messages/<message_id>/reactions", methods=["POST"]
-)
-def add_reaction_to_private_chat_message(private_chat_id, message_id):
-    pass
