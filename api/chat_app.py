@@ -26,9 +26,11 @@ from app.models import (
 )
 from app.clients import dynamodb_client
 from app.repositories import dynamodb_repository, s3_repository
-from flask import jsonify
+from app.extensions import socketio
+from dotenv import load_dotenv
 
 
+load_dotenv()
 app = create_app(os.environ.get("FLASK_CONFIG", "development"))
 
 
@@ -93,5 +95,4 @@ def make_shell_context():
 
 
 if __name__ == "__main__":
-    from app.extensions import socketio
     socketio.run(app)
