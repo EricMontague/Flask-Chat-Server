@@ -7,6 +7,7 @@ from flask import Flask
 from app.extensions import bcrypt, ma, socketio
 from app.api import api as api_blueprint
 from app.auth import auth as auth_blueprint
+from app.sockets import sockets as sockets_blueprint
 from config import CONFIG_MAPPER
 
 
@@ -32,3 +33,4 @@ def register_blueprints(app):
     """Register blueprints with the Flask app."""
     app.register_blueprint(api_blueprint, url_prefix="/api/v1")
     app.register_blueprint(auth_blueprint, url_prefix="/auth")
+    app.register_blueprint(sockets_blueprint)
