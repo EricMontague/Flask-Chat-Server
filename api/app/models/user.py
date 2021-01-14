@@ -112,10 +112,10 @@ class User:
             raise ValueError("User Id missing from token claims")
         if "token_type" not in claims:
             raise ValueError("Token type missing from token claims")
-        utcnow = datetime.utcnow()
-        expiration_date = utcnow + timedelta(seconds=expires_in)
+        now = datetime.now()
+        expiration_date = now + timedelta(seconds=expires_in)
         claims.update({"exp": int(expiration_date.timestamp())})
-        claims.update({"iat": int(utcnow.timestamp())})
+        claims.update({"iat": int(now.timestamp())})
         encoded_token = jwt.encode(claims, secret, algorithm="HS256")
         return Token(
             claims["user_id"],
