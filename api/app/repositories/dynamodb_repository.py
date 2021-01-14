@@ -631,6 +631,14 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response["next"] = encode_cursor(query_results["LastEvaluatedKey"] or {})
         return response
 
+    def get_community_membership(self, community_id, user_id):
+        """Return a community membership model instance."""
+        primary_key = self._community_membership_mapper.key(community_id, user_id)
+        item = self._dynamodb_client.get_item(primary_key)
+        if not item:
+            return None
+        return self._community_membership_mapper.deserialize_to_model(item)
+
     def get_user_notifications(self, user_id, limit, **kwargs):
         """Return a collection of the user's notifications."""
         user = self.get_user(user_id)
@@ -885,12 +893,12 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             else:
                 raise DatabaseException(response["error"])
         return True
-
+    
     def remove_group_chat_member(self, group_chat_id, user_id):
         """Remove a GroupChatMember item from DynamoDB."""
         primary_key = self._group_chat_member_mapper.key(group_chat_id, user_id)
         if not self._dynamodb_client.delete_item(primary_key):
-            raise NotFoundException("User or group chat not found")
+            raise NotFoundException("User is not a member of the given group chat")
     
     def get_group_chat_message(self, group_chat_id, message_id):
         """Return an instance of a Message model."""
