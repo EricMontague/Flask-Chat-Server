@@ -3,9 +3,11 @@
 
 import functools
 import base64
+import json
+from json.decoder import JSONDecodeError
 from http import HTTPStatus
 from flask import request, current_app, g
-from flask_socketio import disconnect, emit
+from flask_socketio import disconnect, emit, ConnectionRefusedError
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
 from app.models import User, TokenType
@@ -110,35 +112,42 @@ def jwt_required(token_type):
     return decorator
 
 
+def get_raw_jwt(request):
+    """Return the JWT sent in the query string of a url or
+    in the arguments to a SocketIO event handler.
+    """
+    raw_jwt = request.args.get("token")
+    if raw_jwt:
+        return raw_jwt
+    try:
+        return json.loads(request.event["args"][0].get("token"))
+    except (TypeError, JSONDecodeError):
+        return None
+
+
 def socketio_jwt_required(token_type):
     """Decorator used to protect socketio event handlers that require an authenticated user."""
 
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            raw_jwt = request.args.get("token")
+            raw_jwt = get_raw_jwt(request)
             if not raw_jwt:
-                g.disconnect_reason = "Missing token in query string"
-                disconnect()
+                raise ConnectionRefusedError("Missing token in arguments or query string")
             else:
                 decoded_token = User.decode_token(raw_jwt, current_app.config["SECRET_KEY"])
                 if not decoded_token:
-                    g.disconnect_reason = f"Invalid {token_type.name.replace('_', ' ').lower()}"
-                    disconnect()
+                    raise ConnectionRefusedError(f"Invalid {token_type.name.replace('_', ' ').lower()}")
                 elif decoded_token.token_type != token_type:
-                    g.disconnect_reason = "Incorrect token type provided"
-                    disconnect()
+                    raise ConnectionRefusedError("Incorrect token type provided")
                 elif is_blacklisted(decoded_token, token_type):
-                    g.disconnect_reason = f"Invalid {token_type.name.replace('_', ' ').lower()}"
-                    disconnect()
+                    raise ConnectionRefusedError(f"Invalid {token_type.name.replace('_', ' ').lower()}")
                 else:
                     current_user = dynamodb_repository.get_user(decoded_token.user_id)
                     if not current_user:
-                        g.disconnect_reason = "User not found"
-                        disconnect()
+                        raise ConnectionRefusedError("User not found")
                     elif current_user.is_banned:
-                        g.disconnect_reason = "User is banned"
-                        disconnect()
+                        raise ConnectionRefusedError("User is banned")
                     else:
                         g.current_user = current_user
                         g.decoded_token = decoded_token
