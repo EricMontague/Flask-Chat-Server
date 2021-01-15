@@ -149,7 +149,6 @@ def get_user_notifications(url_params, user_id):
     return results, HTTPStatus.OK
 
 
-# Socket ?
 @api.route("/users/<user_id>/notifications/<notification_id>", methods=["PATCH"])
 @handle_request(NotificationSchema())
 def update_user_notification(notification_data, user_id, notification_id):
