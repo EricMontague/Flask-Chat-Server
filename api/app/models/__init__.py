@@ -10,7 +10,7 @@ from app.models.community import (
     CommunityName
 )
 from app.models.image import Image, ImageType
-from app.models.message import Message, Reaction
+from app.models.message import Message, Reaction, ReactionType
 from app.models.notification import Notification, NotificationType
 from app.models.role import Role, RolePermission, RoleName
 from app.models.user import User, UserEmail, Username
