@@ -10,7 +10,7 @@ from app.extensions import socketio
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
 from app.decorators.auth import socketio_jwt_required
-from app.models import TokenType, Message, Notification, NotificationType
+from app.models import TokenType, Message, Notification, NotificationType, Reaction, ReactionType
 from app.schemas import GroupChatMessageSchema, NotificationSchema
 from marshmallow import ValidationError
 
@@ -20,80 +20,155 @@ def testing_chat():
     return render_template("chat.html")
 
 
-# Socket - Creates a notification too
-# @api.route("/group_chats/<group_chat_id>/messages", methods=["POST"])
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
 def create_group_chat_message(data):
-    message_schema = GroupChatMessageSchema()
+    message_schema = GroupChatMessageSchema(partial=["_id"])
     notification_schema = NotificationSchema()
     try:
         message_data = message_schema.loads(data)
     except ValidationError as err:
         emit("error", json.dumps(err))
     else:
-        community_membership = dynamodb_repository.get_community_membership(message_data["community_id"], g.current_user.id)
-        if not community_membership:
-            emit("error", json.dumps({"error": "User is not a member of this community"}))
+        group_chat = dynamodb_repository.get_group_chat(message_data["community_id"], message_data["_chat_id"])
+        if not group_chat:
+            emit("error", json.dumps({"error": "Group chat not found"}))
         else:
-            group_chat = dynamodb_repository.get_group_chat(message_data["community_id"], message_data["chat_id"])
-            if not group_chat:
-                emit("error", json.dumps({"error": "Group chat not found"}))
+            member = dynamodb_repository.get_group_chat_member(message_data["_chat_id"], g.current_user.id)
+            if not member:
+                emit("error", json.dumps({"error": "User is not a member of this group chat"}))
             else:
+                now = datetime.now()
                 # Create new message
                 chat_message = Message(
-                    message_data["_id"], 
+                    now.isoformat() + "-" + uuid4().hex, 
                     message_data["_chat_id"], 
                     g.current_user.id, 
                     message_data["_content"]
                 )
-                dynamodb_repository.add_private_chat_message(chat_message)
+                dynamodb_repository.add_group_chat_message(chat_message)
+                # When should the message be confirmed as sent?
                 emit(
                     "new_group_chat_message",
                     message_schema.dump(chat_message),
                     room=chat_message.chat_id
                 )
-
-                # Create new notification. How do I get all users in this room so I
-                # can save this in dynamodb for all of them?
-                now = datetime.now()
-                notification = Notification(
-                    now.isoformat() + "-" + uuid4(),
-                    g.current_user.id,
-                    NotificationType.NEW_GROUP_CHAT_MESSAGE,
-                    f"{g.current_user.username} posted a new message in {group_chat.name}",
-                    url_for("api.get_user", user_id=g.current_user.id),
+                limit = 25
+                members = dynamodb_repository.get_group_chat_members(
+                    message_data["community_id"], message_data["_chat_id"], limit
                 )
-                
+                for member in members:
+                    if member.id != g.current_user.id:
+                        notification = Notification(
+                            now.isoformat() + "-" + uuid4().hex,
+                            member.id,
+                            NotificationType.NEW_GROUP_CHAT_MESSAGE,
+                            f"{g.current_user.username} posted a new message in {group_chat.name}",
+                            url_for("api.get_user", user_id=g.current_user.id),
+                        )
+                        dynamodb_repository.add_user_notification(notification)
+                        if member.socketio_session_id:
+                            emit(
+                                "new_notification",
+                                notification_schema.dump(notification),
+                                room=member.socketio_session_id
+                            )
+
+
+@socketio.event
+@socketio_jwt_required(TokenType.ACCESS_TOKEN)
+def update_group_chat_message(data):
+    message_schema = GroupChatMessageSchema()
+    try:
+        message_data = message_schema.loads(data)
+    except ValidationError as err:
+        emit("error", json.dumps(err))
+    else:
+        chat_message = dynamodb_repository.get_group_chat_message(
+            message_data["_chat_id"], message_data["_id"]
+        )
+        if not chat_message:
+            emit("error", json.dumps({"error": "Group chat message not found"}))
+        elif chat_message.user_id != g.current_user.id:
+            emit("error", json.dumps({"error": "User is not the sender of this message"}))
+        else:
+            chat_message.edit(message_data["_content"])
+            dynamodb_repository.add_group_chat_message(chat_message)
+            emit(
+                "group_chat_message_editted",
+                message_schema.dump(chat_message),
+                room=chat_message.chat_id
+            )
+
+@socketio.event
+@socketio_jwt_required(TokenType.ACCESS_TOKEN)
+def delete_group_chat_message(data):
+    try:
+        payload = json.loads(data)
+    except (TypeError, JSONDecodeError):
+        emit("error", json.dumps({"error": "Missing JSON body in event data"}))
+    else:
+        group_chat_id = payload.get("group_chat_id")
+        message_id = payload.get("message_id")
+        if not group_chat_id:
+            emit("error", json.dumps({"error": "Missing group chat id in event data"}))
+        elif not message_id:
+            emit("error", json.dumps({"error": "Missing chat message id in event data"}))
+        else:
+            chat_message = dynamodb_repository.get_group_chat_message(
+                group_chat_id, message_id
+            )
+            if not chat_message:
+                emit("error", json.dumps({"error": "Group chat message not found"}))
+            elif chat_message.user_id != g.current_user.id:
+                emit("error", json.dumps({"error": "User is not the sender of this message"}))
+            else:
+                dynamodb_repository.remove_group_chat_message(chat_message)
                 emit(
-                    "new_notification",
-                    notification_schema.dump(notification),
+                    "group_chat_message_deleted",
+                    json.dumps({"message_id": chat_message.id}),
                     room=chat_message.chat_id
                 )
 
-# Socket
-# A message that has been marked as read should not be able to be marked as unread
-# @api.route("/group_chats/<group_chat_id>/messages/<message_id>", methods=["PATCH"])
-def update_group_chat_message(group_chat_id, message_id):
-    pass
+
+@socketio.event
+@socketio_jwt_required(TokenType.ACCESS_TOKEN)
+def react_to_group_chat_message(data):
+    try:
+        payload = json.loads(data)
+    except (TypeError, JSONDecodeError):
+        emit("error", json.dumps({"error": "Missing JSON body in event data"}))
+    else:
+        group_chat_id = payload.get("group_chat_id")
+        message_id = payload.get("message_id")
+        reaction_type = payload.get("reaction_type")
+        if not group_chat_id:
+            emit("error", json.dumps({"error": "Missing group chat id in event data"}))
+        elif not message_id:
+            emit("error", json.dumps({"error": "Missing chat message id in event data"}))
+        elif not reaction_type:
+            emit("error", json.dumps({"error": "Missing reaction type in event data"}))
+        elif reaction_type.upper() not in {reaction_type.name for reaction_type in ReactionType}:
+            emit("error", json.dumps({"error": "Not a valid reaction type"}))
+        else:
+            chat_message = dynamodb_repository.get_group_chat_message(
+                group_chat_id, message_id
+            )
+            if not chat_message:
+                emit("error", json.dumps({"error": "Group chat message not found"}))
+            elif chat_message.user_id != g.current_user.id:
+                emit("error", json.dumps({"error": "User is not the sender of this message"}))
+            else:
+                reaction = Reaction(g.current_user.id, ReactionType[reaction_type.upper()])
+                chat_message.add_reaction(reaction)
+                dynamodb_repository.add_group_chat_message(chat_message)
+                emit(
+                    "react_to_group_chat_message",
+                    json.dumps({"reaction": reaction.reaction_type.name, "message_id": chat_message.id}),
+                    room=chat_message.chat_id,
+                )
 
 
-# Socket
-# @api.route("/group_chats/<group_chat_id>/messages/<message_id>", methods=["DELETE"])
-def delete_group_chat_message(group_chat_id, message_id):
-    pass
-
-
-# Socket
-# @api.route(
-#     "/group_chats/<group_chat_id>/messages/<message_id>/reactions", methods=["POST"]
-# )
-def add_reaction_to_group_chat_message(group_chat_id, message_id):
-    pass
-
-
-
-# Socket
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
 def join_group_chat(data):
@@ -101,17 +176,17 @@ def join_group_chat(data):
     group_chat_id = payload.get("group_chat_id")
     community_id = payload.get("community_id")
     if not group_chat_id:
-        emit("error", json.dumps({"error": "Missing group chat id in request"}))
+        emit("error", json.dumps({"error": "Missing group chat id in event data"}))
     elif not community_id:
-        emit("error", json.dumps({"error": "Missing community id in request"}))
+        emit("error", json.dumps({"error": "Missing community id in event data"}))
     else:
-        community_membership = dynamodb_repository.get_community_membership(community_id, g.current_user.id)
-        if not community_membership:
-            emit("error", json.dumps({"error": "User is not a member of this community"}))
+        group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
+        if not group_chat:
+            emit("error", json.dumps({"error": "Group chat not found"}))
         else:
-            group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
-            if not group_chat:
-                emit("error", json.dumps({"error": "Group chat not found"}))
+            member = dynamodb_repository.get_group_chat_member(group_chat_id, g.current_user.id)
+            if not member:
+                emit("error", json.dumps({"error": "User is not a member of this group chat"}))    
             else:
                 join_room(group_chat_id)
                 emit(
@@ -128,17 +203,17 @@ def leave_group_chat(data):
     group_chat_id = payload.get("group_chat_id")
     community_id = payload.get("community_id")
     if not group_chat_id:
-        emit("error", json.dumps({"error": "Missing group chat id in request"}))
+        emit("error", json.dumps({"error": "Missing group chat id in event data"}))
     elif not community_id:
-        emit("error", json.dumps({"error": "Missing community id in request"}))
+        emit("error", json.dumps({"error": "Missing community id in event data"}))
     else:
-        community_membership = dynamodb_repository.get_community_membership(community_id, g.current_user.id)
-        if not community_membership:
-            emit("error", {"error": "User is not a member of this community"})
+        group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
+        if not group_chat:
+            emit("error", {"error": "Group chat not found"})
         else:
-            group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
-            if not group_chat:
-                emit("error", {"error": "Group chat not found"})
+            member = dynamodb_repository.get_group_chat_member(group_chat_id, g.current_user.id)
+            if not member:
+                emit("error", json.dumps({"error": "User is not a member of this group chat"}))
             else:
                 leave_room(group_chat_id)
                 emit(
@@ -151,11 +226,15 @@ def leave_group_chat(data):
 @socketio.on("connect")
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
 def connect_handler():
-    print("Connected to server!")
-    print(g.current_user.username)
+    dynamodb_repository.update_user(
+        g.current_user, {"socketio_session_id": request.sid, "is_online": True}
+    )
+    print(f"{g.current_user.username} connected to server!")
 
 
 @socketio.on("disconnect")
 def disconnect_handler():
-    print(g.disconnect_reason)
-    emit("disconnect_reason", g.disconnect_reason)
+    dynamodb_repository.update_user(
+        g.current_user, {"socketio_session_id": "", "is_online": False}
+    )
+    
