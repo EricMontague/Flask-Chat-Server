@@ -27,6 +27,7 @@ class User:
         cover_photo=None,
         is_online=True,
         is_banned=False,
+        socketio_session_id=""
     ):
         self._id = id
         self.username = username
@@ -42,6 +43,7 @@ class User:
         self.role = role
         self.is_online = is_online
         self.is_banned = is_banned
+        self.socketio_session_id = socketio_session_id
 
     @property
     def id(self):
