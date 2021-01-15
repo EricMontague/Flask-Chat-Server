@@ -869,6 +869,14 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         group_chat_item = self._group_chat_mapper.serialize_from_model(group_chat)
         response = self._dynamodb_client.put_item(group_chat_item)
         return response
+
+    def get_group_chat_member(self, group_chat_id, user_id):
+        """Return a user who is a member of the given group chat."""
+        primary_key = self._group_chat_member_mapper.key(group_chat_id, user_id)
+        item = self._dynamodb_client.get_item(primary_key)
+        if not item:
+            return None
+        return self.get_user(primary_key["user_id"]["S"])
     
     def add_group_chat_member(self, community_id, group_chat_id, user_id):
         """Add a new user to a group chat."""
@@ -882,7 +890,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         )
         keys = {
             "group_chat_key": self._group_chat_mapper.key(community_id, group_chat_id),
-            "user_key": self._user_mapper.key(user_id, user_id)
+            "user_key": self._user_mapper.key(user_id, user_id),
+            "community_membership_key": self._community_membership_mapper.key(community_id, user_id)
         }
         response = self._dynamodb_client.add_group_chat_member(keys, item)
         if "error" in response:

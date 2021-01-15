@@ -176,6 +176,10 @@ class AbstractDatabaseRepository(ABC):
     @abstractmethod
     def get_group_chat_messages(self, group_chat_id, *args, **kwargs):
         pass
+    
+    @abstractmethod
+    def get_group_chat_member(self, group_chat_id, user_id):
+        pass
 
     @abstractmethod
     def get_group_chat_members(self, group_chat_id, *args, **kwargs):
