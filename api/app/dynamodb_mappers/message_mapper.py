@@ -23,7 +23,6 @@ class MessageMapper(ModelMapper):
             "_content",
             "_created_at",
             "_reactions",
-            "_read",
             "_editted",
         )
         partition_key_attribute = "_chat_id"
