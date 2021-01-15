@@ -12,9 +12,9 @@ from app.models import Reaction
 class MessageSchema(ma.Schema):
     """Class to serialize and deserialize message models."""
 
-    _id = ma.UUID(data_key="id")
-    _chat_id = ma.UUID(data_key="chat_id")
-    _user_id = ma.UUID(data_key="user_id")
+    _id = ma.UUID(required=True, data_key="id")
+    _chat_id = ma.UUID(required=True, data_key="chat_id")
+    _user_id = ma.UUID(required=True, data_key="user_id")
     _content = ma.Str(
         data_key="content", validate=validate.Length(min=1, max=500)
     )
@@ -23,7 +23,7 @@ class MessageSchema(ma.Schema):
         EnumField(Reaction),
         dump_only=True
     )
-    _read = ma.Boolean(required=True)
+    _sent = ma.Boolean(required=True)
     _editted = ma.Boolean(dump_only=True)
     resource_type = ma.Str(dump_only=True, default="Message")
 
