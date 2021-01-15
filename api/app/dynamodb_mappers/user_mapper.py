@@ -44,6 +44,7 @@ class UserMapper(ModelMapper):
             "cover_photo",
             "is_online",
             "is_banned",
+            "socketio_session_id",
         )
         type_ = ItemType.USER.name
         partition_key_attribute = "_id"
