@@ -228,6 +228,9 @@ class _DynamoDBClient:
                     error_message = "Group chat could not be found"
                     error_type = ErrorType.NOT_FOUND
                 elif err.response["CancellationReasons"][2]["Code"] == "ConditionalCheckFailed":
+                    error_message = "User is not a member of the community this group chat is in"
+                    error_type = ErrorType.NOT_FOUND
+                elif err.response["CancellationReasons"][3]["Code"] == "ConditionalCheckFailed":
                     error_message = "User is already a member of this group chat"
                     error_type = ErrorType.UNIQUE_CONSTRAINT
             return {"error": error_message, "error_type": error_type}
@@ -542,6 +545,13 @@ class _DynamoDBClient:
             {
                 "ConditionCheck": {
                     "Key": keys["group_chat_key"],
+                    "TableName": self._table_name,
+                    "ConditionExpression": "attribute_exists(PK) AND attribute_exists(SK)",
+                }
+            },
+            {
+                "ConditionCheck": {
+                    "Key": keys["community_membership_key"],
                     "TableName": self._table_name,
                     "ConditionExpression": "attribute_exists(PK) AND attribute_exists(SK)",
                 }
