@@ -1,6 +1,7 @@
 """This module contains the chat message model."""
 
 
+from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
 
@@ -9,15 +10,15 @@ class Message:
     """Class to represent a message in a chat."""
 
     def __init__(
-        self, id, chat_id, user_id, content, created_at=datetime.now(), read=False, editted=False
+        self, id, chat_id, user_id, content, created_at=datetime.now(), sent=False, editted=False
     ):
         self._id = id
         self._chat_id = chat_id
         self._user_id = user_id
         self._content = content
         self._created_at = created_at
-        self._reactions = set()
-        self._read = read
+        self._reactions = {}
+        self._sent = sent
         self._editted = editted
 
     @property
@@ -49,7 +50,7 @@ class Message:
 
     def add_reaction(self, reaction):
         """Add a reaction to the message."""
-        self._reactions.add(reaction)
+        self._reactions[reaction.user_id] = reaction
 
     def has_reactions(self):
         """Return True if the message has any reactions, otherwise
@@ -61,6 +62,10 @@ class Message:
         """Return True if the message has been read,
         otherwise return False."""
         return self._read
+
+    def mark_as_read(self):
+        """Mark the chat message as read."""
+        self._read = True
 
     def edit(self, content):
         """Edit the message content."""
@@ -82,8 +87,8 @@ class Message:
         )
 
 
-class Reaction(Enum):
-    """Enum to represent reactions that a user can
+class ReactionType(Enum):
+    """Enum to represent types of reactions that a user can
     have to a message.
     """
 
@@ -95,3 +100,12 @@ class Reaction(Enum):
     WOW = 6
     ANGRY = 7
 
+
+
+@dataclass(frozen=True)
+class Reaction:
+    """Class to represent a reaction a user has had to a message."""
+
+    user_id: str
+    reaction_type: ReactionType
+    created_at: datetime = datetime.now()
