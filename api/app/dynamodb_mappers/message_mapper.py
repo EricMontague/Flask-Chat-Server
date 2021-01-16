@@ -6,7 +6,19 @@ items.
 
 from app.dynamodb_mappers.mapper_core import ModelMapper
 from app.dynamodb_mappers.constants import ItemType, PrimaryKeyPrefix
-from app.models import Message, Reaction
+from app.models import Message, Reaction, ReactionType
+
+
+class ReactionMapper(ModelMapper):
+    """Class to serialize and deserialize Reaction models
+    to and from DynamoDB items.
+    """
+
+    class Meta:
+        model = Reaction
+        fields = ("user_id", "reaction_type", "created_at")
+    
+    ENUMS = {"reaction_type": ReactionType}
 
 
 class MessageMapper(ModelMapper):
@@ -29,7 +41,7 @@ class MessageMapper(ModelMapper):
         sort_key_attribute = "_id"
         attributes_to_monkey_patch = ("_reactions",)
 
-    ENUMS = {"_reactions": Reaction}
+    NESTED_MAPPERS = {"_reactions": ReactionMapper(ignore_partition_key=True)}
 
 
 class PrivateChatMessageMapper(MessageMapper):
