@@ -20,7 +20,7 @@ class NotificationSchema(ma.Schema):
     class Meta:
         unknown = EXCLUDE
 
-    _id = ma.UUID(required=True, data_key="id", dump_only=True)
+    _id = ma.Str(required=True, data_key="id", dump_only=True)
     _user_id = ma.UUID(required=True, data_key="user_id", dump_only=True)
     _notification_type = EnumField(NotificationType, required=True, data_key="notification_type", dump_only=True)
     _message = ma.Str(required=True, data_key="message", validate=validate.Length(min=1, max=64), dump_only=True)
