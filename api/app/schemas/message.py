@@ -3,32 +3,47 @@ deserializing message models.
 """
 
 
+import uuid
 from app.extensions import ma
-from marshmallow import validate, EXCLUDE, pre_load
+from marshmallow import validate, EXCLUDE, pre_load, post_load, post_dump
 from app.schemas.enum_field import EnumField
-from app.models import Reaction
+from app.models import Reaction, ReactionType
+
+
+class ReactionSchema(ma.Schema):
+    """Class to serialize and deserialize Reaction models."""
+
+    class Meta:
+        unknown = EXCLUDE
+
+    user_id = ma.UUID(required=True)
+    reaction_type = EnumField(ReactionType, required=True)
+    created_at = ma.DateTime(dump_only=True, data_key="timestamp")
 
 
 class MessageSchema(ma.Schema):
     """Class to serialize and deserialize message models."""
 
-    _id = ma.UUID(required=True, data_key="id")
+    _id = ma.Str(required=True, data_key="id")
     _chat_id = ma.UUID(required=True, data_key="chat_id")
-    _user_id = ma.UUID(required=True, data_key="user_id")
     _content = ma.Str(
-        data_key="content", validate=validate.Length(min=1, max=500)
+        data_key="content", validate=validate.Length(min=1, max=500), required=True
     )
     _created_at = ma.DateTime(dump_only=True, data_key="timestamp")
-    _reactions = ma.List(
-        EnumField(Reaction),
-        dump_only=True
-    )
-    _sent = ma.Boolean(required=True)
+    _sent = ma.Boolean(dump_only=True)
     _editted = ma.Boolean(dump_only=True)
-    resource_type = ma.Str(dump_only=True, default="Message")
 
     # Links
     user_url = ma.URLFor("api.get_user", user_id="<_user_id>")
+
+    @post_dump(pass_original=True)
+    def inject_extra_fields(self, data, original_model, **kwargs):
+        """Post processing method to inject extra fields into the
+        serialized data.
+        """
+        reaction_schema = ReactionSchema()
+        data["reactions"] = [reaction_schema.dump(reaction) for reaction in original_model.reactions]
+        return data
 
     @pre_load
     def strip_unwanted_fields(self, data, many, **kwargs):
@@ -37,6 +52,15 @@ class MessageSchema(ma.Schema):
         for field in unwanted_fields:
             if field in data:
                 data.pop(field)
+        return data
+    
+    @post_load
+    def convert_uuid_to_hex(self, data, **kwargs):
+        """Convert all UUID fields to their 32-character hexadecimal equivalent."""
+        for key in data:
+            value = data[key]
+            if isinstance(value, uuid.UUID):
+                data[key] = data[key].hex
         return data
 
 
@@ -51,6 +75,7 @@ class PrivateChatMessageSchema(MessageSchema):
     class Meta:
         unknown = EXCLUDE
 
+    resource_type = ma.Str(dump_only=True, default="PrivateChatMessage")
     self_url = ma.URLFor(
         "api.get_private_chat_message", private_chat_id="<_chat_id>", message_id="<_id>"
     )
@@ -68,7 +93,7 @@ class GroupChatMessageSchema(MessageSchema):
         unknown = EXCLUDE
 
     community_id = ma.UUID(load_only=True, required=True)
-
+    resource_type = ma.Str(dump_only=True, default="GroupChatMessage")
     self_url = ma.URLFor(
         "api.get_group_chat_message", group_chat_id="<_chat_id>", message_id="<_id>"
     )
