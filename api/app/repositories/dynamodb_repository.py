@@ -876,7 +876,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         item = self._dynamodb_client.get_item(primary_key)
         if not item:
             return None
-        return self.get_user(primary_key["user_id"]["S"])
+        return self.get_user(item["user_id"]["S"])
     
     def add_group_chat_member(self, community_id, group_chat_id, user_id):
         """Add a new user to a group chat."""
