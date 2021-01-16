@@ -34,7 +34,7 @@ class Message:
     @property
     def user_id(self):
         """Return the id of the user the message belongs to."""
-        return self.user_id
+        return self._user_id
 
     @property
     def content(self):
@@ -47,6 +47,11 @@ class Message:
         was created.
         """
         return self._created_at
+
+    @property
+    def reactions(self):
+        """Return a list of reactions attached to the message."""
+        return list(self._reactions.values())
 
     def add_reaction(self, reaction):
         """Add a reaction to the message."""
