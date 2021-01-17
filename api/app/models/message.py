@@ -57,6 +57,10 @@ class Message:
         """Add a reaction to the message."""
         self._reactions[reaction.user_id] = reaction
 
+    def remove_reaction(self, user_id):
+        """Remove and return a user's reaction from the chat message."""
+        return self._reactions.pop(user_id, None)
+
     def has_reactions(self):
         """Return True if the message has any reactions, otherwise
         return False.
