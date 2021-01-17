@@ -188,25 +188,6 @@ def get_user_private_chats(url_params, user_id):
     except DatabaseException as err:
         return {"error": str(err)}, HTTPStatus.BAD_REQUEST
     return results, HTTPStatus.OK 
-
-
-# When authentication is added, the current user will have already been fetched from DynamoDB
-# and is guaranteed to exist in the database
-@api.route("/users/<user_id>/private_chats/<other_user_id>", methods=["PUT"])
-@permission_required(RolePermission.CREATE_PRIVATE_CHAT)
-@handle_response(UserSchema())
-def create_user_private_chat(user_id, other_user_id):
-    """Create a new private chat between two users."""
-    # user_id = g.current_user.id
-    other_user = dynamodb_repository.get_user(other_user_id)
-    if not other_user:
-        return {"error": "Other user could not be found"}, HTTPStatus.NOT_FOUND
-    try:
-        dynamodb_repository.add_private_chat(user_id, other_user_id)
-    except UniqueConstraintException as err:
-        return {"error": str(err)}, HTTPStatus.BAD_REQUEST
-    headers = {"Location": url_for("api.get_user", user_id=other_user_id)}
-    return {}, HTTPStatus.OK, headers
     
 
 @api.route("/users/<user_id>/group_chats")
