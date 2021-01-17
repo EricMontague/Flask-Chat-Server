@@ -2,6 +2,7 @@
 
 
 import json
+from hashlib import md5
 from datetime import datetime
 from uuid import uuid4
 from json.decoder import JSONDecodeError
@@ -14,7 +15,7 @@ from app.repositories import dynamodb_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
 from app.decorators.auth import socketio_jwt_required
 from app.models import TokenType, Message, Notification, NotificationType, Reaction, ReactionType
-from app.schemas import PrivateChatMessageSchema, NotificationSchema
+from app.schemas import PrivateChatMessageSchema, NotificationSchema, ReactionSchema
 from marshmallow import ValidationError
 
 
@@ -30,9 +31,7 @@ def create_private_chat_message(data):
     except ValidationError as err:
         emit("error", json.dumps({"error": err.messages}))
     else:
-        private_chat = dynamodb_repository.get_private_chat(
-            g.current_user.id, message_data["other_user_id"]
-        )
+        private_chat = dynamodb_repository.get_private_chat(message_data["_chat_id"])
         if not private_chat:
             emit("error", json.dumps({"error": "Private chat not found"}))
         else:
@@ -178,14 +177,55 @@ def react_to_private_chat_message(data):
 
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
+def unreact_to_private_chat_message(data):
+    """Remove a reaction from a private chat message."""
+    reaction_schema = ReactionSchema()
+    try:
+        payload = json.loads(data)
+    except (TypeError, JSONDecodeError):
+        emit("error", json.dumps({"error": "Missing JSON body in event data"}))
+    else:
+        private_chat_id = payload.get("chat_id")
+        message_id = payload.get("message_id")
+        if not private_chat_id:
+            emit("error", json.dumps({"error": "Missing private chat id in event data"}))
+        elif not message_id:
+            emit("error", json.dumps({"error": "Missing chat message id in event data"}))
+        else:
+            chat_message = dynamodb_repository.get_private_chat_message(
+                private_chat_id, message_id
+            )
+            if not chat_message:
+                emit("error", json.dumps({"error": "Private chat message not found"}))
+            elif chat_message.user_id != g.current_user.id:
+                emit("error", json.dumps({"error": "User is not the sender of this message"}))
+            else:
+                reaction = chat_message.remove_reaction(g.current_user.id)
+                if not reaction:
+                    emit("error", json.dumps({"error": "User has not yet reacted to this message"}))
+                else:
+                    dynamodb_repository.add_private_chat_message(chat_message)
+                    emit(
+                        "removed_chat_message_reaction",
+                        json.dumps({
+                            "reaction": reaction_schema.dumps(reaction),
+                            "message_id": chat_message.id,
+                            "resource_type": "PrivateChatMessage"
+                        }),
+                        room=chat_message.chat_id,
+                    )
+
+
+@socketio.event
+@socketio_jwt_required(TokenType.ACCESS_TOKEN)
 def join_private_chat(data):
     """Add a user to a socketio room. Rooms are identified by private chat ids."""
     payload = json.loads(data)
-    other_user_id = payload.get("other_user_id")
-    if not other_user_id:
-        emit("error", json.dumps({"error": "Missing other user id in event data"}))
+    private_chat_id = payload.get("private_chat_id")
+    if not private_chat_id:
+        emit("error", json.dumps({"error": "Missing private chat id in event data"}))
     else:
-        private_chat = dynamodb_repository.get_private_chat(g.current_user.id, other_user_id)
+        private_chat = dynamodb_repository.get_private_chat(private_chat_id)
         if not private_chat:
             emit("error", json.dumps({"error": "Private chat not found"}))
         else:
@@ -202,11 +242,11 @@ def join_private_chat(data):
 def leave_private_chat(data):
     """Remove a user from a socketio room. Roomas are identified by private chat ids."""
     payload = json.loads(data)
-    other_user_id = payload.get("other_user_id")
-    if not other_user_id:
-        emit("error", json.dumps({"error": "Missing other user id in event data"}))
+    private_chat_id = payload.get("private_chat_id")
+    if not private_chat_id:
+        emit("error", json.dumps({"error": "Missing private chat id in event data"}))
     else:
-        private_chat = dynamodb_repository.get_private_chat(g.current_user.id, other_user_id)
+        private_chat = dynamodb_repository.get_private_chat(private_chat_id)
         if not private_chat:
             emit("error", json.dumps({"error": "Private chat not found"}))
         else:

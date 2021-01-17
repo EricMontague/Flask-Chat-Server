@@ -189,6 +189,47 @@ def react_to_group_chat_message(data):
 
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
+def unreact_to_group_chat_message(data):
+    """Remove a reaction from a group chat message."""
+    reaction_schema = ReactionSchema()
+    try:
+        payload = json.loads(data)
+    except (TypeError, JSONDecodeError):
+        emit("error", json.dumps({"error": "Missing JSON body in event data"}))
+    else:
+        group_chat_id = payload.get("chat_id")
+        message_id = payload.get("message_id")
+        reaction_type = payload.get("reaction_type")
+        if not group_chat_id:
+            emit("error", json.dumps({"error": "Missing group chat id in event data"}))
+        elif not message_id:
+            emit("error", json.dumps({"error": "Missing chat message id in event data"}))
+        else:
+            chat_message = dynamodb_repository.get_group_chat_message(
+                group_chat_id, message_id
+            )
+            if not chat_message:
+                emit("error", json.dumps({"error": "Group chat message not found"}))
+            elif chat_message.user_id != g.current_user.id:
+                emit("error", json.dumps({"error": "User is not the sender of this message"}))
+            else:
+                reaction = chat_message.remove_reaction(g.current_user.id)
+                if not reaction:
+                    emit("error", json.dumps({"error": "User has not yet reacted to this message"}))
+                else:
+                    dynamodb_repository.add_group_chat_message(chat_message)
+                    emit(
+                        "removed_chat_message_reaction",
+                        json.dumps({
+                            "reaction": reaction_schema.dumps(reaction),
+                            "message_id": chat_message.id,
+                            "resource_type": "GroupChatMessage"
+                        }),
+                        room=chat_message.chat_id,
+                    )
+
+@socketio.event
+@socketio_jwt_required(TokenType.ACCESS_TOKEN)
 def join_group_chat(data):
     """Add a user to a socketio room. Rooms are identified by group chat ids."""
     payload = json.loads(data)
