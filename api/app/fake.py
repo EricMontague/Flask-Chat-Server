@@ -19,9 +19,10 @@ from app.dynamodb_mappers import (
     CommunityNameMapper,
     CommunityMembershipMapper,
     NotificationMapper,
-    PrivateChatMemberMapper,
+    PrivateChatMembershipMapper,
     PrivateChatMessageMapper,
-    GroupChatMemberMapper,
+    PrivateChatMapper,
+    GroupChatMembershipMapper,
     GroupChatMapper,
     GroupChatMessageMapper,
 )
@@ -34,10 +35,11 @@ from app.models import (
     CommunityTopic,
     Notification,
     NotificationType,
-    PrivateChatMember,
+    PrivateChatMembership,
+    PrivateChat,
     Message,
     GroupChat,
-    GroupChatMember,
+    GroupChatMembership,
 )
 from app.dynamodb_mappers.constants import PrimaryKeyPrefix
 
@@ -49,9 +51,10 @@ community_mapper = CommunityMapper()
 community_name_mapper = CommunityNameMapper()
 community_membership_mapper = CommunityMembershipMapper()
 notification_mapper = NotificationMapper()
-private_chat_member_mapper = PrivateChatMemberMapper()
+private_chat_membership_mapper = PrivateChatMembershipMapper()
 private_chat_message_mapper = PrivateChatMessageMapper()
-group_chat_member_mapper = GroupChatMemberMapper()
+private_chat_mapper = PrivateChatMapper()
+group_chat_membership_mapper = GroupChatMembershipMapper()
 group_chat_mapper = GroupChatMapper()
 group_chat_message_mapper = GroupChatMessageMapper()
 
@@ -207,25 +210,28 @@ class FakeDataGenerator:
 
         while remaining_private_chats > 0:
             requests = []
-            primary_user, secondary_user = self._pick_private_chat_members(users)
+            primary_user, secondary_user = random.sample(users, 2)
+            private_chat = PrivateChat(uuid4().hex, primary_user, secondary_user)
             primary_additional_attributes = {
-                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT
-                + primary_user.private_chat_id,
-                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + primary_user.user_id,
+                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat.id,
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + primary_user.id
             }
             secondary_additional_attributes = {
-                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT
-                + secondary_user.private_chat_id,
-                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + secondary_user.user_id,
+                "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat.id,
+                "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + secondary_user.id
             }
-            primary_item = private_chat_member_mapper.serialize_from_model(
-                primary_user, additional_attributes=primary_additional_attributes
+            primary_membership_item = private_chat_membership_mapper.serialize_from_model(
+                PrivateChatMembership(private_chat.id, primary_user.id, secondary_user.id), 
+                additional_attributes=primary_additional_attributes
             )
-            secondary_item = private_chat_member_mapper.serialize_from_model(
-                secondary_user, additional_attributes=secondary_additional_attributes
+            secondary_membership_item = private_chat_membership_mapper.serialize_from_model(
+                PrivateChatMembership(private_chat.id, secondary_user.id, primary_user.id), 
+                additional_attributes=secondary_additional_attributes
             )
-            requests.append(("PutRequest", primary_item))
-            requests.append(("PutRequest", secondary_item))
+            private_chat_item = private_chat_mapper.serialize_from_model(private_chat)
+            requests.append(("PutRequest", primary_membership_item))
+            requests.append(("PutRequest", secondary_membership_item))
+            requests.append(("PutRequest", private_chat_item))
             dynamodb_client.batch_write_items(requests)
             remaining_private_chats -= 1
 
@@ -285,8 +291,8 @@ class FakeDataGenerator:
                     "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + member.id,
                     "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat.id,
                 }
-                chat_member_item = group_chat_member_mapper.serialize_from_model(
-                    GroupChatMember(group_chat.id, member.id, random_community.id),
+                chat_member_item = group_chat_membership_mapper.serialize_from_model(
+                    GroupChatMembership(group_chat.id, member.id, random_community.id),
                     additional_attributes=membership_additional_attributes,
                 )
                 requests.append(("PutRequest", chat_member_item))
@@ -365,14 +371,14 @@ class FakeDataGenerator:
             created_at=created_at,
         )
 
-    def _pick_private_chat_members(self, users):
+    def _generate_private_chat_memberships(self, users):
         """Choose two random users to form a private chat and
-        return a list of two PrivateChatMember instances.
+        return a list of two PrivateChatMembership instances.
         """
         primary_user, secondary_user = random.sample(users, 2)
-        chat_id = sorted([primary_user.id, secondary_user.id])[0]
-        primary = PrivateChatMember(chat_id, primary_user.id, secondary_user.id)
-        secondary = PrivateChatMember(chat_id, secondary_user.id, primary_user.id)
+        chat_id = uuid4().hex
+        primary = PrivateChatMembership(chat_id, primary_user.id, secondary_user.id)
+        secondary = PrivateChatMembership(chat_id, secondary_user.id, primary_user.id)
         return [primary, secondary]
 
     def _create_message(self, chat_id, user_id):
