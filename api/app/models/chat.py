@@ -20,6 +20,31 @@ class PrivateChat:
         """Return the chat's id."""
         return self._id
 
+    @property
+    def primary_user_id(self):
+        """Return the id of the primary user in the chat."""
+        return self._primary_user.id
+
+    @property
+    def secondary_user_id(self):
+        """Return the id of the secondary user in the chat."""
+        return self._secondary_user.id
+
+    def get_other_user(self, user_id):
+        """Return the other user the given user is in the private chat
+        with.
+        """
+        user = None
+        if self._primary_user.id == user_id:
+            user = self._secondary_user
+        elif self._secondary_user.id == user_id:
+            user = self._primary_user
+        return user
+
+    def is_member(self, user_id):
+        """Return True if the given user is a part of this private chat."""
+        return user_id == self._primary_user.id or user_id == self._secondary_user.id
+
     def __repr__(self):
         """Return a representatino of a private chat."""
         return "PrivateChat(id=%r, primary_user=%r, secondary_user=%r)" % (
@@ -61,7 +86,7 @@ class GroupChat:
 
 
 @dataclass(frozen=True)
-class PrivateChatMember:
+class PrivateChatMembership:
     """Class to represent the relationship between a private chat and 
     a user who is a member of that private chat.
     """
@@ -73,7 +98,7 @@ class PrivateChatMember:
 
 
 @dataclass(frozen=True)
-class GroupChatMember:
+class GroupChatMembership:
     """Class to represent the relationship between a private chat and 
     a user who is a member of that private chat.
     """
