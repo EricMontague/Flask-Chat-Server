@@ -1,7 +1,7 @@
 """This package contains the models for the application."""
 
 
-from app.models.chat import PrivateChat, GroupChat, PrivateChatMember, GroupChatMember
+from app.models.chat import PrivateChat, GroupChat, PrivateChatMembership, GroupChatMembership
 from app.models.community import (
     Community,
     CommunityTopic,

@@ -13,9 +13,10 @@ from app.dynamodb_mappers.community_mapper import (
     CommunityMembershipMapper,
 )
 from app.dynamodb_mappers.chat_mapper import (
-    PrivateChatMemberMapper,
-    GroupChatMemberMapper,
+    PrivateChatMembershipMapper,
+    GroupChatMembershipMapper,
     GroupChatMapper,
+    PrivateChatMapper
 )
 from app.dynamodb_mappers.common_mappers import LocationMapper, ImageMapper
 from app.dynamodb_mappers.message_mapper import (
