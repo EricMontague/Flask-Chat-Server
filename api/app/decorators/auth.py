@@ -95,7 +95,7 @@ def jwt_required(token_type):
 
             if is_blacklisted(decoded_token, token_type):
                 return (
-                    {"error": f"Invalid {token_type.name.replace('_', ' ').lower()}"},
+                    {"error": f"Token is blacklisted"},
                     HTTPStatus.UNAUTHORIZED,
                 )
             current_user = dynamodb_repository.get_user(decoded_token.user_id)
