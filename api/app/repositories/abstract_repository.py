@@ -126,7 +126,11 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    def add_private_chat(self, private_chat, primary_user_id, secondary_user_id):
+    def get_private_chat(self, private_chat_id):
+        pass
+
+    @abstractmethod
+    def add_private_chat(self, private_chat):
         pass
 
     @abstractmethod

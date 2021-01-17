@@ -16,9 +16,9 @@ from app.models import (
     CommunityName, 
     Image, 
     ImageType, 
-    PrivateChatMember,
+    PrivateChatMembership,
     PrivateChat,
-    GroupChatMember,
+    GroupChatMembership,
     GroupChat,
     TokenType
 )
@@ -31,10 +31,11 @@ from app.dynamodb_mappers import (
     CommunityMembershipMapper,
     CommunityNameMapper,
     NotificationMapper,
-    PrivateChatMemberMapper,
+    PrivateChatMembershipMapper,
     PrivateChatMessageMapper,
+    PrivateChatMapper,
     GroupChatMessageMapper,
-    GroupChatMemberMapper,
+    GroupChatMembershipMapper,
     GroupChatMapper,
     TokenMapper
 )
@@ -55,10 +56,11 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         self._community_name_mapper = kwargs.get("community_name_mapper")
         self._community_membership_mapper = kwargs.get("community_membership_mapper")
         self._notification_mapper = kwargs.get("notification_mapper")
-        self._private_chat_member_mapper = kwargs.get("private_chat_member_mapper")
+        self._private_chat_membership_mapper = kwargs.get("private_chat_membership_mapper")
         self._private_chat_message_mapper = kwargs.get("private_chat_message_mapper")
+        self._private_chat_mapper = kwargs.get("private_chat_mapper")
         self._group_chat_message_mapper = kwargs.get("group_chat_message_mapper")
-        self._group_chat_member_mapper = kwargs.get("group_chat_member_mapper")
+        self._group_chat_membership_mapper = kwargs.get("group_chat_membership_mapper")
         self._group_chat_mapper = kwargs.get("group_chat_mapper")
         self._token_mapper = kwargs.get("token_mapper")
 
@@ -689,25 +691,38 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response = self._dynamodb_client.put_item(notification_item)
         return response
 
-    # Shouldn't be able to have more than one private chat with another user
-    def add_private_chat(self, primary_user_id, secondary_user_id):
-        """Create a private chat member items in DynamoDB."""
-        private_chat_id = sorted([primary_user_id, secondary_user_id])[0]
+    def get_private_chat(self, private_chat_id):
+        """Return a private chat from DynamoDB."""
+        primary_key = {
+            "PK": {"S": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id},
+            "SK": {"S": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id}
+        }
+        item = self._dynamodb_client.get_item(primary_key)
+        if not item:
+            return None
+        primary_user = self.get_user(item["primary_user_id"]["S"])
+        secondary_user = self.get_user(item["secondary_user_id"]["S"])
+        return PrivateChat(private_chat_id, primary_user, secondary_user)
+
+    def add_private_chat(self, private_chat):
+        """Create a private chat item in DynamoDB."""
         primary_additional_attributes = {
-            "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id,
-            "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + primary_user_id
+            "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat.id,
+            "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + private_chat.primary_user_id
         }
         secondary_additional_attributes = {
-            "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id,
-            "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + secondary_user_id
+            "INVERTED_GSI_PK": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat.id,
+            "INVERTED_GSI_SK": PrimaryKeyPrefix.USER + private_chat.secondary_user_id
         }
+
         items = {
-            "primary_member": self._private_chat_member_mapper.serialize_from_model(
-                PrivateChatMember(private_chat_id, primary_user_id, secondary_user_id),
+            "private_chat": self._private_chat_mapper.serialize_from_model(private_chat),
+            "primary_membership": self._private_chat_membership_mapper.serialize_from_model(
+                PrivateChatMembership(private_chat.id, private_chat.primary_user_id, private_chat.secondary_user_id),
                 additional_attributes=primary_additional_attributes
             ),
-            "secondary_member": self._private_chat_member_mapper.serialize_from_model(
-                PrivateChatMember(private_chat_id, secondary_user_id, primary_user_id),
+            "secondary_membership": self._private_chat_membership_mapper.serialize_from_model(
+                PrivateChatMembership(private_chat.id, private_chat.secondary_user_id, private_chat.primary_user_id),
                 additional_attributes=secondary_additional_attributes
             )
         }
@@ -849,8 +864,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + user_id,
             "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat.id
         }
-        chat_member_item = self._group_chat_member_mapper.serialize_from_model(
-            GroupChatMember(group_chat.id, user_id, community_id), 
+        chat_member_item = self._group_chat_membership_mapper.serialize_from_model(
+            GroupChatMembership(group_chat.id, user_id, community_id), 
             additional_attributes=membership_additional_attributes
         )
         group_chat_item = self._group_chat_mapper.serialize_from_model(group_chat)
@@ -872,7 +887,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
     def get_group_chat_member(self, group_chat_id, user_id):
         """Return a user who is a member of the given group chat."""
-        primary_key = self._group_chat_member_mapper.key(group_chat_id, user_id)
+        primary_key = self._group_chat_membership_mapper.key(group_chat_id, user_id)
         item = self._dynamodb_client.get_item(primary_key)
         if not item:
             return None
@@ -884,8 +899,8 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + user_id,
             "INVERTED_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT + group_chat_id
         }
-        item = self._group_chat_member_mapper.serialize_from_model(
-            GroupChatMember(group_chat_id, user_id, community_id),
+        item = self._group_chat_membership_mapper.serialize_from_model(
+            GroupChatMembership(group_chat_id, user_id, community_id),
             additional_attributes=membership_additional_attributes
         )
         keys = {
@@ -905,7 +920,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     
     def remove_group_chat_member(self, group_chat_id, user_id):
         """Remove a GroupChatMember item from DynamoDB."""
-        primary_key = self._group_chat_member_mapper.key(group_chat_id, user_id)
+        primary_key = self._group_chat_membership_mapper.key(group_chat_id, user_id)
         if not self._dynamodb_client.delete_item(primary_key):
             raise NotFoundException("User is not a member of the given group chat")
     
@@ -1105,10 +1120,11 @@ dynamodb_repository = _DynamoDBRepository(
     community_name_mapper=CommunityNameMapper(),
     community_membership_mapper=CommunityMembershipMapper(),
     notification_mapper=NotificationMapper(),
-    private_chat_member_mapper=PrivateChatMemberMapper(),
+    private_chat_membership_mapper=PrivateChatMembershipMapper(),
     private_chat_message_mapper=PrivateChatMessageMapper(),
+    private_chat_mapper=PrivateChatMapper(),
     group_chat_message_mapper=GroupChatMessageMapper(),
-    group_chat_member_mapper=GroupChatMemberMapper(),
+    group_chat_membership_mapper=GroupChatMembershipMapper(),
     group_chat_mapper=GroupChatMapper(),
     token_mapper=TokenMapper()
 )
