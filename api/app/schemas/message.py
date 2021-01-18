@@ -7,7 +7,7 @@ import uuid
 from app.extensions import ma
 from marshmallow import validate, EXCLUDE, pre_load, post_load, post_dump
 from app.schemas.enum_field import EnumField
-from app.models import Reaction, ReactionType
+from app.models import Reaction, ReactionType, MessageType
 
 
 class ReactionSchema(ma.Schema):
@@ -16,9 +16,21 @@ class ReactionSchema(ma.Schema):
     class Meta:
         unknown = EXCLUDE
 
-    user_id = ma.UUID(required=True)
+    user_id = ma.UUID(dump_only=True, required=True)
     reaction_type = EnumField(ReactionType, required=True)
     created_at = ma.DateTime(dump_only=True, data_key="timestamp")
+    chat_id = ma.UUID(load_only=True, required=True)
+    message_id = ma.UUID(load_only=True, required=True)
+    message_type = EnumField(MessageType, required=True)
+
+    @post_load
+    def convert_uuid_to_hex(self, data, **kwargs):
+        """Convert all UUID fields to their 32-character hexadecimal equivalent."""
+        for key in data:
+            value = data[key]
+            if isinstance(value, uuid.UUID):
+                data[key] = data[key].hex
+        return data
 
 
 class MessageSchema(ma.Schema):
@@ -29,6 +41,7 @@ class MessageSchema(ma.Schema):
     _content = ma.Str(
         data_key="content", validate=validate.Length(min=1, max=500), required=True
     )
+    message_type = EnumField(MessageType, required=True)
     _created_at = ma.DateTime(dump_only=True, data_key="timestamp")
     _sent = ma.Boolean(dump_only=True)
     _editted = ma.Boolean(dump_only=True)
@@ -42,18 +55,11 @@ class MessageSchema(ma.Schema):
         serialized data.
         """
         reaction_schema = ReactionSchema()
-        data["reactions"] = [reaction_schema.dump(reaction) for reaction in original_model.reactions]
+        data["reactions"] = [
+            reaction_schema.dump(reaction) for reaction in original_model.reactions
+        ]
         return data
 
-    @pre_load
-    def strip_unwanted_fields(self, data, many, **kwargs):
-        """Remove unwanted fields from the input data before deserialization."""
-        unwanted_fields = ["resource_type"]
-        for field in unwanted_fields:
-            if field in data:
-                data.pop(field)
-        return data
-    
     @post_load
     def convert_uuid_to_hex(self, data, **kwargs):
         """Convert all UUID fields to their 32-character hexadecimal equivalent."""

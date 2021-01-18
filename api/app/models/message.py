@@ -10,12 +10,21 @@ class Message:
     """Class to represent a message in a chat."""
 
     def __init__(
-        self, id, chat_id, user_id, content, created_at=datetime.now(), sent=False, editted=False
+        self, 
+        id, 
+        chat_id, 
+        user_id, 
+        content,
+        message_type, 
+        created_at=datetime.now(), 
+        sent=False, 
+        editted=False
     ):
         self._id = id
         self._chat_id = chat_id
         self._user_id = user_id
         self._content = content
+        self.message_type = message_type
         self._created_at = created_at
         self._reactions = {}
         self._sent = sent
@@ -94,6 +103,13 @@ class Message:
             self._chat_id,
             self._content,
         )
+
+
+class MessageType(Enum):
+    """Enum to represent chat types for messages"""
+
+    PRIVATE_CHAT = 1
+    GROUP_CHAT = 2
 
 
 class ReactionType(Enum):

@@ -6,7 +6,7 @@ items.
 
 from app.dynamodb_mappers.mapper_core import ModelMapper
 from app.dynamodb_mappers.constants import ItemType, PrimaryKeyPrefix
-from app.models import Message, Reaction, ReactionType
+from app.models import Message, Reaction, ReactionType, MessageType
 
 
 class ReactionMapper(ModelMapper):
@@ -17,7 +17,7 @@ class ReactionMapper(ModelMapper):
     class Meta:
         model = Reaction
         fields = ("user_id", "reaction_type", "created_at")
-    
+
     ENUMS = {"reaction_type": ReactionType}
 
 
@@ -33,6 +33,7 @@ class MessageMapper(ModelMapper):
             "_chat_id",
             "_user_id",
             "_content",
+            "message_type",
             "_created_at",
             "_reactions",
             "_editted",
@@ -41,6 +42,7 @@ class MessageMapper(ModelMapper):
         sort_key_attribute = "_id"
         attributes_to_monkey_patch = ("_reactions",)
 
+    ENUMS = {"message_type": MessageType}
     NESTED_MAPPERS = {"_reactions": ReactionMapper(ignore_partition_key=True)}
 
 
