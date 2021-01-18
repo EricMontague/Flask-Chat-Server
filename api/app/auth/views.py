@@ -10,7 +10,7 @@ from app.models import User, TokenType
 from app.models.factories import UserFactory
 from app.models.role import admin_user_role
 from app.decorators.auth import jwt_required, basic_auth_required
-from app.decorators.request_response import handle_request, handle_response
+from app.decorators.views import handle_request, handle_response
 from app.schemas import UserSchema
 
 
