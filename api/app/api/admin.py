@@ -5,7 +5,7 @@ from http import HTTPStatus
 from flask import request
 from app.api import api
 from app.repositories import dynamodb_repository
-from app.decorators.request_response import handle_request, handle_response
+from app.decorators.views import handle_request, handle_response
 from app.decorators.auth import admin_required
 from app.models import RolePermission
 from app.models.role import PermissionsError

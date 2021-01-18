@@ -9,7 +9,7 @@ from app.api import api
 from app.schemas import UrlParamsSchema, GroupChatMessageSchema, UserSchema
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
-from app.decorators.request_response import handle_response, handle_request
+from app.decorators.views import handle_response, handle_request
 
 
 @api.route("/group_chats/<group_chat_id>/messages")

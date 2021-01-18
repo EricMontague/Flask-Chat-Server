@@ -5,7 +5,7 @@ from http import HTTPStatus
 from uuid import uuid4
 from flask import url_for, current_app, g
 from app.api import api
-from app.decorators.request_response import handle_request, handle_response, handle_file_request
+from app.decorators.views import handle_request, handle_response, handle_file_request
 from app.decorators.auth import permission_required 
 from app.api.helpers import process_image
 from app.schemas import (

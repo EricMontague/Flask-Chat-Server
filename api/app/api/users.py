@@ -4,7 +4,7 @@
 from http import HTTPStatus
 from flask import current_app, url_for, request, g
 from app.api import api
-from app.decorators.request_response import handle_request, handle_response, handle_file_request
+from app.decorators.views import handle_request, handle_response, handle_file_request
 from app.decorators.auth import permission_required
 from app.schemas import (
     UserSchema, 
