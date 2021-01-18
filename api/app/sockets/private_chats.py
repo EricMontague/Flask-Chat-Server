@@ -44,7 +44,7 @@ def create_private_chat_message(message_data, message_schema):
             room=chat_message.chat_id,
         )
 
-        send_private_chat_notifications(dynamodb_repository, chat_message)
+        send_private_chat_notifications(dynamodb_repository, chat_message, private_chat)
 
 
 @socketio.event
