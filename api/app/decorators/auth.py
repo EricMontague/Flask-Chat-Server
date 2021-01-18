@@ -52,6 +52,23 @@ def admin_required(func):
     return wrapper
 
 
+def socketio_permission_required(permission):
+    """Decorator to be used to protect socketio event handlers."""
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if not g.current_user.has_permission(permission):
+                emit("error", json.dumps({"error": "You do not have the required permissions to perform this action"}))
+                disconnect()
+            else:
+                return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 def is_blacklisted(decoded_token, token_type):
     """Return True if the given token is blacklisted."""
     token = dynamodb_repository.get_token(decoded_token.raw_jwt, token_type)
@@ -133,15 +150,23 @@ def socketio_jwt_required(token_type):
         def wrapper(*args, **kwargs):
             raw_jwt = get_raw_jwt(request)
             if not raw_jwt:
-                raise ConnectionRefusedError("Missing token in arguments or query string")
+                raise ConnectionRefusedError(
+                    "Missing token in arguments or query string"
+                )
             else:
-                decoded_token = User.decode_token(raw_jwt, current_app.config["SECRET_KEY"])
+                decoded_token = User.decode_token(
+                    raw_jwt, current_app.config["SECRET_KEY"]
+                )
                 if not decoded_token:
-                    raise ConnectionRefusedError(f"Invalid {token_type.name.replace('_', ' ').lower()}")
+                    raise ConnectionRefusedError(
+                        f"Invalid {token_type.name.replace('_', ' ').lower()}"
+                    )
                 elif decoded_token.token_type != token_type:
                     raise ConnectionRefusedError("Incorrect token type provided")
                 elif is_blacklisted(decoded_token, token_type):
-                    raise ConnectionRefusedError(f"Invalid {token_type.name.replace('_', ' ').lower()}")
+                    raise ConnectionRefusedError(
+                        f"Invalid {token_type.name.replace('_', ' ').lower()}"
+                    )
                 else:
                     current_user = dynamodb_repository.get_user(decoded_token.user_id)
                     if not current_user:
@@ -152,6 +177,7 @@ def socketio_jwt_required(token_type):
                         g.current_user = current_user
                         g.decoded_token = decoded_token
                         return func(*args, **kwargs)
+
         return wrapper
 
     return decorator
