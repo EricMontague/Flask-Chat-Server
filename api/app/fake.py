@@ -38,6 +38,7 @@ from app.models import (
     PrivateChatMembership,
     PrivateChat,
     Message,
+    MessageType,
     GroupChat,
     GroupChatMembership,
 )
@@ -247,7 +248,7 @@ class FakeDataGenerator:
                 continue
             for i in range(self.messages_per_chat):
                 random_chat = random.choice(chats)
-                message = self._create_message(random_chat.id, user.id)
+                message = self._create_message(random_chat.id, user.id, MessageType.PRIVATE_CHAT)
                 target_url = f"http://127.0.0.1:5000/api/v1/private_chats/{random_chat.id}/messages/{message.id}"
                 notification = self._generate_fake_notification(
                     user.id, target_url, NotificationType.NEW_PRIVATE_CHAT_MESSAGE
@@ -316,7 +317,7 @@ class FakeDataGenerator:
                 users = results["models"]
                 for i in range(self.messages_per_chat):
                     random_user = random.choice(users)
-                    message = self._create_message(group_chat.id, random_user.id)
+                    message = self._create_message(group_chat.id, random_user.id, MessageType.GROUP_CHAT)
                     target_url = f"http://127.0.0.1:5000/api/v1/group_chats/{group_chat.id}/messages/{message.id}"
                     notification = self._generate_fake_notification(
                         random_user.id, target_url, NotificationType.NEW_GROUP_CHAT_MESSAGE
@@ -381,7 +382,7 @@ class FakeDataGenerator:
         secondary = PrivateChatMembership(chat_id, secondary_user.id, primary_user.id)
         return [primary, secondary]
 
-    def _create_message(self, chat_id, user_id):
+    def _create_message(self, chat_id, user_id, message_type):
         """Return an instance of a message model."""
         now = datetime.now()
         return Message(
@@ -389,6 +390,7 @@ class FakeDataGenerator:
             chat_id,
             user_id,
             self._faker.paragraph()[:50],
+            message_type,
             created_at=now,
         )
     
