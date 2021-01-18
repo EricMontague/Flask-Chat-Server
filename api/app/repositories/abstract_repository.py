@@ -142,27 +142,15 @@ class AbstractDatabaseRepository(ABC):
         pass
 
     @abstractmethod
-    def get_group_chat_message(self, message_id):
+    def get_chat_message(self, chat_id, message_id, message_type):
         pass
 
     @abstractmethod
-    def add_group_chat_message(self, message):
+    def add_chat_message(self, message):
         pass
 
     @abstractmethod
-    def remove_group_chat_message(self, message):
-        pass
-
-    @abstractmethod
-    def get_private_chat_message(self, message_id):
-        pass
-
-    @abstractmethod
-    def add_private_chat_message(self, message):
-        pass
-
-    @abstractmethod
-    def remove_private_chat_message(self, message):
+    def remove_chat_message(self, message):
         pass
 
     @abstractmethod
@@ -180,7 +168,7 @@ class AbstractDatabaseRepository(ABC):
     @abstractmethod
     def get_group_chat_messages(self, group_chat_id, *args, **kwargs):
         pass
-    
+
     @abstractmethod
     def get_group_chat_member(self, group_chat_id, user_id):
         pass

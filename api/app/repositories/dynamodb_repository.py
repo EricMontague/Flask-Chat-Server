@@ -20,7 +20,8 @@ from app.models import (
     PrivateChat,
     GroupChatMembership,
     GroupChat,
-    TokenType
+    TokenType,
+    MessageType
 )
 from app.models.update_models import update_user_model, update_community_model
 from app.dynamodb_mappers import (
@@ -814,25 +815,24 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             ItemType.PRIVATE_CHAT_MESSAGE.name
         )
         
-    def get_private_chat_message(self, private_chat_id, message_id):
+    def get_chat_message(self, chat_id, message_id, message_type):
         """Return an instance of a Message model."""
-        primary_key = self._private_chat_message_mapper.key(private_chat_id, message_id)
+        if message_type == MessageType.PRIVATE_CHAT:
+            mapper = self._private_chat_message_mapper
+        else:
+            mapper = self._group_chat_mapper
+        primary_key = mapper.key(chat_id, message_id)
         item = self._dynamodb_client.get_item(primary_key)
         if not item:
             return None
-        return self._private_chat_message_mapper.deserialize_to_model(item)
+        return mapper.deserialize_to_model(item)
 
-    def add_private_chat_message(self, message):
-        """Create or replace a private chat message in DynamoDB."""
-        return self._add_chat_message(message, self._private_chat_message_mapper)
-
-    def remove_private_chat_message(self, message):
-        """Delete a private chat message item from DynamoDB."""
-        if not self._remove_chat_message(message, self._private_chat_message_mapper):
-            raise NotFoundException("Private chat message not found")
-
-    def _add_chat_message(self, message, mapper):
+    def add_chat_message(self, message):
         """Add a chat message to DynamoDB."""
+        if message.message_type == MessageType.PRIVATE_CHAT:
+            mapper = self._private_chat_mapper
+        else:
+            mapper = self._group_chat_mapper
         additional_attributes = {"USERS_GSI_PK": PrimaryKeyPrefix.USER + message.user_id}
         if mapper == self._private_chat_message_mapper:
             gsi_sort_key = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE + message.id
@@ -845,8 +845,12 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         response = self._dynamodb_client.put_item(message_item)
         return response
         
-    def _remove_chat_message(self, message, mapper):
+    def remove_chat_message(self, message):
         """Delete a chat message from DynamoDB."""
+        if message.message_type == MessageType.PRIVATE_CHAT:
+            mapper = self._private_chat_mapper
+        else:
+            mapper = self._group_chat_mapper
         primary_key = mapper.key(message.chat_id, message.id)
         return self._dynamodb_client.delete_item(primary_key)
     
@@ -923,22 +927,6 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         primary_key = self._group_chat_membership_mapper.key(group_chat_id, user_id)
         if not self._dynamodb_client.delete_item(primary_key):
             raise NotFoundException("User is not a member of the given group chat")
-    
-    def get_group_chat_message(self, group_chat_id, message_id):
-        """Return an instance of a Message model."""
-        primary_key = self._group_chat_message_mapper.key(group_chat_id, message_id)
-        item = self._dynamodb_client.get_item(primary_key)
-        if not item:
-            return None
-        return self._group_chat_message_mapper.deserialize_to_model(item)
-
-    def add_group_chat_message(self, message):
-        """Create or replace a group chat message in DynamoDB."""
-        return self._add_chat_message(message, self._group_chat_message_mapper)
-
-    def remove_group_chat_message(self, message):
-        """Delete a group chat message item from DynamoDB."""
-        return self._remove_chat_message(message, self._group_chat_message_mapper)
 
     def get_group_chat_messages(self, group_chat_id, limit, **kwargs):
         """Return a collection of group chat messages."""
