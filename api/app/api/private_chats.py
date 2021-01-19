@@ -16,11 +16,11 @@ from app.repositories.exceptions import (
 from app.schemas import UrlParamsSchema, PrivateChatMessageSchema, PrivateChatSchema
 from app.decorators.views import handle_request, handle_response
 from app.decorators.auth import permission_required
-from app.models import RolePermission, PrivateChat
+from app.models import RolePermission, PrivateChat, MessageType
 from app.extensions import ma
 
 
-PrivateChatGeneratedSchema = PrivateChatSchema.from_dict(
+PrivateChatGeneratedSchema = ma.Schema.from_dict(
     {"other_user_id": ma.UUID(required=True)}
 )
 
@@ -47,8 +47,8 @@ def get_private_chat_messages(url_params, private_chat_id):
 @handle_response(PrivateChatMessageSchema())
 def get_private_chat_message(private_chat_id, message_id):
     """Return a private chat message resource."""
-    chat_message = dynamodb_repository.get_private_chat_message(
-        private_chat_id, message_id
+    chat_message = dynamodb_repository.get_chat_message(
+        private_chat_id, message_id, MessageType.PRIVATE_CHAT
     )
     if not chat_message:
         return {"error": "Private chat message not found"}, HTTPStatus.NOT_FOUND
@@ -79,10 +79,15 @@ def create_private_chat(data):
     other_user = dynamodb_repository.get_user(data["other_user_id"].hex)
     if not other_user:
         return {"error": "Other user could not be found"}, HTTPStatus.NOT_FOUND
-    private_chat_id = md5(g.current_user.id.encode("utf-8") + other_user.id.encode("utf-8")).hexdigest()
+    private_chat_id = md5(
+        g.current_user.id.encode("utf-8") + other_user.id.encode("utf-8")
+    ).hexdigest()
     existing_private_chat = dynamodb_repository.get_private_chat(private_chat_id)
     if existing_private_chat:
-        return {"error": "A private chat already exists between these two users"}, HTTPStatus.BAD_REQUEST
+        return (
+            {"error": "A private chat already exists between these two users"},
+            HTTPStatus.BAD_REQUEST,
+        )
     private_chat = PrivateChat(private_chat_id, g.current_user, other_user)
     try:
         dynamodb_repository.add_private_chat(private_chat)
