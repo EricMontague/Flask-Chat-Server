@@ -10,6 +10,7 @@ from app.schemas import UrlParamsSchema, GroupChatMessageSchema, UserSchema
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
 from app.decorators.views import handle_response, handle_request
+from app.models import MessageType
 
 
 @api.route("/group_chats/<group_chat_id>/messages")
@@ -32,7 +33,7 @@ def get_group_chat_messages(url_params, group_chat_id):
 @handle_response(GroupChatMessageSchema())
 def get_group_chat_message(group_chat_id, message_id):
     """Return a group chat message resource."""
-    chat_message = dynamodb_repository.get_group_chat_message(group_chat_id, message_id)
+    chat_message = dynamodb_repository.get_chat_message(group_chat_id, message_id, MessageType.GROUP_CHAT)
     if not chat_message:
         return {"error": "Group chat message not found"}, HTTPStatus.NOT_FOUND
     return chat_message, HTTPStatus.OK
