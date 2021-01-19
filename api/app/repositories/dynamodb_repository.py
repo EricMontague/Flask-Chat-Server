@@ -820,7 +820,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if message_type == MessageType.PRIVATE_CHAT:
             mapper = self._private_chat_message_mapper
         else:
-            mapper = self._group_chat_mapper
+            mapper = self._group_chat_message_mapper
         primary_key = mapper.key(chat_id, message_id)
         item = self._dynamodb_client.get_item(primary_key)
         if not item:
@@ -830,9 +830,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def add_chat_message(self, message):
         """Add a chat message to DynamoDB."""
         if message.message_type == MessageType.PRIVATE_CHAT:
-            mapper = self._private_chat_mapper
+            mapper = self._private_chat_message_mapper
         else:
-            mapper = self._group_chat_mapper
+            mapper = self._group_chat_message_mapper
         additional_attributes = {"USERS_GSI_PK": PrimaryKeyPrefix.USER + message.user_id}
         if mapper == self._private_chat_message_mapper:
             gsi_sort_key = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE + message.id
@@ -848,9 +848,9 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
     def remove_chat_message(self, message):
         """Delete a chat message from DynamoDB."""
         if message.message_type == MessageType.PRIVATE_CHAT:
-            mapper = self._private_chat_mapper
+            mapper = self._private_chat_message_mapper
         else:
-            mapper = self._group_chat_mapper
+            mapper = self._group_chat_message_mapper
         primary_key = mapper.key(message.chat_id, message.id)
         return self._dynamodb_client.delete_item(primary_key)
     
