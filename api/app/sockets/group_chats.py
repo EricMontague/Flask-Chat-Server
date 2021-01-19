@@ -51,15 +51,14 @@ def create_group_chat_message(message_data, message_schema):
             send_group_chat_notifications(dynamodb_repository, chat_message, group_chat)
 
 
-
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
 @socketio_permission_required(RolePermission.READ_CHAT_MESSAGE)
-@socketio_handle_arguments(GroupChatSchema(only=["_id", "community_id"]))
+@socketio_handle_arguments(GroupChatSchema(only=["_id", "_community_id"]))
 def join_group_chat(group_chat_data, chat_schema):
     """Add a user to a socketio room. Rooms are identified by group chat ids."""
     group_chat_id = group_chat_data["_id"]
-    community_id = group_chat_data["community_id"]
+    community_id = group_chat_data["_community_id"]
     group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
     if not group_chat:
         emit("error", json.dumps({"error": "Group chat not found"}))
@@ -78,11 +77,11 @@ def join_group_chat(group_chat_data, chat_schema):
 
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
-@socketio_handle_arguments(GroupChatSchema(only=["_id", "community_id"]))
+@socketio_handle_arguments(GroupChatSchema(only=["_id", "_community_id"]))
 def leave_group_chat(group_chat_data, chat_schema):
     """Remove a user from a socketio room. Roomas are identified by group chat ids."""
     group_chat_id = group_chat_data["_id"]
-    community_id = group_chat_data["community_id"]
+    community_id = group_chat_data["_community_id"]
     group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
     if not group_chat:
         emit("error", json.dumps({"error": "Group chat not found"}))
