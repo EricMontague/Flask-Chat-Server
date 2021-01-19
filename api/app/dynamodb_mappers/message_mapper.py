@@ -16,7 +16,7 @@ class ReactionMapper(ModelMapper):
 
     class Meta:
         model = Reaction
-        fields = ("user_id", "reaction_type", "created_at")
+        fields = ("user_id", "reaction_type", "message_id", "created_at")
 
     ENUMS = {"reaction_type": ReactionType}
 

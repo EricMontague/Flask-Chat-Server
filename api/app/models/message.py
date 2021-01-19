@@ -133,4 +133,5 @@ class Reaction:
 
     user_id: str
     reaction_type: ReactionType
+    message_id: str
     created_at: datetime = datetime.now()
