@@ -3,8 +3,9 @@ and deserializing group chat models.
 """
 
 
+import uuid
 from app.extensions import ma
-from marshmallow import validate, EXCLUDE, pre_load
+from marshmallow import validate, EXCLUDE, pre_load, post_load
 
 
 class GroupChatSchema(ma.Schema):
@@ -15,8 +16,8 @@ class GroupChatSchema(ma.Schema):
 
     class Meta:
         unknown = EXCLUDE
-
-    _id = ma.UUID(dump_only=True, data_key="id")
+    
+    _id = ma.UUID(required=True, data_key="id")
     _community_id = ma.UUID(dump_only=True, data_key="community_id")
     name = ma.Str(required=True, validate=validate.Length(min=1, max=32))
     description = ma.Str(required=True, validate=validate.Length(min=1, max=140))
@@ -30,6 +31,15 @@ class GroupChatSchema(ma.Schema):
     community_url = ma.URLFor("api.get_community", community_id="<_id>")
     members_url = ma.URLFor("api.get_community_group_chat_members", community_id="<_community_id>", group_chat_id="<_id>")
 
+
+    @post_load
+    def convert_uuid_to_hex(self, data, **kwargs):
+        """Convert all UUID fields to their 32-character hexadecimal equivalent."""
+        for key in data:
+            value = data[key]
+            if isinstance(value, uuid.UUID):
+                data[key] = data[key].hex
+        return data
 
     @pre_load
     def strip_unwanted_fields(self, data, many, **kwargs):
