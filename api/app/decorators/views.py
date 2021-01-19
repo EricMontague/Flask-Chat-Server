@@ -177,7 +177,8 @@ def socketio_handle_arguments(schema):
                 deserialized_data = schema.loads(data)
             except ValidationError as err:
                 emit("error", json.dumps({"error": err.messages}))
-            return func(deserialized_data, schema, *args, **kwargs)
+            else:
+                return func(deserialized_data, schema)
 
         return wrapper
 
