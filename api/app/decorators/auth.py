@@ -148,8 +148,11 @@ def socketio_jwt_required(token_type):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            raw_jwt = get_raw_jwt(request)
+            raw_jwt = request.args.get("token")
             if not raw_jwt:
+                print("#####")
+                print("NO JWT!")
+                print("###")
                 raise ConnectionRefusedError(
                     "Missing token in arguments or query string"
                 )
