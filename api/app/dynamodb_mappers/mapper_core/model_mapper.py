@@ -14,9 +14,8 @@ from app.dynamodb_mappers.mapper_core.exceptions import (
 from app.dynamodb_mappers.mapper_core.utils import (
     TypeValidator,
     DateTimeParser,
-    get_attribute_or_dict_value,
-    set_attribute_or_dict_value,
     DynamoDBType,
+    is_empty_collection,
 )
 from app.dynamodb_mappers.mapper_core.serializer_manager import serializer_manager
 
@@ -70,6 +69,10 @@ class MapperOptions:
                 "`attributes_to_monkey_patch` option must be a list or a tuple"
             )
 
+        self.default_values = getattr(meta, "default_values", {})
+        if not isinstance(self.default_values, dict):
+            raise ValueError("`default_values` options must be a dictionary")
+
         partition_key_prefix = getattr(
             meta, "partition_key_prefix", self.model.__name__.upper() + "#"
         )
@@ -90,7 +93,6 @@ class MapperOptions:
         self.datetime_format = getattr(meta, "datetime_format", "%Y-%m-%dT%H:%M:%S.%f")
 
 
-# TODO - Determine how to intelligently split this class up if necessary
 class ModelMapper(ABC):
     """Abstract base class to serialize and deserialize 
     models to and from DynamoDB items.
@@ -135,6 +137,8 @@ class ModelMapper(ABC):
             - ``type_``: String that indicates the type of the item
             - ``attributes_to_monkey_patch``: A tuple of attributes that should be set on the model
             but aren't passed in to the constructor during instantiation. Used on deserialization
+            - ``default_values``: A dictionary of attributes and the default values that should be
+            used on deserialization if those attributes are missing
             
 
 
@@ -163,9 +167,11 @@ class ModelMapper(ABC):
         """Return a dictionary containing the formatted primary key for
         the item.
         """
-        pk_prefix = kwargs.get("partition_key_prefix", self._options.partition_key.prefix)
+        pk_prefix = kwargs.get(
+            "partition_key_prefix", self._options.partition_key.prefix
+        )
         pk_name = self._options.partition_key.column_name
-        partition_key =  pk_prefix + str(partition_key_value)
+        partition_key = pk_prefix + str(partition_key_value)
         if not sort_key_value:
             return {
                 pk_name: self._serializer_manager.serialize("", partition_key),
@@ -181,7 +187,9 @@ class ModelMapper(ABC):
     def serialize_from_model(self, model, **kwargs):
         """Serialize the given model to a DynamoDB item."""
         item = self._serialize(model, **kwargs)
-        self._serialize_additional_attributes(item, kwargs.get("additional_attributes", {}))
+        self._serialize_additional_attributes(
+            item, kwargs.get("additional_attributes", {})
+        )
         return item
 
     def deserialize_to_model(self, item):
@@ -203,14 +211,16 @@ class ModelMapper(ABC):
             merged_item.update(item)
         return merged_item
 
-    def _serialize(self, model_or_dict, **kwargs):
+    def _serialize(self, model, **kwargs):
         """Serialize the given model or dictionary to a DynamoDB item."""
         item = {}
         if not self.ignore_partition_key:
-            primary_key = self._construct_primary_key(model_or_dict, **kwargs)
+            primary_key = self._construct_primary_key(model, **kwargs)
             item.update(primary_key)
         for field in self._options.fields:
-            value = get_attribute_or_dict_value(model_or_dict, field)
+            value = getattr(model, field)
+            if is_empty_collection(value):  
+                continue
             item[field] = self._handle_serialization(field, value)
         if self._options.type is not None:
             item["type"] = self._serializer_manager.serialize(
@@ -265,10 +275,18 @@ class ModelMapper(ABC):
         model_dict = {}
         for field in self._options.fields:
             if field not in attributes_to_skip:
-                value = item[field]
-                model_dict[field.lstrip("_")] = self._handle_deserialization(
-                    field, value, item
-                )
+                if field not in item:
+                    if (
+                        field in self._options.default_values
+                    ):  # skip this field if it doesn't have a default
+                        model_dict[field.lstrip("_")] = self._options.default_values[
+                            field
+                        ]
+                else:
+                    value = item[field]
+                    model_dict[field.lstrip("_")] = self._handle_deserialization(
+                        field, value, item
+                    )
         return model_dict
 
     # TODO - Break up into separate methods
@@ -311,22 +329,24 @@ class ModelMapper(ABC):
             )
         return deserialized_value
 
-    def _deserialize_additional_attributes(self, model_or_dict, item, attributes):
+    def _deserialize_additional_attributes(self, model, item, attributes):
         """Add additional attributes to the model or dictionary after deserialization
         has taken place.
         """
         for attribute in attributes:
             value = item.get(attribute)
-            if value: 
-                deserialized_value = self._handle_deserialization(attribute, value, item)
-                set_attribute_or_dict_value(model_or_dict, attribute, deserialized_value)
+            if value:
+                deserialized_value = self._handle_deserialization(
+                    attribute, value, item
+                )
+                setattr(model, attribute, deserialized_value)
 
     def _construct_primary_key(self, model, **kwargs):
         """Return a formatted primary key based on the passed in parameters
         and options set on the Mapper class. Values passed into this function
         override the values set in the options class
         """
-        partition_key_value= kwargs.pop("partition_key_value", None)
+        partition_key_value = kwargs.pop("partition_key_value", None)
         sort_key_value = kwargs.pop("sort_key_value", None)
         # Passed in PK and SK values override values set in the options class
         if partition_key_value and sort_key_value:
@@ -334,29 +354,21 @@ class ModelMapper(ABC):
         # Both not passed in, use options class values
         elif not partition_key_value and not sort_key_value:
             primary_key = self.key(
-                get_attribute_or_dict_value(
-                    model, str(self._options.partition_key_attribute)
-                ),
-                get_attribute_or_dict_value(
-                    model, str(self._options.sort_key_attribute), None
-                ),
+                getattr(model, str(self._options.partition_key_attribute)),
+                getattr(model, str(self._options.sort_key_attribute), None),
                 **kwargs
             )
         # Partition key but no sort key
         elif partition_key_value and not sort_key_value:
             primary_key = self.key(
                 partition_key_value,
-                get_attribute_or_dict_value(
-                    model, str(self._options.sort_key_attribute), None
-                ),
+                getattr(model, str(self._options.sort_key_attribute), None),
                 **kwargs
             )
         # Sort Key but no partition key
         elif not partition_key_value and sort_key_value:
             primary_key = self.key(
-                get_attribute_or_dict_value(
-                    model, str(self._options.partition_key_attribute)
-                ),
+                getattr(model, str(self._options.partition_key_attribute)),
                 sort_key_value,
                 **kwargs
             )
