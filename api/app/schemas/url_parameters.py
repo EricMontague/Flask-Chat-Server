@@ -3,37 +3,44 @@ information from url parameters
 """
 
 
+import uuid
 from app.extensions import ma
 from app.schemas.enum_field import EnumField
 from app.schemas.location import LocationSchema
 from app.models import CommunityTopic
-from marshmallow import EXCLUDE, validates_schema, ValidationError, validate
+from marshmallow import EXCLUDE, validates_schema, ValidationError, validate, post_load
 
 
 class UrlParamsSchema(ma.Schema):
-    """Class to serialize and deserialize information from url parameters"""
+    """Class to parse and validate information from url parameters"""
 
     class Meta:
         unknown = EXCLUDE
 
     per_page = ma.Integer()
     next_cursor = ma.Str(data_key="next")
-    # prev_cursor = ma.Str(data_key="prev")
 
-    @validates_schema
-    def validate_cursors(self, data, **kwargs):
-        """Raise a ValidationError if both the next and previous cursors
-        were sent.
-        """
-        if "next_cursor" in data and "prev_cursor" in data:
-            raise ValidationError(
-                "Next and previous cursors cannot be present at the same time"
-            )
+
+class GroupChatUrlParamsSchema(UrlParamsSchema):
+    """Class to parse and validate information from Group Chat url parameters."""
+
+    class Meta:
+        unknown = EXCLUDE
+    
+    community_id = ma.UUID(required=True)
+
+    @post_load
+    def convert_uuid_to_hex(self, data, **kwargs):
+        """Convert all UUID fields to their 32-character hexadecimal equivalent."""
+        for key in data:
+            value = data[key]
+            if isinstance(value, uuid.UUID):
+                data[key] = data[key].hex
         return data
 
 
 class CommunityUrlParamsSchema(UrlParamsSchema):
-    """Class to serialize and deserialize information from url parameters
+    """Class to Deserialize information from url parameters
     for community resources.
     """
 
