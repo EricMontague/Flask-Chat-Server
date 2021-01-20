@@ -18,7 +18,8 @@ class Message:
         message_type, 
         created_at=datetime.now(), 
         sent=False, 
-        editted=False
+        editted=False,
+        reactions={}
     ):
         self._id = id
         self._chat_id = chat_id
@@ -26,7 +27,7 @@ class Message:
         self._content = content
         self.message_type = message_type
         self._created_at = created_at
-        self._reactions = {}
+        self._reactions = reactions
         self._sent = sent
         self._editted = editted
 
@@ -133,5 +134,4 @@ class Reaction:
 
     user_id: str
     reaction_type: ReactionType
-    message_id: str
     created_at: datetime = datetime.now()
