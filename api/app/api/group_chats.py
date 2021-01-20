@@ -6,7 +6,7 @@ chat resources.
 from http import HTTPStatus
 from flask import current_app, request, g
 from app.api import api
-from app.schemas import UrlParamsSchema, GroupChatMessageSchema, UserSchema
+from app.schemas import UrlParamsSchema, GroupChatMessageSchema, UserSchema, GroupChatUrlParamsSchema
 from app.repositories import dynamodb_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
 from app.decorators.views import handle_response, handle_request
@@ -14,14 +14,15 @@ from app.models import MessageType
 
 
 @api.route("/group_chats/<group_chat_id>/messages")
-@handle_request(UrlParamsSchema())
+@handle_request(GroupChatUrlParamsSchema())
 @handle_response(GroupChatMessageSchema(many=True))
 def get_group_chat_messages(url_params, group_chat_id):
     """Return a list of group chat message resources."""
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
+    community_id = url_params["community_id"]
     try:
-        results = dynamodb_repository.get_group_chat_messages(group_chat_id, per_page, cursor=cursor)
+        results = dynamodb_repository.get_group_chat_messages(community_id, group_chat_id, per_page, cursor=cursor)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
