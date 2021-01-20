@@ -4,6 +4,7 @@ DynamoDB Mapper package.
 
 
 from collections import abc
+from collections.abc import Iterable
 from enum import Enum
 from datetime import datetime, date, time
 from decimal import Decimal
@@ -77,17 +78,15 @@ class TypeValidator:
         return isinstance(value, time)
     
     @staticmethod
-    def is_list_like(value):
-        """Return True if the value is a list, tuple, or a set, otherwise
-        return False
+    def is_iterable(value):
+        """Return True if the value is iterable, otherwise return False
         """
-        if (
-            TypeValidator.is_set(value)
-            or TypeValidator.is_list(value)
-            or TypeValidator.is_tuple(value)
-        ):
-            return True
-        return False
+        return isinstance(value, Iterable)
+
+    @staticmethod
+    def is_string(value):
+        """Return True if the value is a string, otherwise return False."""
+        return isinstance(value, str)
 
     @staticmethod
     def is_type_set(value, validator):
@@ -149,25 +148,16 @@ def get_enum_member(enum, name_or_value):
         return enum(int(name_or_value)) # Get by value
 
 
-def get_attribute_or_dict_value(model_or_dict, attribute_or_key, default=None):
-    """Return the value of the matching attribute or key from the given
-    model or dictionary.
+def is_empty_collection(value):
+    """Return True if the given value is an empty list, tuple, set,
+    or dictionary, else return False.
     """
-    if TypeValidator.is_dict(model_or_dict):
-        return model_or_dict[attribute_or_key]
-    return getattr(model_or_dict, attribute_or_key, default)
-
-
-def set_attribute_or_dict_value(model_or_dict, attribute_or_key, value):
-    """Set the value of the matching attribute or key on the given
-    model or in the given dictionary.
-    """
-    if TypeValidator.is_dict(model_or_dict):
-        model_or_dict[attribute_or_key] = value
-    else:
-        setattr(model_or_dict, attribute_or_key, value)
-
-
+    return (
+        TypeValidator.is_iterable(value)
+        and not TypeValidator.is_string(value)
+        and len(value) == 0
+    )
+    
 
 def convert_decimal_to_float_or_int(value):
     """Convert a object of type decimal.Decimal to a float or
