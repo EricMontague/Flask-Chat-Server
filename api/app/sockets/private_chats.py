@@ -16,7 +16,6 @@ from app.models import TokenType, Message, MessageType, RolePermission
 from app.schemas import PrivateChatMessageSchema, PrivateChatSchema
 
 
-# TODO - Validate that the current user is connected to the room before creating the message
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
 @socketio_permission_required(RolePermission.WRITE_CHAT_MESSAGE)
@@ -26,6 +25,8 @@ def create_private_chat_message(message_data, message_schema):
     private_chat = dynamodb_repository.get_private_chat(message_data["_chat_id"])
     if not private_chat:
         emit("error", json.dumps({"error": "Private chat not found"}))
+    elif not g.current_user.in_room(private_chat.id):
+        emit("error", json.dumps({"error": "User has not joined the private chat"}))
     else:
         now = datetime.now()
         # Create new message
@@ -43,8 +44,9 @@ def create_private_chat_message(message_data, message_schema):
             message_schema.dumps(chat_message),
             room=chat_message.chat_id,
         )
-
-        send_private_chat_notifications(dynamodb_repository, chat_message, private_chat)
+        socketio.start_background_task(
+            send_private_chat_notifications, dynamodb_repository, chat_message, private_chat
+        )
 
 
 @socketio.event
@@ -56,6 +58,8 @@ def join_private_chat(private_chat_data, chat_schema):
     if not private_chat:
         emit("error", json.dumps({"error": "Private chat not found"}))
     else:
+        g.current_user.add_room(private_chat.id)
+        dynamodb_repository.update_user(g.current_user, {"rooms": g.current_user.rooms})
         join_room(private_chat.id)
         emit(
             "joined_private_chat",
@@ -72,7 +76,11 @@ def leave_private_chat(private_chat_data, chat_schema):
     private_chat = dynamodb_repository.get_private_chat(private_chat_data["_id"])
     if not private_chat:
         emit("error", json.dumps({"error": "Private chat not found"}))
+    elif not g.current_user.in_room(private_chat.id):
+        emit("error", json.dumps({"error": "User has not joined this private chat"}))
     else:
+        g.current_user.remove_room(private_chat.id)
+        dynamodb_repository.update_user(g.current_user, {"rooms": g.current_user.rooms})
         leave_room(private_chat.id)
         emit(
             "left_private_chat",
