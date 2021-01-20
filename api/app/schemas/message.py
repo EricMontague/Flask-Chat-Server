@@ -19,7 +19,7 @@ class ReactionSchema(ma.Schema):
     user_id = ma.UUID(dump_only=True, required=True)
     created_at = ma.DateTime(dump_only=True, data_key="timestamp")
     reaction_type = EnumField(ReactionType, required=True)
-    message_id = ma.Str(required=True)
+    message_id = ma.Str(load_only=True, required=True)
     message_type = EnumField(MessageType, required=True)
     chat_id = ma.UUID(load_only=True, required=True)
 
