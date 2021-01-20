@@ -257,8 +257,6 @@ class FakeDataGenerator:
                     notification
                 )
                 message_item = private_chat_message_mapper.serialize_from_model(message)
-                if not message.has_reactions():
-                    del message_item["_reactions"]
                 requests.append(("PutRequest", message_item))
                 requests.append(("PutRequest", notification_item))
         
@@ -328,8 +326,6 @@ class FakeDataGenerator:
                     message_item = group_chat_message_mapper.serialize_from_model(
                         message
                     )
-                    if not message.has_reactions():
-                        del message_item["_reactions"]
                     requests.append(("PutRequest", message_item))
                     requests.append(("PutRequest", notification_item))
         self._write_batches(requests)
