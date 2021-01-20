@@ -45,11 +45,13 @@ class UserMapper(ModelMapper):
             "is_online",
             "is_banned",
             "socketio_session_id",
+            "_rooms",
         )
         type_ = ItemType.USER.name
         partition_key_attribute = "_id"
         sort_key_attribute = "_id"
         attributes_to_monkey_patch = ("_password_hash",)
+        default_values = {"_rooms": set()}
 
     NESTED_MAPPERS = {
         "location": LocationMapper(ignore_partition_key=True),
