@@ -16,7 +16,6 @@ from app.models import TokenType, Message, MessageType, RolePermission
 from app.schemas import GroupChatMessageSchema, GroupChatSchema
 
 
-# TODO - Validate that the current user is connected to the room before creating the message
 @socketio.event
 @socketio_jwt_required(TokenType.ACCESS_TOKEN)
 @socketio_permission_required(RolePermission.WRITE_CHAT_MESSAGE)
@@ -30,6 +29,8 @@ def create_group_chat_message(message_data, message_schema):
         member = dynamodb_repository.get_group_chat_member(message_data["_chat_id"], g.current_user.id)
         if not member:
             emit("error", json.dumps({"error": "User is not a member of this group chat"}))
+        elif not member.in_room(group_chat.id):
+            emit("error", json.dumps({"error": "User has not joined the group chat"})) 
         else:
             now = datetime.now()
             # Create new message
@@ -48,7 +49,10 @@ def create_group_chat_message(message_data, message_schema):
                 message_schema.dumps(chat_message),
                 room=chat_message.chat_id
             )
-            send_group_chat_notifications(dynamodb_repository, chat_message, group_chat)
+
+            socketio.start_background_task(
+                send_group_chat_notifications, dynamodb_repository, chat_message, group_chat
+            )
 
 
 @socketio.event
@@ -67,6 +71,8 @@ def join_group_chat(group_chat_data, chat_schema):
         if not member:
             emit("error", json.dumps({"error": "User is not a member of this group chat"}))    
         else:
+            member.add_room(group_chat_id)
+            dynamodb_repository.update_user(member, {"rooms": member.rooms})
             join_room(group_chat_id)
             emit(
                 "joined_group_chat", 
@@ -89,7 +95,11 @@ def leave_group_chat(group_chat_data, chat_schema):
         member = dynamodb_repository.get_group_chat_member(group_chat_id, g.current_user.id)
         if not member:
             emit("error", json.dumps({"error": "User is not a member of this group chat"}))
+        elif not member.in_room(group_chat_id):
+            emit("error", json.dumps({"error": "User has not joined this group chat"}))
         else:
+            member.remove_room(group_chat_id)
+            dynamodb_repository.update_user(member, {"rooms": member.rooms})
             leave_room(group_chat_id)
             emit(
                 "left_group_chat", 

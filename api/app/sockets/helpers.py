@@ -29,6 +29,7 @@ def send_group_chat_notifications(repo, chat_message, group_chat):
                 ),
             )
             repo.add_user_notification(notification)
+            print("Add group chat notifications")
             if member.socketio_session_id:
                 emit(
                     "new_notification",
@@ -55,6 +56,7 @@ def send_private_chat_notifications(repo, chat_message, private_chat):
         ),
     )
     repo.add_user_notification(notification)
+    print("Add private chat notifications")
     if other_user.socketio_session_id:
         emit(
             "new_notification",
