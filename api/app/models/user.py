@@ -27,7 +27,8 @@ class User:
         cover_photo=None,
         is_online=True,
         is_banned=False,
-        socketio_session_id=""
+        socketio_session_id="",
+        rooms=set()
     ):
         self._id = id
         self.username = username
@@ -44,6 +45,7 @@ class User:
         self.is_online = is_online
         self.is_banned = is_banned
         self.socketio_session_id = socketio_session_id
+        self._rooms = rooms
 
     @property
     def id(self):
@@ -106,6 +108,27 @@ class User:
     def is_admin(self):
         """Return True if the user has admin priveleges, else return False."""
         return self.role.name == RoleName.ADMIN
+
+    def in_room(self, room):
+        """Return True if the user is in the given room, else return False."""
+        return room in self._rooms
+
+    def add_room(self, room):
+        """Add the given room to the user's set of rooms."""
+        self._rooms.add(room)
+
+    def remove_room(self, room):
+        """Remove the given room from the user's set of rooms."""
+        self._rooms.remove(room)
+
+    def clear_rooms(self):
+        """Remove all rooms from the user's set of rooms."""
+        self._rooms.clear()
+
+    @property
+    def rooms(self):
+        """Return a list of the user's rooms."""
+        return list(self._rooms)
 
     @classmethod
     def encode_token(self, claims, secret, expires_in):
