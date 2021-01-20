@@ -128,20 +128,6 @@ def jwt_required(token_type):
 
     return decorator
 
-
-def get_raw_jwt(request):
-    """Return the JWT sent in the query string of a url or
-    in the arguments to a SocketIO event handler.
-    """
-    raw_jwt = request.args.get("token")
-    if raw_jwt:
-        return raw_jwt
-    try:
-        return json.loads(request.event["args"][0].get("token"))
-    except (TypeError, JSONDecodeError):
-        return None
-
-
 def socketio_jwt_required(token_type):
     """Decorator used to protect socketio event handlers that require an authenticated user."""
 
@@ -150,32 +136,23 @@ def socketio_jwt_required(token_type):
         def wrapper(*args, **kwargs):
             raw_jwt = request.args.get("token")
             if not raw_jwt:
-                print("#####")
-                print("NO JWT!")
-                print("###")
-                raise ConnectionRefusedError(
-                    "Missing token in arguments or query string"
-                )
+                disconnect()
             else:
                 decoded_token = User.decode_token(
                     raw_jwt, current_app.config["SECRET_KEY"]
                 )
                 if not decoded_token:
-                    raise ConnectionRefusedError(
-                        f"Invalid {token_type.name.replace('_', ' ').lower()}"
-                    )
+                    disconnect()
                 elif decoded_token.token_type != token_type:
-                    raise ConnectionRefusedError("Incorrect token type provided")
+                    disconnect()
                 elif is_blacklisted(decoded_token, token_type):
-                    raise ConnectionRefusedError(
-                        f"Invalid {token_type.name.replace('_', ' ').lower()}"
-                    )
+                    disconnect()
                 else:
                     current_user = dynamodb_repository.get_user(decoded_token.user_id)
                     if not current_user:
-                        raise ConnectionRefusedError("User not found")
+                        disconnect()
                     elif current_user.is_banned:
-                        raise ConnectionRefusedError("User is banned")
+                        disconnect()
                     else:
                         g.current_user = current_user
                         g.decoded_token = decoded_token
