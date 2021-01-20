@@ -18,7 +18,7 @@ class GroupChatSchema(ma.Schema):
         unknown = EXCLUDE
     
     _id = ma.UUID(required=True, data_key="id")
-    _community_id = ma.UUID(dump_only=True, data_key="community_id")
+    _community_id = ma.UUID(required=True, data_key="community_id")
     name = ma.Str(required=True, validate=validate.Length(min=1, max=32))
     description = ma.Str(required=True, validate=validate.Length(min=1, max=140))
     resource_type = ma.Str(default="GroupChat", dump_only=True)
