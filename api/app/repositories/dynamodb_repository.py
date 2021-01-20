@@ -778,6 +778,10 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
     def get_private_chat_messages(self, private_chat_id, limit, **kwargs):
         """Return a collection of messages from a private chat."""
+        chat_primary_key = self._private_chat_mapper.key(private_chat_id, private_chat_id)
+        private_chat = self.get_private_chat(private_chat_id)
+        if not private_chat:
+            raise NotFoundException("Private chat not found")
         chat_primary_key = {"PK": {"S": PrimaryKeyPrefix.PRIVATE_CHAT + private_chat_id}}
         chat_query_results = self._dynamodb_client.query(
             1, 
@@ -840,8 +844,6 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             gsi_sort_key = PrimaryKeyPrefix.GROUP_CHAT_MESSAGE + message.id
         additional_attributes["USERS_GSI_SK"] = gsi_sort_key
         message_item = mapper.serialize_from_model(message, additional_attributes=additional_attributes)
-        if not message.has_reactions():
-            del message_item["_reactions"]
         response = self._dynamodb_client.put_item(message_item)
         return response
         
@@ -928,20 +930,21 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         if not self._dynamodb_client.delete_item(primary_key):
             raise NotFoundException("User is not a member of the given group chat")
 
-    def get_group_chat_messages(self, group_chat_id, limit, **kwargs):
+    def get_group_chat_messages(self, community_id, group_chat_id, limit, **kwargs):
         """Return a collection of group chat messages."""
         cursor = {}
         if kwargs.get("cursor"):
             cursor = decode_cursor(kwargs["cursor"])
-        primary_key = {
-            "PK": {"S": PrimaryKeyPrefix.GROUP_CHAT + group_chat_id}
-        }
+        group_chat = self.get_group_chat(community_id, group_chat_id)
+        if not group_chat:
+            raise NotFoundException("Group chat not found")
+        primary_key = self._group_chat_mapper.key(community_id, group_chat_id)
         query_results = self._dynamodb_client.query(
             limit,
             cursor,
             {
                 "pk_name": "PK", 
-                "pk_value": primary_key["PK"], 
+                "pk_value": primary_key["SK"], 
                 "sk_name": "SK",
                 "sk_value": {"S": PrimaryKeyPrefix.GROUP_CHAT_MESSAGE},
             },
