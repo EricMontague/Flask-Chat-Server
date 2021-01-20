@@ -27,6 +27,10 @@ def update_user_model(old_user, updated_user_data):
             updated_user.location.country = updated_user_data["location"]["country"]
         elif attribute == "role":
             update_user_role(updated_user, updated_user_data["role"])
+        elif attribute == "rooms":
+            updated_user.clear_rooms()
+            for room in updated_user_data["rooms"]:
+                updated_user.add_room(room)
         else:
             setattr(updated_user, attribute, updated_user_data[attribute])
     return updated_user
