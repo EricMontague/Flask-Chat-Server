@@ -16,7 +16,7 @@ class ReactionMapper(ModelMapper):
 
     class Meta:
         model = Reaction
-        fields = ("user_id", "reaction_type", "message_id", "created_at")
+        fields = ("user_id", "reaction_type", "created_at")
 
     ENUMS = {"reaction_type": ReactionType}
 
@@ -41,6 +41,7 @@ class MessageMapper(ModelMapper):
         partition_key_attribute = "_chat_id"
         sort_key_attribute = "_id"
         attributes_to_monkey_patch = ("_reactions",)
+        default_values = {"_reactions": {}}
 
     ENUMS = {"message_type": MessageType}
     NESTED_MAPPERS = {"_reactions": ReactionMapper(ignore_partition_key=True)}
