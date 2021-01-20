@@ -18,8 +18,17 @@ def connect_handler():
     The user's session is saved in the database for as long as the 
     connection is alive.
     """
+    g.current_user.ping()
+    g.current_user.socketio_session_id = request.sid
+    g.current_user.add_room(request.sid)
     dynamodb_repository.update_user(
-        g.current_user, {"socketio_session_id": request.sid, "is_online": True}
+        g.current_user,
+        {
+            "socketio_session_id": g.current_user.socketio_session_id,
+            "is_online": g.current_user.is_online,
+            "last_seen_at": g.current_user.last_seen_at,
+            "rooms": g.current_user.rooms
+        },
     )
     print(f"{g.current_user.username} connected to server!")
 
@@ -29,8 +38,28 @@ def disconnect_handler():
     """Remove the user's session id from the database and do any other
     necessary cleanup when the client disconnects from the server.
     """
+
+    g.current_user.is_online = False
+    g.current_user.socketio_session_id = ""
+    g.current_user.clear_rooms()
     dynamodb_repository.update_user(
-        g.current_user, {"socketio_session_id": "", "is_online": False}
+        g.current_user,
+        {
+            "socketio_session_id": g.current_user.socketio_session_id,
+            "is_online": g.current_user.is_online,
+            "rooms": g.current_user.rooms,
+        },
+    )
+
+
+@socketio.event
+@socketio_jwt_required(TokenType.ACCESS_TOKEN)
+def ping_user():
+    """Clients must send this event periodically to keep the user online."""
+    g.current_user.ping()
+    dynamodb_repository.update_user(
+        g.current_user, 
+        {"is_online": g.current_user.is_online, "last_seen_at": g.current_user.last_seen_at}
     )
 
 
