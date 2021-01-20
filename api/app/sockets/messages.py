@@ -25,6 +25,8 @@ def update_chat_message(message_data, message_schema):
         emit("error", json.dumps({"error": "Chat message not found"}))
     elif chat_message.user_id != g.current_user.id:
         emit("error", json.dumps({"error": "User is not the sender of this message"}))
+    elif not g.current_user.in_room(chat_message.chat_id):
+        emit("error", json.dumps({"error": "User has not joined the chat"}))
     else:
         chat_message.edit(message_data["_content"])
         dynamodb_repository.add_chat_message(chat_message)
@@ -52,6 +54,8 @@ def delete_chat_message(message_data, message_schema):
         emit("error", json.dumps({"error": "Chat message not found"}))
     elif chat_message.user_id != g.current_user.id:
         emit("error", json.dumps({"error": "User is not the sender of this message"}))
+    elif not g.current_user.in_room(chat_message.chat_id):
+        emit("error", json.dumps({"error": "User has not joined the chat"}))
     else:
         dynamodb_repository.remove_chat_message(chat_message)
         emit(
@@ -74,8 +78,10 @@ def react_to_chat_message(reaction_data, reaction_schema):
         emit("error", json.dumps({"error": "Chat message not found"}))
     elif chat_message.user_id != g.current_user.id:
         emit("error", json.dumps({"error": "User is not the sender of this message"}))
+    elif not g.current_user.in_room(chat_message.chat_id):
+        emit("error", json.dumps({"error": "User has not joined the chat"}))
     else:
-        reaction = Reaction(g.current_user.id, reaction_data["reaction_type"], reaction_data["message_id"])
+        reaction = Reaction(g.current_user.id, reaction_data["reaction_type"])
         chat_message.add_reaction(reaction)
         dynamodb_repository.add_chat_message(chat_message)
         emit(
@@ -98,6 +104,8 @@ def unreact_to_chat_message(reaction_data, reaction_schema):
         emit("error", json.dumps({"error": "Chat message not found"}))
     elif chat_message.user_id != g.current_user.id:
         emit("error", json.dumps({"error": "User is not the sender of this message"}))
+    elif not g.current_user.in_room(chat_message.chat_id):
+        emit("error", json.dumps({"error": "User has not joined the chat"}))
     else:
         reaction = chat_message.remove_reaction(g.current_user.id)
         if not reaction:
