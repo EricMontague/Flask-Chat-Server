@@ -256,7 +256,10 @@ class FakeDataGenerator:
                 notification_item = notification_mapper.serialize_from_model(
                     notification
                 )
-                message_item = private_chat_message_mapper.serialize_from_model(message)
+                additional_attributes = {"USERS_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT_MESSAGE + message.id}
+                message_item = private_chat_message_mapper.serialize_from_model(
+                    message, additional_attributes=additional_attributes
+                )
                 requests.append(("PutRequest", message_item))
                 requests.append(("PutRequest", notification_item))
         
@@ -323,8 +326,9 @@ class FakeDataGenerator:
                     notification_item = notification_mapper.serialize_from_model(
                         notification
                     )
+                    additional_attributes = {"USERS_GSI_SK": PrimaryKeyPrefix.GROUP_CHAT_MESSAGE + message.id}
                     message_item = group_chat_message_mapper.serialize_from_model(
-                        message
+                        message, additional_attributes=additional_attributes
                     )
                     requests.append(("PutRequest", message_item))
                     requests.append(("PutRequest", notification_item))
