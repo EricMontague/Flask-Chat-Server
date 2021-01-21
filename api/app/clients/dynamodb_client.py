@@ -145,7 +145,6 @@ class _DynamoDBClient:
         except ClientError as err:
             logger.error(f"{err.response['Error']['Code']}")
             logger.error(f"{err.response['Error']['Message']}")
-            pprint(err.response)
             error_message = "Could not add user to community"
             error_type = ErrorType.OTHER
             if err.response["Error"]["Code"] == "TransactionCanceledException":
@@ -216,7 +215,7 @@ class _DynamoDBClient:
         except ClientError as err:
             logger.error(f"{err.response['Error']['Code']}")
             logger.error(f"{err.response['Error']['Message']}")
-            pprint(err.response)
+            
 
             error_message = "Could not add user to group chat"
             error_type = ErrorType.OTHER
@@ -387,7 +386,7 @@ class _DynamoDBClient:
         except ClientError as err:
             logger.error(err.response["Error"]["Code"])
             logger.error(err.response["Error"]["Message"])
-            pprint(err.response)
+            
             response = {"error": "Batch write was unsuccessful"}
         return response
 
