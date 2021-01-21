@@ -40,7 +40,6 @@ class MessageMapper(ModelMapper):
         )
         partition_key_attribute = "_chat_id"
         sort_key_attribute = "_id"
-        attributes_to_monkey_patch = ("_reactions",)
         default_values = {"_reactions": {}}
 
     ENUMS = {"message_type": MessageType}
