@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from uuid import uuid4
 from http import HTTPStatus
-from flask import g
+from flask import g, current_app, url_for
 from flask_socketio import emit, join_room, leave_room
 from app.sockets.helpers import send_group_chat_notifications
 from app.extensions import socketio
@@ -49,9 +49,14 @@ def create_group_chat_message(message_data, message_schema):
                 message_schema.dumps(chat_message),
                 room=chat_message.chat_id
             )
-
+            target_url = url_for(
+                "api.get_group_chat_message",
+                group_chat_id=group_chat.id,
+                message_id=chat_message.id,
+            )
             socketio.start_background_task(
-                send_group_chat_notifications, dynamodb_repository, chat_message, group_chat
+                send_group_chat_notifications, target_url, 
+                g.current_user, chat_message, group_chat
             )
 
 
