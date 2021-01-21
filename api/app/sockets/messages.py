@@ -76,8 +76,6 @@ def react_to_chat_message(reaction_data, reaction_schema):
     )
     if not chat_message:
         emit("error", json.dumps({"error": "Chat message not found"}))
-    elif chat_message.user_id != g.current_user.id:
-        emit("error", json.dumps({"error": "User is not the sender of this message"}))
     elif not g.current_user.in_room(chat_message.chat_id):
         emit("error", json.dumps({"error": "User has not joined the chat"}))
     else:
@@ -102,8 +100,6 @@ def unreact_to_chat_message(reaction_data, reaction_schema):
     )
     if not chat_message:
         emit("error", json.dumps({"error": "Chat message not found"}))
-    elif chat_message.user_id != g.current_user.id:
-        emit("error", json.dumps({"error": "User is not the sender of this message"}))
     elif not g.current_user.in_room(chat_message.chat_id):
         emit("error", json.dumps({"error": "User has not joined the chat"}))
     else:
