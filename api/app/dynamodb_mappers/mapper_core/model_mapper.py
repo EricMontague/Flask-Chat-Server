@@ -2,6 +2,7 @@
 """
 
 
+from pprint import pprint
 from abc import ABC
 from datetime import datetime, date, time
 from dataclasses import dataclass
@@ -69,9 +70,6 @@ class MapperOptions:
                 "`attributes_to_monkey_patch` option must be a list or a tuple"
             )
 
-        self.default_values = getattr(meta, "default_values", {})
-        if not isinstance(self.default_values, dict):
-            raise ValueError("`default_values` options must be a dictionary")
 
         partition_key_prefix = getattr(
             meta, "partition_key_prefix", self.model.__name__.upper() + "#"
@@ -137,8 +135,7 @@ class ModelMapper(ABC):
             - ``type_``: String that indicates the type of the item
             - ``attributes_to_monkey_patch``: A tuple of attributes that should be set on the model
             but aren't passed in to the constructor during instantiation. Used on deserialization
-            - ``default_values``: A dictionary of attributes and the default values that should be
-            used on deserialization if those attributes are missing
+
             
 
 
@@ -197,6 +194,8 @@ class ModelMapper(ABC):
         if not self._options.model:
             raise ModelNotSetException("Please set a model in the Mapper's model class")
         model_dict = self._deserialize(item)
+        # if "_chat_id" in self._options.fields:
+        #     model_dict["reactions"] = {}
         model_instance = self._options.model(**model_dict)
         self._deserialize_additional_attributes(
             model_instance, item, self._options.attributes_to_monkey_patch
@@ -274,19 +273,13 @@ class ModelMapper(ABC):
         attributes_to_skip = set(self._options.attributes_to_monkey_patch)
         model_dict = {}
         for field in self._options.fields:
-            if field not in attributes_to_skip:
-                if field not in item:
-                    if (
-                        field in self._options.default_values
-                    ):  # skip this field if it doesn't have a default
-                        model_dict[field.lstrip("_")] = self._options.default_values[
-                            field
-                        ]
-                else:
-                    value = item[field]
-                    model_dict[field.lstrip("_")] = self._handle_deserialization(
-                        field, value, item
-                    )
+            if field in attributes_to_skip or field not in item:
+                continue
+       
+            value = item[field]
+            model_dict[field.lstrip("_")] = self._handle_deserialization(
+                field, value, item
+            )
         return model_dict
 
     # TODO - Break up into separate methods
