@@ -50,8 +50,7 @@ class UserMapper(ModelMapper):
         type_ = ItemType.USER.name
         partition_key_attribute = "_id"
         sort_key_attribute = "_id"
-        attributes_to_monkey_patch = ("_password_hash",)
-        default_values = {"_rooms": set()}
+        attributes_to_monkey_patch = ("_password_hash", "_rooms")
 
     NESTED_MAPPERS = {
         "location": LocationMapper(ignore_partition_key=True),

@@ -40,7 +40,7 @@ class MessageMapper(ModelMapper):
         )
         partition_key_attribute = "_chat_id"
         sort_key_attribute = "_id"
-        default_values = {"_reactions": {}}
+        attributes_to_monkey_patch = ("_reactions",)
 
     ENUMS = {"message_type": MessageType}
     NESTED_MAPPERS = {"_reactions": ReactionMapper(ignore_partition_key=True)}
