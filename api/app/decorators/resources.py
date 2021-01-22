@@ -3,7 +3,7 @@
 
 import functools
 from http import HTTPStatus
-from app.repositories import dynamodb_repository
+from app.repositories import database_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
 
 

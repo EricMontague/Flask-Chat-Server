@@ -4,7 +4,7 @@
 from http import HTTPStatus
 from flask import current_app, request, url_for, g
 from app.auth import auth
-from app.repositories import dynamodb_repository
+from app.repositories import database_repository
 from app.repositories.exceptions import DatabaseException
 from app.models import User, TokenType
 from app.models.factories import UserFactory
@@ -32,8 +32,8 @@ def login():
     )
 
     # Add tokens to database
-    dynamodb_repository.add_token(access_token)
-    dynamodb_repository.add_token(refresh_token)
+    database_repository.add_token(access_token)
+    database_repository.add_token(refresh_token)
     return (
         {"access_token": access_token.raw_jwt, "refresh_token": refresh_token.raw_jwt},
         HTTPStatus.CREATED,
@@ -49,7 +49,7 @@ def create_user(user_data):
     if user.email == current_app.config["ADMIN_EMAIL"]:
         user.role = admin_user_role
     try:
-        dynamodb_repository.add_user(user)
+        database_repository.add_user(user)
     except DatabaseException as err:
         return {"error": str(err)}, HTTPStatus.BAD_REQUEST
     headers = {"Location": url_for("api.get_user", user_id=user.id)}
@@ -65,7 +65,7 @@ def refresh_access_token():
         current_app.config["SECRET_KEY"],
         current_app.config["ACCESS_TOKEN_LIFESPAN"]
     )
-    dynamodb_repository.add_token(access_token)
+    database_repository.add_token(access_token)
     return {"access_token": access_token.raw_jwt}, HTTPStatus.CREATED
 
 
@@ -74,8 +74,8 @@ def refresh_access_token():
 def revoke_tokens():
     """Revoke both of a user's access and refresh tokens."""
     # Get user's tokens and blacklist them
-    tokens = dynamodb_repository.get_user_tokens(g.current_user.id)
+    tokens = database_repository.get_user_tokens(g.current_user.id)
     for token in tokens:
         token.is_blacklisted = True
-        dynamodb_repository.add_token(token)
+        database_repository.add_token(token)
     return {}, HTTPStatus.NO_CONTENT

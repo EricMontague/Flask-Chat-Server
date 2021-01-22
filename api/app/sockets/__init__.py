@@ -2,7 +2,7 @@ from flask import Blueprint, g, request, render_template
 from app.extensions import socketio
 from app.decorators.auth import socketio_jwt_required
 from app.models import TokenType
-from app.repositories import dynamodb_repository
+from app.repositories import database_repository
 
 
 sockets = Blueprint("sockets", __name__)
@@ -21,7 +21,7 @@ def connect_handler():
     g.current_user.ping()
     g.current_user.socketio_session_id = request.sid
     g.current_user.add_room(request.sid)
-    dynamodb_repository.update_user(
+    database_repository.update_user(
         g.current_user,
         {
             "socketio_session_id": g.current_user.socketio_session_id,
@@ -38,11 +38,11 @@ def disconnect_handler():
     """Remove the user's session id from the database and do any other
     necessary cleanup when the client disconnects from the server.
     """
-
+    print("User disconnected from server!")
     g.current_user.is_online = False
     g.current_user.socketio_session_id = ""
     g.current_user.clear_rooms()
-    dynamodb_repository.update_user(
+    database_repository.update_user(
         g.current_user,
         {
             "socketio_session_id": g.current_user.socketio_session_id,
@@ -57,7 +57,7 @@ def disconnect_handler():
 def ping_user():
     """Clients must send this event periodically to keep the user online."""
     g.current_user.ping()
-    dynamodb_repository.update_user(
+    database_repository.update_user(
         g.current_user, 
         {"is_online": g.current_user.is_online, "last_seen_at": g.current_user.last_seen_at}
     )

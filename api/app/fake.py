@@ -10,7 +10,7 @@ from pprint import pprint
 from datetime import datetime
 from faker import Faker
 from app.clients import dynamodb_client
-from app.repositories import dynamodb_repository
+from app.repositories import database_repository
 from app.dynamodb_mappers import (
     UserMapper,
     UsernameMapper,
@@ -147,13 +147,13 @@ class FakeDataGenerator:
 
     def add_communities(self):
         """Add fake community data to the database."""
-        results = dynamodb_repository.get_users(self.num_users)
+        results = database_repository.get_users(self.num_users)
         users = results["models"]
         remaining_communities = self.num_communities
         while remaining_communities > 0:
             random_user = random.choice(users)
             requests = []
-            community_data = self._generate_fake_community_data()
+            community_data = self._generate_fake_community_data(random_user.id)
             community = CommunityFactory.create_community(community_data)
             community_name = CommunityName(community.id, community.name)
             community_membership = CommunityMembership(
@@ -205,7 +205,7 @@ class FakeDataGenerator:
 
     def add_private_chats(self):
         """Add fake private chat data to the database."""
-        results = dynamodb_repository.get_users(self.num_users)
+        results = database_repository.get_users(self.num_users)
         users = results["models"]
         remaining_private_chats = self.num_private_chats
 
@@ -239,10 +239,10 @@ class FakeDataGenerator:
     def add_private_chat_messages(self):
         """Add fake private chat message data to the database."""
         requests = []
-        results = dynamodb_repository.get_users(self.num_users // 2)
+        results = database_repository.get_users(self.num_users // 2)
         users = results["models"]
         for user in users:
-            results = dynamodb_repository.get_user_private_chats(user.id, 1)
+            results = database_repository.get_user_private_chats(user.id, 1)
             chats = results["models"]
             if not chats:
                 continue
@@ -269,8 +269,8 @@ class FakeDataGenerator:
         """Add fake group chat data to the database."""
         requests = []
         group_chats_by_community_id = {}
-        user_results = dynamodb_repository.get_users(self.num_users)
-        community_results = dynamodb_repository.get_communities(self.num_communities)
+        user_results = database_repository.get_users(self.num_users)
+        community_results = database_repository.get_communities(self.num_communities)
         users = user_results["models"]
         communities = community_results["models"]
         remaining_group_chats = self.num_group_chats
@@ -307,12 +307,12 @@ class FakeDataGenerator:
     def add_group_chat_messages(self, group_chats_by_community_id):
         """Add fake group chat message data to the database."""
         requests = []
-        results = dynamodb_repository.get_communities(self.num_communities//2)
+        results = database_repository.get_communities(self.num_communities//2)
         communities = results["models"]
         for community in communities:
             if community.id in group_chats_by_community_id:
                 group_chat = group_chats_by_community_id[community.id]
-                results = dynamodb_repository.get_group_chat_members(
+                results = database_repository.get_group_chat_members(
                     community.id, group_chat.id, self.num_users
                 )
                 users = results["models"]
@@ -334,13 +334,14 @@ class FakeDataGenerator:
                     requests.append(("PutRequest", notification_item))
         self._write_batches(requests)
         
-    def _generate_fake_community_data(self):
+    def _generate_fake_community_data(self, founder_id):
         """Return fake community data as a dictionary."""
         fake_community_data = {
             "name": self._faker.name(),
             "description": self._faker.paragraph()[:280],
             "topic": random.choice(TOPICS),
             "location": random.choice(LOCATIONS),
+            "founder_id": founder_id
         }
         return fake_community_data
 

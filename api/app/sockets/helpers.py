@@ -5,7 +5,7 @@ from uuid import uuid4
 from flask import url_for
 from app.models import Notification, NotificationType
 from app.schemas import NotificationSchema
-from app.repositories import dynamodb_repository
+from app.repositories import database_repository
 from flask_socketio import emit
 
 
@@ -16,7 +16,7 @@ def send_group_chat_notifications(target_url, current_user, chat_message, group_
    
     limit = 25
     notification_schema = NotificationSchema()
-    results = dynamodb_repository.get_group_chat_members(group_chat.community_id, group_chat.id, limit)
+    results = database_repository.get_group_chat_members(group_chat.community_id, group_chat.id, limit)
     for member in results["models"]:
         if member.id != current_user.id:
             notification = Notification(
@@ -26,7 +26,7 @@ def send_group_chat_notifications(target_url, current_user, chat_message, group_
                 f"{current_user.username} posted a new message in {group_chat.name}",
                 target_url
             )
-            dynamodb_repository.add_user_notification(notification)
+            database_repository.add_user_notification(notification)
             
             if member.socketio_session_id:
                 emit(
@@ -50,7 +50,7 @@ def send_private_chat_notifications(target_url, current_user, chat_message, priv
         f"{current_user.username} sent you a new message",
         target_url
     )
-    dynamodb_repository.add_user_notification(notification)
+    database_repository.add_user_notification(notification)
     
     if other_user.socketio_session_id:
         emit(

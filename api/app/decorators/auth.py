@@ -8,7 +8,7 @@ from json.decoder import JSONDecodeError
 from http import HTTPStatus
 from flask import request, current_app, g
 from flask_socketio import disconnect, emit, ConnectionRefusedError
-from app.repositories import dynamodb_repository
+from app.repositories import database_repository
 from app.repositories.exceptions import NotFoundException, DatabaseException
 from app.models import User, TokenType
 
@@ -71,7 +71,7 @@ def socketio_permission_required(permission):
 
 def is_blacklisted(decoded_token, token_type):
     """Return True if the given token is blacklisted."""
-    token = dynamodb_repository.get_token(decoded_token.raw_jwt, token_type)
+    token = database_repository.get_token(decoded_token.raw_jwt, token_type)
     if not token:
         return True
     return token.is_blacklisted
@@ -115,7 +115,7 @@ def jwt_required(token_type):
                     {"error": f"Token is blacklisted"},
                     HTTPStatus.UNAUTHORIZED,
                 )
-            current_user = dynamodb_repository.get_user(decoded_token.user_id)
+            current_user = database_repository.get_user(decoded_token.user_id)
             if not current_user:
                 return {"error": "User not found"}
             if current_user.is_banned:
@@ -148,7 +148,7 @@ def socketio_jwt_required(token_type):
                 elif is_blacklisted(decoded_token, token_type):
                     disconnect()
                 else:
-                    current_user = dynamodb_repository.get_user(decoded_token.user_id)
+                    current_user = database_repository.get_user(decoded_token.user_id)
                     if not current_user:
                         disconnect()
                     elif current_user.is_banned:
@@ -187,7 +187,7 @@ def basic_auth_required(func):
                 {"error": "Missing user password"},
                 HTTPStatus.UNAUTHORIZED,
             )
-        current_user = dynamodb_repository.get_user_by_username(username)
+        current_user = database_repository.get_user_by_username(username)
         if not current_user:
             return {"error": "User could not be found"}, HTTPStatus.NOT_FOUND
         if current_user.is_banned:
