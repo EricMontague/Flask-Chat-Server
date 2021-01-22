@@ -44,6 +44,6 @@ class _S3Repository(FileStorageRepository):
         return True
 
 
-s3_repository = _S3Repository(
+file_repository = _S3Repository(
     boto3.client("s3"), os.environ.get("AWS_S3_BUCKET_NAME", "chat-app-images")
 )
