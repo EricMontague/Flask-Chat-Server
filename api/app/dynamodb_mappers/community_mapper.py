@@ -25,6 +25,7 @@ class CommunityMapper(ModelMapper):
             "avatar",
             "cover_photo",
             "location",
+            "_founder_id",
             "_created_at",
         )
         partition_key_attribute = "_id"
