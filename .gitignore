@@ -39,3 +39,4 @@ venv/
 sockets.py
 sockets.js
 api/app/templates
+api/app/decorators/resources.py
