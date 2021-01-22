@@ -15,20 +15,20 @@ from app.schemas import (
     PrivateChatSchema
 )
 from app.api.helpers import process_image, upload_to_cdn
-from app.repositories import dynamodb_repository, s3_repository
+from app.repositories import database_repository, file_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException, UniqueConstraintException
 from app.models.factories import UserFactory
 from app.models import ImageType, RolePermission
 
 
-@api.route("/users")
+@api.route("/users") 
 @handle_request(UrlParamsSchema())
 @handle_response(UserSchema(many=True))
 def get_users(url_params):
     """Return a list of user resources."""
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
-    results = dynamodb_repository.get_users(per_page, cursor)
+    results = database_repository.get_users(per_page, cursor)
     return results, HTTPStatus.OK
 
 
@@ -40,7 +40,7 @@ def get_user_communities(url_params, user_id):
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_user_communities(
+        results = database_repository.get_user_communities(
             user_id, per_page, cursor=cursor
         )
     except NotFoundException as err:
@@ -54,7 +54,7 @@ def get_user_communities(url_params, user_id):
 @handle_response(UserSchema())
 def get_user(user_id):
     """Return a single user by id."""
-    user = dynamodb_repository.get_user(user_id)
+    user = database_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
     return user, HTTPStatus.OK
@@ -64,7 +64,7 @@ def get_user(user_id):
 @handle_response(UserSchema())
 def get_user_by_username(username):
     """Return a single user by username."""
-    user = dynamodb_repository.get_user_by_username(username)
+    user = database_repository.get_user_by_username(username)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
     return user, HTTPStatus.OK
@@ -74,7 +74,7 @@ def get_user_by_username(username):
 @handle_response(UserSchema())
 def get_user_by_email(email):
     """Return a single user by email."""
-    user = dynamodb_repository.get_user_by_email(email)
+    user = database_repository.get_user_by_email(email)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
     return user, HTTPStatus.OK
@@ -84,24 +84,28 @@ def get_user_by_email(email):
 @handle_request(UserSchema(partial=["password"]))
 def update_user(user_data, user_id):
     """Replace a user resource."""
-    user = dynamodb_repository.get_user(user_id)
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    user = database_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
-    dynamodb_repository.update_user(user, user_data)
+    database_repository.update_user(user, user_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
 @api.route("/users/<user_id>", methods=["DELETE"])
 def delete_user(user_id):
     """Delete a user resource."""
-    user = dynamodb_repository.get_user(user_id)
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    user = database_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
-    dynamodb_repository.remove_user(user)
+    database_repository.remove_user(user)
     profile_photo_id = user.id + "_" + ImageType.USER_PROFILE_PHOTO.name
     cover_photo_id = user.id + "_" + ImageType.USER_COVER_PHOTO.name
-    s3_repository.remove(profile_photo_id)
-    s3_repository.remove(cover_photo_id)
+    file_repository.remove(profile_photo_id)
+    file_repository.remove(cover_photo_id)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -109,11 +113,13 @@ def delete_user(user_id):
 @handle_file_request("cover_photo")
 def upload_user_cover_photo(file, user_id):
     """Add or replace the user's cover photo."""
-    user = dynamodb_repository.get_user(user_id)
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    user = database_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
-    image_data = process_image(user.id, s3_repository, file, ImageType.USER_COVER_PHOTO)
-    dynamodb_repository.update_user_image(user, image_data)
+    image_data = process_image(user.id, file_repository, file, ImageType.USER_COVER_PHOTO)
+    database_repository.update_user_image(user, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -121,13 +127,15 @@ def upload_user_cover_photo(file, user_id):
 @handle_file_request("profile_photo")
 def upload_user_profile_photo(file, user_id):
     """Add or a replace the user's profile photo."""
-    user = dynamodb_repository.get_user(user_id)
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    user = database_repository.get_user(user_id)
     if not user:
         return {"error": "User not found"}, HTTPStatus.NOT_FOUND
     image_data = process_image(
-        user.id, s3_repository, file, ImageType.USER_PROFILE_PHOTO
+        user.id, file_repository, file, ImageType.USER_PROFILE_PHOTO
     )
-    dynamodb_repository.update_user_image(user, image_data)
+    database_repository.update_user_image(user, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -136,10 +144,12 @@ def upload_user_profile_photo(file, user_id):
 @handle_response(NotificationSchema(many=True))
 def get_user_notifications(url_params, user_id):
     """Return a list of notification resources."""
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_user_notifications(
+        results = database_repository.get_user_notifications(
             user_id, per_page, cursor=cursor
         )
     except NotFoundException as err:
@@ -155,7 +165,9 @@ def update_user_notification(notification_data, user_id, notification_id):
     """Update a user's notification. The two attributes to updated are whether the
     notification has been read or whether it has been seen.
     """
-    notification = dynamodb_repository.get_user_notification(user_id, notification_id)
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    notification = database_repository.get_user_notification(user_id, notification_id)
     if notification.was_seen() and notification_data.get("_seen") is False:
         return (
             {"error": "Cannot change notification status from seen to unseen"},
@@ -170,7 +182,7 @@ def update_user_notification(notification_data, user_id, notification_id):
         notification.mark_as_seen()
     elif notification_data.get("_read"):
         notification.mark_as_read()
-    dynamodb_repository.add_user_notification(notification)
+    database_repository.add_user_notification(notification)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -179,10 +191,12 @@ def update_user_notification(notification_data, user_id, notification_id):
 @handle_response(PrivateChatSchema(many=True))
 def get_user_private_chats(url_params, user_id):
     """Return a list of private chats the user is a part of."""
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_user_private_chats(user_id, per_page, cursor=cursor)
+        results = database_repository.get_user_private_chats(user_id, per_page, cursor=cursor)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -194,11 +208,13 @@ def get_user_private_chats(url_params, user_id):
 @handle_request(UrlParamsSchema())
 @handle_response(GroupChatSchema(many=True))
 def get_user_group_chats(url_params, user_id):
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
     """Return a list of group chat resources that the user is a member of."""
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_user_group_chats(user_id, per_page, cursor=cursor)
+        results = database_repository.get_user_group_chats(user_id, per_page, cursor=cursor)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:

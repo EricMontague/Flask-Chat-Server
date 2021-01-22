@@ -17,7 +17,7 @@ from app.schemas import (
 )
 from app.models.factories import CommunityFactory
 from app.models import ImageType, GroupChat, RolePermission
-from app.repositories import dynamodb_repository, s3_repository
+from app.repositories import database_repository, file_repository
 from app.repositories.exceptions import DatabaseException, NotFoundException
 from werkzeug.utils import secure_filename
 
@@ -35,7 +35,7 @@ def get_communities(url_params):
         kwargs["topic"] = url_params["topic"].name
     else:
         kwargs.update(url_params)
-    results = dynamodb_repository.get_communities(per_page, **kwargs)
+    results = database_repository.get_communities(per_page, **kwargs)
     return results, HTTPStatus.OK
 
 
@@ -43,7 +43,7 @@ def get_communities(url_params):
 @handle_response(CommunitySchema())
 def get_community(community_id):
     """Get a community resource."""
-    community = dynamodb_repository.get_community(community_id)
+    community = database_repository.get_community(community_id)
     if not community:
         return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
     return community, HTTPStatus.OK
@@ -53,8 +53,7 @@ def get_community(community_id):
 @handle_response(CommunitySchema())
 def get_community_by_name(community_name):
     """Get a community resource by name."""
-    print(community_name)
-    community = dynamodb_repository.get_community_by_name(community_name)
+    community = database_repository.get_community_by_name(community_name)
     if not community:
         return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
     return community, HTTPStatus.OK
@@ -66,9 +65,10 @@ def get_community_by_name(community_name):
 @handle_response(CommunitySchema())
 def create_community(community_data):
     """Create a new community resource."""
+    community_data["founder_id"] = g.current_user.id
     community = CommunityFactory.create_community(community_data)
     try:
-        dynamodb_repository.add_community(community, g.current_user.id)
+        database_repository.add_community(community)
     except DatabaseException as err:
         return {"error": str(err)}, HTTPStatus.BAD_REQUEST
     headers = {"Location": url_for("api.get_community", community_id=community.id)}
@@ -79,10 +79,12 @@ def create_community(community_data):
 @handle_request(CommunitySchema())
 def update_community(community_data, community_id):
     """Replace a community resource."""
-    community = dynamodb_repository.get_community(community_id)
+    community = database_repository.get_community(community_id)
     if not community:
         return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
-    dynamodb_repository.update_community(community, community_data)
+    if g.current_user.id != community.founder_id:
+        return {"error": "You do not have the required permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    database_repository.update_community(community, community_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -94,7 +96,7 @@ def get_community_members(url_params, community_id):
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_community_members(community_id, per_page, cursor=cursor)
+        results = database_repository.get_community_members(community_id, per_page, cursor=cursor)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -106,8 +108,10 @@ def get_community_members(url_params, community_id):
 @permission_required(RolePermission.JOIN_COMMUNITY)
 def join_community(community_id, user_id):
     """Add a new member to a community."""
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the required permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
     try:
-        dynamodb_repository.add_community_member(community_id, user_id)
+        database_repository.add_community_member(community_id, user_id)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -117,8 +121,10 @@ def join_community(community_id, user_id):
 
 @api.route("/communities/<community_id>/members/<user_id>", methods=["DELETE"])
 def leave_community(community_id, user_id):
+    if g.current_user.id != user_id:
+        return {"error": "You do not have the required permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
     try:
-        dynamodb_repository.remove_community_member(community_id, user_id)
+        database_repository.remove_community_member(community_id, user_id)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -130,11 +136,13 @@ def leave_community(community_id, user_id):
 @handle_file_request("cover_photo")
 def upload_community_cover_photo(file, community_id):
     """Add or replace the community's cover photo."""
-    community = dynamodb_repository.get_community(community_id)
+    community = database_repository.get_community(community_id)
     if not community:
         return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
-    image_data = process_image(community.id, s3_repository, file, ImageType.COMMUNITY_COVER_PHOTO)
-    dynamodb_repository.update_community_image(community, image_data)
+    if g.current_user.id != community.founder_id:
+        return {"error": "You do not have the required permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    image_data = process_image(community.id, file_repository, file, ImageType.COMMUNITY_COVER_PHOTO)
+    database_repository.update_community_image(community, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -142,11 +150,13 @@ def upload_community_cover_photo(file, community_id):
 @handle_file_request("profile_photo")
 def upload_community_profile_photo(file, community_id):
     """Add or a replace the community's profile photo."""
-    community = dynamodb_repository.get_community(community_id)
+    community = database_repository.get_community(community_id)
     if not community:
         return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
-    image_data = process_image(community.id, s3_repository, file, ImageType.COMMUNITY_PROFILE_PHOTO)
-    dynamodb_repository.update_community_image(community, image_data)
+    if g.current_user.id != community.founder_id:
+        return {"error": "You do not have the required permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
+    image_data = process_image(community.id, file_repository, file, ImageType.COMMUNITY_PROFILE_PHOTO)
+    database_repository.update_community_image(community, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -158,7 +168,7 @@ def get_community_group_chats(url_params, community_id):
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_community_group_chats(community_id, per_page, cursor=cursor)
+        results = database_repository.get_community_group_chats(community_id, per_page, cursor=cursor)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
@@ -168,15 +178,18 @@ def get_community_group_chats(url_params, community_id):
 
 @api.route("/communities/<community_id>/group_chats", methods=["POST"])
 @permission_required(RolePermission.CREATE_GROUP_CHAT)
-@handle_request(GroupChatSchema())
+@handle_request(GroupChatSchema(partial=["_id", "_community_id"]))
 @handle_response(GroupChatSchema())
 def create_community_group_chat(group_chat_data, community_id):
     """Create a new group chat resource."""
-    community = dynamodb_repository.get_community(community_id)
+    community = database_repository.get_community(community_id)
     if not community:
         return {"error": "Community not found"}, HTTPStatus.NOT_FOUND
     group_chat = GroupChat(uuid4().hex, community_id, group_chat_data["name"], group_chat_data["description"])
-    dynamodb_repository.add_group_chat(g.current_user.id, community_id, group_chat)
+    try:
+        database_repository.add_group_chat(g.current_user.id, community_id, group_chat)
+    except DatabaseException as err: # The user isn't a member of the community yet
+        return {"error": str(err)}, HTTPStatus.UNAUTHORIZED
     headers = {
         "Location": url_for(
             "api.get_community_group_chat", community_id=community_id, group_chat_id=group_chat.id
@@ -189,20 +202,23 @@ def create_community_group_chat(group_chat_data, community_id):
 @handle_response(GroupChatSchema())
 def get_community_group_chat(community_id, group_chat_id):
     """Return a group chat resource."""
-    group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
+    group_chat = database_repository.get_group_chat(community_id, group_chat_id)
     if not group_chat:
         return {"error": "Group chat not found"}, HTTPStatus.NOT_FOUND
     return group_chat, HTTPStatus.OK
 
 
 @api.route("/communities/<community_id>/group_chats/<group_chat_id>", methods=["PUT"])
-@handle_request(GroupChatSchema())
+@handle_request(GroupChatSchema(partial=["_id", "_community_id"]))
 def update_community_group_chat(group_chat_data, community_id, group_chat_id):
     """Update a group chat resource."""
-    group_chat = dynamodb_repository.get_group_chat(community_id, group_chat_id)
+    group_chat = database_repository.get_group_chat(community_id, group_chat_id)
     if not group_chat:
         return {"error": "Group chat not found"}, HTTPStatus.NOT_FOUND
-    dynamodb_repository.update_group_chat(group_chat, group_chat_data)
+    member = database_repository.get_group_chat_member(group_chat.id, g.current_user.id)
+    if not member:
+        return {"error": "User is not a member of this group chat"}, HTTPStatus.UNAUTHORIZED
+    database_repository.update_group_chat(group_chat, group_chat_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -214,7 +230,7 @@ def get_community_group_chat_members(url_params,community_id, group_chat_id):
     per_page = url_params.get("per_page", current_app.config["RESULTS_PER_PAGE"])
     cursor = url_params.get("next_cursor")
     try:
-        results = dynamodb_repository.get_group_chat_members(community_id, group_chat_id, per_page, cursor=cursor)
+        results = database_repository.get_group_chat_members(community_id, group_chat_id, per_page, cursor=cursor)
     except NotFoundException as err:
         return {"error": str(err)}, HTTPStatus.NOT_FOUND
     except DatabaseException as err:
