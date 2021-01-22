@@ -166,7 +166,7 @@ class _DynamoDBClient:
         except ClientError as err:
             logger.error(f"{err.response['Error']['Code']}")
             logger.error(f"{err.response['Error']['Message']}")
-            pprint(err.response)
+            
             error_message = "Could not remove member from community"
             if err.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 error_message = "Community or user not found"
@@ -192,20 +192,21 @@ class _DynamoDBClient:
             
             return {"error": error_message}
     
-    def create_group_chat(self, items):
+    def create_group_chat(self, keys, items):
         """Add group chat, group chat member, and community group chat items
         to DynamoDB.
         """
         logger.info("Adding new group chat to DynamoDB")
-        parameters = self._build_create_item_parameters(items)
+        parameters = self._build_create_group_chat_parameters(keys, items)
         try:
             return self._execute_transact_write(parameters)
         except ClientError as err:
-            logger.error(f"{err.response['Error']['Code']}")
-            logger.error(f"{err.response['Error']['Message']}")
-
             error_message = "Could not create group chat"
-            return {"error": error_message}
+            error_type = ErrorType.OTHER
+            if err.response["Error"]["Code"] == "TransactionCanceledException":
+                if err.response["CancellationReasons"][2]["Code"] == "ConditionalCheckFailed":
+                    error_message = "User is not a member of the community"
+            return {"error": error_message, "error_type": error_type}
 
     def add_group_chat_member(self, keys, item):
         """Add a group chat member item to DynamoDB."""
@@ -562,6 +563,17 @@ class _DynamoDBClient:
                 }
             },
         ]
+        return parameters
+
+    def _build_create_group_chat_parameters(self, keys, items):
+        parameters = self._build_create_item_parameters(items)
+        parameters.append({
+            "ConditionCheck": {
+                "Key": keys["community_membership_key"],
+                "TableName": self._table_name,
+                "ConditionExpression": "attribute_exists(PK) AND attribute_exists(SK)",
+            }
+        })
         return parameters
 
 
