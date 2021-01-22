@@ -417,12 +417,12 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             return None
         return self.get_community(query_results["Items"][0]["community_id"]["S"])
 
-    def add_community(self, community, founder_id):
+    def add_community(self, community):
         """Add a new community to DynamoDB."""
         community_name = CommunityName(community.id, community.name)
-        community_membership = CommunityMembership(community.id, founder_id)
+        community_membership = CommunityMembership(community.id, community.founder_id)
         membership_additional_attributes={
-            "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + founder_id,
+            "INVERTED_GSI_PK": PrimaryKeyPrefix.USER + community.founder_id,
             "INVERTED_GSI_SK": PrimaryKeyPrefix.COMMUNITY + community.id
         }
         community_additional_attributes = {
@@ -842,6 +842,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             gsi_sort_key = PrimaryKeyPrefix.PRIVATE_CHAT_MESSAGE + message.id
         else:
             gsi_sort_key = PrimaryKeyPrefix.GROUP_CHAT_MESSAGE + message.id
+        
         additional_attributes["USERS_GSI_SK"] = gsi_sort_key
         message_item = mapper.serialize_from_model(message, additional_attributes=additional_attributes)
         response = self._dynamodb_client.put_item(message_item)
@@ -875,13 +876,15 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
             additional_attributes=membership_additional_attributes
         )
         group_chat_item = self._group_chat_mapper.serialize_from_model(group_chat)
+        community_membership_key = self._community_membership_mapper.key(community_id, user_id)
         items = {
             "chat_member": chat_member_item,
             "group_chat": group_chat_item
         }
-        response = self._dynamodb_client.create_group_chat(items)
+        keys = {"community_membership_key": community_membership_key}
+        response = self._dynamodb_client.create_group_chat(keys, items)
         if "error" in response:
-            raise UniqueConstraintException(response["error"])
+            raise DatabaseException(response["error"])
 
     def update_group_chat(self, group_chat, updated_group_chat_data):
         """Update group chat attributes."""
@@ -1102,7 +1105,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
         return private_chats
 
 
-dynamodb_repository = _DynamoDBRepository(
+database_repository = _DynamoDBRepository(
     dynamodb_client,
     user_mapper=UserMapper(),
     username_mapper=UsernameMapper(),
