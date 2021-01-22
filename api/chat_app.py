@@ -13,6 +13,7 @@ from app.models import (
     Image,
     ImageType,
     Message,
+    MessageType,
     Reaction,
     Notification,
     NotificationType,
@@ -22,10 +23,10 @@ from app.models import (
     User,
     Location,
     Token,
-    TokenType
+    TokenType,
 )
 from app.clients import dynamodb_client
-from app.repositories import dynamodb_repository, s3_repository
+from app.repositories import database_repository, file_repository
 from app.extensions import socketio
 from dotenv import load_dotenv
 
@@ -70,9 +71,9 @@ def make_shell_context():
     accessible in the Flask shell.
     """
     return dict(
-        dynamodb_repository=dynamodb_repository,
+        database_repository=database_repository,
         dynamodb_client=dynamodb_client,
-        s3_repository=s3_repository,
+        file_repository=file_repository,
         PrivateChat=PrivateChat,
         GroupChat=GroupChat,
         Community=Community,
@@ -81,6 +82,7 @@ def make_shell_context():
         Image=Image,
         ImageType=ImageType,
         Message=Message,
+        MessageType=MessageType,
         Reaction=Reaction,
         Notification=Notification,
         NotificationType=NotificationType,
@@ -90,7 +92,7 @@ def make_shell_context():
         User=User,
         Location=Location,
         Token=Token,
-        TokenType=TokenType
+        TokenType=TokenType,
     )
 
 
