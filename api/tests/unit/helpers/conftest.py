@@ -29,6 +29,7 @@ class FakeErrorSchema:
 class FakeDataSchema:
     """Fake marshmallow schema whose methods return dictionaries."""
 
+    RESOURCE_NAME = "User"
     COLLECTION_NAME = "Users"
 
     def __init__(self):
