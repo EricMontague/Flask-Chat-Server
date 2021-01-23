@@ -119,6 +119,7 @@ def handle_response(schema):
                 api_response = handle_serialization(results, schema, http_status_code)
             if len(view_response) == 3:  # extra headers are included in the response
                 api_response.headers.extend(view_response[2])
+            api_response.headers["Content-Type"] = "application/json"
             return api_response
 
         return wrapper
