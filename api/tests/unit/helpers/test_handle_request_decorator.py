@@ -5,11 +5,7 @@ functions that it depends on.
 
 import pytest
 from http import HTTPStatus
-from app.helpers.decorators import (
-    handle_request,
-    handle_get_request,
-    handle_post_or_put_request,
-)
+from app.decorators.views import handle_request, handle_get_request, handle_post_or_put_request
 from marshmallow import ValidationError
 from unittest.mock import patch, create_autospec
 
@@ -68,8 +64,8 @@ def test_handle_post_put_request_valid_parameters_field_errors(fake_data_schema)
     assert "age" in results
 
 
-@patch("app.helpers.decorators.handle_get_request", autospec=True)
-@patch("app.helpers.decorators.request")
+@patch("app.decorators.views.handle_get_request", autospec=True)
+@patch("app.decorators.views.request")
 def test_handle_request_decorator_get_request(
     mock_request_context, mock_handle_get_request, fake_data_schema
 ):
@@ -89,8 +85,8 @@ def test_handle_request_decorator_get_request(
     assert wrapper_function("was called!") == "Get request handler was called!"
 
 
-@patch("app.helpers.decorators.handle_post_or_put_request", auto_spec=True)
-@patch("app.helpers.decorators.request")
+@patch("app.decorators.views.handle_post_or_put_request", auto_spec=True)
+@patch("app.decorators.views.request")
 def test_handle_request_decorator_post_request(
     mock_request_context, mock_handle_post_or_put_request, fake_data_schema
 ):
@@ -113,8 +109,8 @@ def test_handle_request_decorator_post_request(
     )
 
 
-@patch("app.helpers.decorators.handle_post_or_put_request", auto_spec=True)
-@patch("app.helpers.decorators.request")
+@patch("app.decorators.views.handle_post_or_put_request", auto_spec=True)
+@patch("app.decorators.views.request")
 def test_handle_request_decorator_put_request(
     mock_request_context, mock_handle_post_or_put_request, fake_data_schema
 ):
@@ -138,7 +134,7 @@ def test_handle_request_decorator_put_request(
     )
 
 
-@patch("app.helpers.decorators.request")
+@patch("app.decorators.views.request")
 def test_handle_request_decorator_post_request_no_json_body_returns_error(
     mock_request_context, fake_data_schema
 ):
@@ -162,7 +158,7 @@ def test_handle_request_decorator_post_request_no_json_body_returns_error(
     mock_view_function.assert_not_called()
 
 
-@patch("app.helpers.decorators.request")
+@patch("app.decorators.views.request")
 def test_handle_request_decorator_put_request_no_json_body_returns_error(
     mock_request_context, fake_data_schema
 ):
@@ -186,8 +182,8 @@ def test_handle_request_decorator_put_request_no_json_body_returns_error(
     mock_view_function.assert_not_called()
 
 
-@patch("app.helpers.decorators.handle_get_request")
-@patch("app.helpers.decorators.request")
+@patch("app.decorators.views.handle_get_request")
+@patch("app.decorators.views.request")
 def test_handle_request_decorator_error_with_deserialization(
     mock_request_context, mock_handle_get_request, fake_data_schema
 ):

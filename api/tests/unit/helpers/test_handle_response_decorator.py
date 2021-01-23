@@ -6,17 +6,17 @@ as well as the functions it depends on.
 import pytest
 from http import HTTPStatus
 from unittest.mock import patch, create_autospec
-from app.helpers.decorators import (
-    not_require_serialization,
+from app.decorators.views import (
     handle_response,
     handle_serialization,
-    serialize_model_or_models
+    not_require_serialization,
+    serialize_model_or_models,
 )
 
 
-@patch("app.helpers.decorators.make_response")
-@patch("app.helpers.decorators.handle_serialization")
-@patch("app.helpers.decorators.not_require_serialization")
+@patch("app.decorators.views.make_response")
+@patch("app.decorators.views.handle_serialization")
+@patch("app.decorators.views.not_require_serialization")
 def test_handle_response_doesnt_require_serialization(
     mock_not_require_serialization,
     mock_handle_serialization,
@@ -49,9 +49,9 @@ def test_handle_response_doesnt_require_serialization(
     mock_make_response.assert_called()
 
 
-@patch("app.helpers.decorators.make_response")
-@patch("app.helpers.decorators.handle_serialization")
-@patch("app.helpers.decorators.not_require_serialization")
+@patch("app.decorators.views.make_response")
+@patch("app.decorators.views.handle_serialization")
+@patch("app.decorators.views.not_require_serialization")
 def test_handle_response_does_require_serialization(
     mock_not_require_serialization,
     mock_handle_serialization,
@@ -85,9 +85,9 @@ def test_handle_response_does_require_serialization(
     mock_make_response.assert_not_called()
 
 
-@patch("app.helpers.decorators.make_response")
-@patch("app.helpers.decorators.handle_serialization")
-@patch("app.helpers.decorators.not_require_serialization")
+@patch("app.decorators.views.make_response")
+@patch("app.decorators.views.handle_serialization")
+@patch("app.decorators.views.not_require_serialization")
 def test_handle_response_extra_headers_present(
     mock_not_require_serialization,
     mock_handle_serialization,
@@ -152,7 +152,7 @@ def test_not_require_serialization_returns_false(test_input, fake_data_schema):
     assert not_require_serialization(fake_data_schema, test_input) is False
 
 
-@patch("app.helpers.decorators.make_response")
+@patch("app.decorators.views.make_response")
 def test_handle_serialization_argument_is_list(
     mock_make_response, fake_data_schema, fake_response
 ):
@@ -172,8 +172,8 @@ def test_handle_serialization_argument_is_list(
     mock_make_response.assert_called_with(fake_results, HTTPStatus.OK)
 
 
-@patch("app.helpers.decorators.serialize_model_or_models")
-@patch("app.helpers.decorators.make_response")
+@patch("app.decorators.views.serialize_model_or_models")
+@patch("app.decorators.views.make_response")
 def test_handle_serialization_argument_is_dict(
     mock_make_response, mock_serialize_model_or_models, fake_data_schema, fake_response
 ):
@@ -187,7 +187,6 @@ def test_handle_serialization_argument_is_dict(
     assert flask_response == fake_response
     assert flask_response.status_code == 200
     mock_serialize_model_or_models.assert_called_with(arguments, fake_data_schema)
-
 
 
 def test_serialize_model_or_models_with_models_in_dict(fake_data_schema):
