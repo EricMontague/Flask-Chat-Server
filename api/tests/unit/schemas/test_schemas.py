@@ -57,17 +57,7 @@ def test_unwanted_fields_removed_on_deserialization(test_user_dict, user_schema)
     assert "resource_type" not in user_schema.load(test_user_dict)
 
 
-@pytest.mark.skip(reason="Need to determine whether the userId will be sent on requests")
-def test_uuid_converted_to_hex_on_deserialization(test_user_dict, user_schema):
-    """Test that the uuid field is converted to a string in the load
-    post-processor method.
-    """
-    deserialized_user_data = user_schema.load(test_user_dict)
-    assert "id" in deserialized_user_data
-    assert isinstance(deserialized_user_data["id"], str)
-
-
-def test_injected_fields_are_present_on_serialization(test_user_model, user_schema):
+def test_injected_fields_are_present_on_serialization(test_user_model, user_schema, flask_app):
     """Test that the extra fields added in the dump post-processor
     method are present after serialization.
     """
