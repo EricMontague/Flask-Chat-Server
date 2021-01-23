@@ -17,7 +17,6 @@ def flask_app():
     """
     app = create_app(config_name="testing")
     app.config["SERVER_NAME"] = "http://localhost:5000"
-    print(app.config["TESTING"])
     context = app.app_context()
     context.push()
     yield app
