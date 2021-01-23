@@ -4,8 +4,8 @@ code that interacts with DynamoDB.
 
 
 import pytest
-from app.dynamodb.mapper import ModelMapper
-from app.dynamodb.model_mappers import LocationMapper
+from app.dynamodb_mappers.mapper_core import ModelMapper
+from app.dynamodb_mappers.common_mappers import LocationMapper
 from app.models import Location
 from enum import Enum
 

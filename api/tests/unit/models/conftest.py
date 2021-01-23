@@ -2,7 +2,7 @@
 
 
 import pytest
-from app.models.user_factory import UserFactory
+from app.models.factories import UserFactory
 
 
 @pytest.fixture
