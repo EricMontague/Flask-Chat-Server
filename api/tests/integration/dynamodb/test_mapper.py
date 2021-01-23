@@ -6,7 +6,7 @@ Note: These tests are dependent on the functionality of the boto3 libary
 
 
 import pytest
-from app.dynamodb.exceptions import ModelNotSetException
+from app.dynamodb_mappers.mapper_core.exceptions import ModelNotSetException
 
 
 def test_create_primary_key_without_sort_key_value(test_key_prefix, test_mapper):
@@ -43,7 +43,7 @@ def test_construct_primary_key_with_partition_and_sort_key(
     partition_key = "12345"
     sort_key = "6789"
     primary_key = test_mapper._construct_primary_key(
-        test_model, partition_key, sort_key
+        test_model, partition_key_value=partition_key, sort_key_value=sort_key
     )
     assert "PK" in primary_key
     assert primary_key["PK"]["S"] == test_key_prefix + "12345"
@@ -58,7 +58,11 @@ def test_construct_primary_key_without_partition_or_sort_key(
     a partition and sort key both not provided, that a primary key is made with
     using the attributes provided on the options class
     """
-    primary_key = test_mapper._construct_primary_key(test_model, None, None)
+    primary_key = test_mapper._construct_primary_key(
+        test_model, 
+        partition_key_value=None, 
+        sort_key_value=None
+    )
     assert "PK" in primary_key
     assert primary_key["PK"]["S"] == test_key_prefix + test_model.id
     assert "SK" in primary_key
@@ -73,7 +77,11 @@ def test_construct_primary_key_with_partition_key_but_not_sort_key(
     using the passed in partition key value and the sort key from the options class
     """
     partition_key = "1234"
-    primary_key = test_mapper._construct_primary_key(test_model, partition_key, None)
+    primary_key = test_mapper._construct_primary_key(
+        test_model, 
+        partition_key_value=partition_key, 
+        sort_key_value=None
+    )
     assert "PK" in primary_key
     assert primary_key["PK"]["S"] == test_key_prefix + "1234"
     assert "SK" in primary_key
@@ -88,7 +96,11 @@ def test_construct_primary_key_with_sort_key_but_not_partition_key(
     using the passed in sort key value and the partition key from the options class
     """
     sort_key = "5678"
-    primary_key = test_mapper._construct_primary_key(test_model, None, sort_key)
+    primary_key = test_mapper._construct_primary_key(
+        test_model, 
+        partition_key_value=None, 
+        sort_key_value=sort_key
+    )
     assert "PK" in primary_key
     assert primary_key["PK"]["S"] == test_key_prefix + test_model.id
     assert "SK" in primary_key
