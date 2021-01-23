@@ -65,4 +65,7 @@ def ping_user():
 
 @sockets.route("/testing_chat")
 def testing_chat():
+    """Return a barebones template used to manually test the
+    functionality of the socketio event handlers.
+    """
     return render_template("chat.html")
