@@ -17,7 +17,7 @@ class Message:
         content,
         message_type, 
         created_at=datetime.now(), 
-        sent=False, 
+        sent=True, 
         editted=False
     ):
         self._id = id
