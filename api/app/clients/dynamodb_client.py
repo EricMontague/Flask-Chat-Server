@@ -30,9 +30,9 @@ class _DynamoDBClient:
     DynamoDB resource.
     """
 
-    def __init__(self, endpoint_url=None):
-        self._dynamodb = boto3.client("dynamodb", endpoint_url=endpoint_url)
-        self._table_name = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
+    def __init__(self, region, endpoint_url=None):
+        self._dynamodb = boto3.client("dynamodb", region, endpoint_url=endpoint_url)
+        self._table_name = os.environ.get("AWS_DYNAMODB_TABLE_NAME")
 
     def create_user(self, items):
         """Add a new user item to DynamoDB."""
@@ -577,4 +577,7 @@ class _DynamoDBClient:
         return parameters
 
 
-dynamodb_client = _DynamoDBClient(endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL"))
+dynamodb_client = _DynamoDBClient(
+    os.environ.get("AWS_DEFAULT_REGION"),
+    endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL")
+)

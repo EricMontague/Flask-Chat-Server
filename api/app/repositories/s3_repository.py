@@ -13,9 +13,9 @@ from app.repositories.utils import encode_file_contents
 class _S3Repository(FileStorageRepository):
     """Class to interact with the S3 client from the boto3 library."""
 
-    def __init__(self, s3_client, bucket_name):
-        self._s3_client = s3_client
-        self._bucket_name = bucket_name
+    def __init__(self, region):
+        self._s3_client = boto3.client("s3", region)
+        self._bucket_name = os.environ.get("AWS_S3_BUCKET_NAME")
 
     def get(self, file_id):
         """Return the contents of a file from S3 as bytes."""
@@ -44,6 +44,4 @@ class _S3Repository(FileStorageRepository):
         return True
 
 
-file_repository = _S3Repository(
-    boto3.client("s3"), os.environ.get("AWS_S3_BUCKET_NAME", "chat-app-images")
-)
+file_repository = _S3Repository(os.environ.get("AWS_DEFAULT_REGION"))

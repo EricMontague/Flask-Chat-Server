@@ -49,7 +49,7 @@ class _DynamoDBRepository(AbstractDatabaseRepository):
 
     def __init__(self, dynamodb_client, **kwargs):
         self._dynamodb_client = dynamodb_client
-        self._table_name = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
+        self._table_name = os.environ.get("AWS_DYNAMODB_TABLE_NAME")
         self._user_mapper = kwargs.get("user_mapper")
         self._username_mapper = kwargs.get("username_mapper")
         self._user_email_mapper = kwargs.get("user_email_mapper")
