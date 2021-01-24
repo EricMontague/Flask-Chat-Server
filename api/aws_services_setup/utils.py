@@ -8,13 +8,15 @@ import boto3
 from aws_services_setup.global_secondary_indexes import GSI_LIST
 
 
-TABLE_NAME = os.environ.get("AWS_DYNAMODB_TABLE_NAME", "ChatAppTable")
-BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME", "chat-app-images")
-BUCKET_LOCATION = os.environ.get("AWS_S3_BUCKET_LOCATION", "us-east-2")
+TABLE_NAME = os.environ.get("AWS_DYNAMODB_TABLE_NAME")
+BUCKET_NAME = os.environ.get("AWS_S3_BUCKET_NAME")
+BUCKET_LOCATION = os.environ.get("AWS_S3_BUCKET_LOCATION")
 dynamodb_client = boto3.client(
-    "dynamodb", endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL", "http://localhost:8000")
+    "dynamodb", 
+    os.environ.get("AWS_DEFAULT_REGION"),
+    endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL", "http://localhost:8000")
 )
-s3_client = boto3.client("s3")
+s3_client = boto3.client("s3", os.environ.get("AWS_DEFAULT_REGION"))
 
 
 def create_dynamodb_table():
