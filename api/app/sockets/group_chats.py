@@ -33,7 +33,6 @@ def create_group_chat_message(message_data, message_schema):
             emit("error", json.dumps({"error": "User has not joined the group chat"})) 
         else:
             now = datetime.now()
-            # Create new message
             chat_message = Message(
                 now.isoformat() + "-" + uuid4().hex, 
                 message_data["_chat_id"], 
@@ -44,7 +43,6 @@ def create_group_chat_message(message_data, message_schema):
             )
             database_repository.add_chat_message(chat_message)
 
-            # When should the message be confirmed as sent?
             emit(
                 "new_chat_message",
                 message_schema.dumps(chat_message),

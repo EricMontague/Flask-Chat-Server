@@ -29,7 +29,7 @@ def create_private_chat_message(message_data, message_schema):
         emit("error", json.dumps({"error": "User has not joined the private chat"}))
     else:
         now = datetime.now()
-        # Create new message
+        
         chat_message = Message(
             now.isoformat() + "-" + uuid4().hex,
             message_data["_chat_id"],
@@ -39,7 +39,7 @@ def create_private_chat_message(message_data, message_schema):
             created_at=now
         )
         database_repository.add_chat_message(chat_message)
-        # When should the message be confirmed as sent?
+        
         emit(
             "new_chat_message",
             message_schema.dumps(chat_message),
