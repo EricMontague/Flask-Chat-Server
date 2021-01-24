@@ -1,15 +1,6 @@
 version: "3.8"
 
 services:
-    web:
-        build: .
-        image: chat_app:latest
-        container_name: chat_app
-        ports:
-            - "8000:5000"
-        env_file: .env
-        depends_on: 
-            - dynamodb-local
     dynamodb-local:
         command: "-jar DynamoDBLocal.jar -sharedDb -optimizeDbBeforeStartup -dbPath ./data"
         image: "amazon/dynamodb-local:latest"
@@ -19,3 +10,14 @@ services:
         volumes:
             - "./docker/dynamodb:/home/dynamodblocal/data"
         working_dir: /home/dynamodblocal
+    
+    web:
+        build: .
+        image: chat_app:latest
+        container_name: chat_app
+        ports:
+            - "5000:5000"
+        env_file: .env
+        depends_on: 
+            - dynamodb-local
+    
