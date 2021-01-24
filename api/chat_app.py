@@ -3,6 +3,12 @@
 
 import os
 from http import HTTPStatus
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+
 from app import create_app
 from app.models import (
     PrivateChat,
@@ -28,10 +34,8 @@ from app.models import (
 from app.clients import dynamodb_client
 from app.repositories import database_repository, file_repository
 from app.extensions import socketio
-from dotenv import load_dotenv
 
 
-load_dotenv()
 app = create_app(os.environ.get("FLASK_CONFIG", "development"))
 
 
