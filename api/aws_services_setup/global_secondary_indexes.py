@@ -12,8 +12,8 @@ USERS_GSI = {
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
-        "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25),
-        "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25),
+        "ReadCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25)),
+        "WriteCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25)),
     },
 }
 
@@ -25,8 +25,8 @@ COMMUNITIES_BY_LOCATION_GSI = {
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
-        "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25),
-        "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25),
+        "ReadCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25)),
+        "WriteCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25)),
     },
 }
 
@@ -39,8 +39,8 @@ COMMUNITIES_BY_TOPIC_GSI = {
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
-        "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25),
-        "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25),
+        "ReadCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25)),
+        "WriteCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25)),
     },
 }
 
@@ -53,8 +53,8 @@ INVERTED_GSI = {
     ],
     "Projection": {"ProjectionType": "ALL"},
     "ProvisionedThroughput": {
-        "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25),
-        "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25),
+        "ReadCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_RCU", 25)),
+        "WriteCapacityUnits": int(os.environ.get("AWS_DYNAMODB_INDEX_WCU", 25)),
     },
 }
 
