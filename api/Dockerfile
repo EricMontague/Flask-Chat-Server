@@ -19,4 +19,5 @@ RUN apk update \
   
 
 EXPOSE 5000
-CMD python chat_app.py
+CMD ["sh", "-c", "python cli.py create-table && python cli.py fake-data $LOAD && python chat_app.py"]
+
