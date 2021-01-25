@@ -115,11 +115,8 @@ def upload_user_cover_photo(file, user_id):
     """Add or replace the user's cover photo."""
     if g.current_user.id != user_id:
         return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
-    user = database_repository.get_user(user_id)
-    if not user:
-        return {"error": "User not found"}, HTTPStatus.NOT_FOUND
-    image_data = process_image(user.id, file_repository, file, ImageType.USER_COVER_PHOTO)
-    database_repository.update_user_image(user, image_data)
+    image_data = process_image(g.current_user.id, file_repository, file, ImageType.USER_COVER_PHOTO)
+    database_repository.update_user_image(g.current_user, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
@@ -129,13 +126,10 @@ def upload_user_profile_photo(file, user_id):
     """Add or a replace the user's profile photo."""
     if g.current_user.id != user_id:
         return {"error": "You do not have the permissions to perform this action"}, HTTPStatus.UNAUTHORIZED
-    user = database_repository.get_user(user_id)
-    if not user:
-        return {"error": "User not found"}, HTTPStatus.NOT_FOUND
     image_data = process_image(
-        user.id, file_repository, file, ImageType.USER_PROFILE_PHOTO
+        g.current_user.id, file_repository, file, ImageType.USER_PROFILE_PHOTO
     )
-    database_repository.update_user_image(user, image_data)
+    database_repository.update_user_image(g.current_user, image_data)
     return {}, HTTPStatus.NO_CONTENT
 
 
