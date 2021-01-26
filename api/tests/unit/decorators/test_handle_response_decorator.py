@@ -196,12 +196,12 @@ def test_serialize_model_or_models_with_models_in_dict(fake_data_schema):
 
     # Test for just a singular model
     arguments = {"name": "John", "model": "Pretend a model object is here"}
-    serialize_model_or_models(arguments, fake_data_schema)
-    assert "User" in arguments
-    assert "name" in arguments
+    results = serialize_model_or_models(arguments, fake_data_schema)
+    assert "User" in results
+    assert "name" in results
 
     # Test for multiple models
     arguments = {"name": "John", "models": "Pretend a list of models are here"}
-    serialize_model_or_models(arguments, fake_data_schema)
-    assert "Users" in arguments
-    assert "name" in arguments
+    results = serialize_model_or_models(arguments, fake_data_schema)
+    assert "Users" in results
+    assert "name" in results
