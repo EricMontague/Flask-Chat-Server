@@ -3,6 +3,12 @@ such as database table creation, running tests and more.
 """
 
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+
 import click
 from aws_services_setup.utils import (
     create_dynamodb_table,
@@ -14,11 +20,11 @@ from botocore.exceptions import ClientError
 
 
 @click.group()
-def aws():
+def app_setup():
     pass
 
 
-@aws.command()
+@app_setup.command()
 def create_table():
     """Create the single DynamoDB application table"""
     try:
@@ -28,7 +34,7 @@ def create_table():
         print(err, "\n")
 
 
-@aws.command()
+@app_setup.command()
 def delete_table():
     """Delete the single Dynamodb table"""
     try:
@@ -41,7 +47,7 @@ def delete_table():
         print(err)
 
 
-@aws.command()
+@app_setup.command()
 def create_bucket():
     """Create the single S3 bucket."""
     try:
@@ -51,7 +57,7 @@ def create_bucket():
         print(err, "\n")
 
 
-@aws.command()
+@app_setup.command()
 def delete_bucket():
     """Delete the single S3 bucket."""
     try:
@@ -62,4 +68,4 @@ def delete_bucket():
 
 
 if __name__ == "__main__":
-    aws()
+    app_setup()
