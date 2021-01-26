@@ -61,13 +61,17 @@ def serialize_model_or_models(results, schema):
     by a view function and update the dictionary with new
     keys to reflect the model or models' name
     """
+    new_results = {}
     for key in results:
         if key == "model":
-            model = results.pop(key)
-            results[schema.RESOURCE_NAME] = schema.dump(model)
+            model = results[key]
+            new_results[schema.RESOURCE_NAME] = schema.dump(model)
         elif key == "models":
-            models = results.pop(key)
-            results[schema.COLLECTION_NAME] = schema.dump(models)
+            models = results[key]
+            new_results[schema.COLLECTION_NAME] = schema.dump(models)
+        else:
+            new_results[key] = results[key]
+    return new_results
 
 
 def handle_serialization(results, schema, http_status_code):
@@ -78,8 +82,8 @@ def handle_serialization(results, schema, http_status_code):
         serialized_results = schema.dump(results)
         api_response = make_response(serialized_results or results, http_status_code)
     elif isinstance(results, dict):  # attempt to serialize every item in dict
-        serialize_model_or_models(results, schema)
-        api_response = make_response(results, http_status_code)
+        new_results = serialize_model_or_models(results, schema)
+        api_response = make_response(new_results, http_status_code)
     else:  # assume it's a model
         api_response = make_response(schema.dump(results), http_status_code)
     return api_response
