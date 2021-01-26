@@ -18,6 +18,8 @@ services:
         ports:
             - "5000:5000"
         env_file: .env
+        environment:
+            AWS_DYNAMODB_ENDPOINT_URL: http://dynamodb-local:8000
         depends_on: 
             - dynamodb-local
         restart: on-failure
