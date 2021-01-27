@@ -22,6 +22,13 @@ I chose to use Flask to build the API since it is lightweight and unopinionated 
 <br>
 
 ## High Level Architecture
+- I chose to use the repository pattern to decouple the Flask API and SocketIO event handlers from
+the underlying data storage layer. This means that the view functions and event handlers don't have to know
+what type of database is being used so long as they are presented a means of interacting with the database
+through the repository
+- Because of this decoupling, if I decide to switch to a different database, I won't have to make changes
+to Flask API or Websockets Layer at all. I'll simply need to rewrite a new repository class that implements
+the same interface that the application expects
 
 ```sh
 
