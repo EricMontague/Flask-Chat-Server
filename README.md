@@ -7,7 +7,11 @@
 
 <br>
 
-Description here...
+Mental health is gaining more and more attention as a important ingredient to having a higher quality of life, especially among younger adults. However, the social stigma of suffering from a mental illness is still prevelant, and it can often be difficult for others to understand what you are going through and even harder to find others who do. HeadsUp allows users to find other people in their area who are dealing with the same mental health issues as they are and form local online communities. Users can create group chats within communities that act as small support groups and where users can help each other through their struggles.
+
+
+I chose to use Flask to build the API since it is lightweight and unopinionated in regards to what other technologies you pair with it as well as how you structure your application. DynamoDB was chosen as the main data store because the low latency, high availability, and consistency of response times that it provides are essential for a scalable chat application. Also, as someone who has more experience with SQL databases, I had fun learning about NoSQL data modeling and how it differs from modeling data in a SQL database like PostgreSQL.
+
 <br>
 <br>
 
