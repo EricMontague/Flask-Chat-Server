@@ -23,6 +23,68 @@ I chose to use Flask to build the API since it is lightweight and unopinionated 
 
 ## High Level Architecture
 
+```sh
+
+Authentication Layer
+---------------------
+* HTTP Basic Auth for logging a user in and revoking tokens
+* JWTs for accessing resources on the server.
+
+
+Serialization and Validation Layer
+-----------------------------
+* Marshmallow schemas used to serialize responses and deserialize and validate incoming
+data from requests
+
+
+Flask API Layer
+---------------------
+* Request/Response handling
+* Accesses data through the database and file storage repositories
+* De
+
+
+Websockets Layer 
+-----------------
+* Handles SocketIO events for chat messages, notifications, and websocket connections
+* Broadcasts chat messages and notifications to connected clients
+* Accesses data through the database repository
+
+
+Database Repository Layer
+-----------------
+* Abstraction over the storage of application models in DynamoDB
+* Interacts with the DynamoDB client to get data in and out of DynamoDB
+* Interacts with DynamoDB Mapper classes which serialize and deserialize models to and from
+DynamoDB items
+
+
+DynamoDB Item Serialization Layer
+--------------------
+* Custom built classes that serialize application models to DynamoDB items
+* Also handles deserializing items from DynamoDB items back to application models
+
+
+Models
+--------
+* Objects that represent the main entities of the application
+* Decoupled from the storage layer
+
+
+DynamoDB Client Layer
+--------------------
+* Serves as the interface layer for accessing data from the Data layer
+* The client is completety ignorant to the application models as it only
+deals with Dynamodb items, and the boto3 library
+
+
+Data Layer
+-------------
+* DynamoDB stores all application objects except images (users, communities, notifications,
+messages, tokens)
+* S3 stores user uploaded images
+```
+
 
 ## Development:
 - First you need to [register with Stripe](https://stripe.com/) and then [obtain your API keys](https://stripe.com/docs/keys) from your Stripe dashboard
