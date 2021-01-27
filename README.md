@@ -95,67 +95,55 @@ messages, tokens)
 
 
 ## Development:
-- First you need to [register with Stripe](https://stripe.com/) and then [obtain your API keys](https://stripe.com/docs/keys) from your Stripe dashboard
-- Next you will need [download Elasticsearch](https://www.elastic.co/downloads/elasticsearch) if you don't have it installed on your computer already. I built this application using version 7.6, but I believe that any subversion of version 7 should work
-<br>
+- First you need to [create and AWS account](https://portal.aws.amazon.com/billing/signup#/start) and get your AWS access key id
+and secret access key
+- Then you will need to create the following .env file and save it in the project's root directory
+- AWS_DYNAMODB_ENPOINT is optional and is only needed if you want to run the application with dynamodb-local
+- Using dynamodb-local is the default behavior when running the application using Docker
 
+`.env`
 
-
-
-
-
-
-### Running with Docker (Preferred)
 ```sh
-➜ git clone https://github.com/EricMontague/SponsorMatch.git
-➜ touch .docker-env
+FLASK_APP=
+FLASK_ENV=
+FLASK_DEBUG=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=
+AWS_DYNAMODB_TABLE_RCU=
+AWS_DYNAMODB_TABLE_WCU=
+AWS_DYNAMODB_INDEX_RCU=
+AWS_DYNAMODB_INDEX_WCU=
+AWS_DYNAMODB_TABLE_NAME=
+AWS_DYNAMODB_ENDPOINT_URL=
+AWS_S3_BUCKET_NAME=
+AWS_S3_BUCKET_LOCATION=
+SECRET_KEY=
+
+```
+
+
+### Running with Docker
+```sh
+➜ git clone https://github.com/EricMontague/ChatApp.git
+➜ touch .env
 ➜ docker-compose up
 ```
 
 
-`.docker-env`
-
-```sh
-FLASK_APP=
-FLASK_CONFIG=
-MAIL_USERNAME=(optional) - Use if you want to utilize email functionality
-MAIL_PASSWORD=(optional) - Use if you want to utilize email functionality
-ADMIN_EMAIL=(optional)
-SECRET_KEY=
-STRIPE_PUBLISHABLE_KEY=
-STRIPE_SECRET_KEY=
-DATABASE_URL= postgresql://sponsormatch:password@database:5432/sponsormatch_db
-ELASTICSEARCH_URL=http://elasticsearch:9200 (Elasticsearch defaults to listening on port 9200, but adjust this to your needs)
-
-```
 <br>
 
 ### Running with the Werkzeug development server
 
 ```sh
-➜ git clone https://github.com/EricMontague/SponsorMatch.git
-➜ touch .flask-env
-➜ [insert command to start up Elasticsearch]
-➜ flask setup-environment --fake-data (optional flag if you want to insert fake data into the database)
-```
-
-
-`.flask-env`
-
-```sh
-FLASK_APP=
-FLASK_CONFIG=
-MAIL_USERNAME=(optional) - Use if you want to utilize email functionality
-MAIL_PASSWORD=(optional) - Use if you want to utilize email functionality
-ADMIN_EMAIL=(optional)
-SECRET_KEY=
-STRIPE_PUBLISHABLE_KEY=
-STRIPE_SECRET_KEY=
-DATABASE_URL= (optional)
-ELASTICSEARCH_URL=
+➜ git clone https://github.com/EricMontague/ChatApp.git
+➜ touch .env
+➜ python cli.py create-table
+➜ python cli.py create-bucket
+➜ python chat_app.py
 
 ```
-<br>
+
 
 ## Testing
 ```sh
