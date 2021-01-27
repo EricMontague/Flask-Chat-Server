@@ -19,5 +19,5 @@ RUN apk update \
   
 
 EXPOSE 5000
-CMD ["sh", "-c", "python cli.py create-table && python chat_app.py"]
+CMD ["sh", "-c", "python cli.py create-table && python cli.py create-bucket && python chat_app.py"]
 
