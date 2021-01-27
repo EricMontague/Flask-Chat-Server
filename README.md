@@ -2,8 +2,8 @@
 
 > HeadsUp is a chat application built with Flask that connects people with others who are suffering from similar mental health issues.
 
-![open-issues](https://img.shields.io/badge/open--issues-0-orange)
 ![last-commit](https://img.shields.io/badge/last--commit-Jan%202021-blue)
+![open-issues](https://img.shields.io/badge/open--issues-0-success)
 
 <br>
 
