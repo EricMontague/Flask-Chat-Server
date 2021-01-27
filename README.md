@@ -13,7 +13,15 @@ Mental health is gaining more and more attention as a important ingredient to ha
 I chose to use Flask to build the API since it is lightweight and unopinionated in regards to what other technologies you pair with it as well as how you structure your application. DynamoDB was chosen as the main data store because the low latency, high availability, and consistency of response times that it provides are essential for a scalable chat application. Also, as someone who has more experience with SQL databases, I had fun learning about NoSQL data modeling and how it differs from modeling data in a SQL database like PostgreSQL.
 
 <br>
+
+
+## API Documentation
+
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/f67339c2a129dcb6138d)
+
 <br>
+
+## High Level Architecture
 
 
 ## Development:
@@ -22,10 +30,9 @@ I chose to use Flask to build the API since it is lightweight and unopinionated 
 <br>
 
 
-## API Documentation
 
 
-## High Level Architecture
+
 
 
 ### Running with Docker (Preferred)
