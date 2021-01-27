@@ -41,7 +41,7 @@ Flask API Layer
 ---------------------
 * Request/Response handling
 * Accesses data through the database and file storage repositories
-* De
+* Decoupled from the data layer
 
 
 Websockets Layer 
@@ -49,6 +49,7 @@ Websockets Layer
 * Handles SocketIO events for chat messages, notifications, and websocket connections
 * Broadcasts chat messages and notifications to connected clients
 * Accesses data through the database repository
+* Decoupled from the data layer
 
 
 Database Repository Layer
@@ -71,7 +72,7 @@ Models
 * Decoupled from the storage layer
 
 
-DynamoDB Client Layer
+Client Layer
 --------------------
 * Serves as the interface layer for accessing data from the Data layer
 * The client is completety ignorant to the application models as it only
