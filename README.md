@@ -1,70 +1,102 @@
-# Getting Started with Create React App
+# SponsorMatch
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> SponsorMatch is a Flask application that connects event organizers with companies who are looking to sponsor events.
 
-## Available Scripts
+![code-coverage](https://img.shields.io/badge/coverage-66%25-yellowgreen)
+![last-commit](https://img.shields.io/badge/last%20commit-Nov%202020-blue)
 
-In the project directory, you can run:
+<br>
 
-### `npm start`
+After reading Miguel Grinberg's Flask: Web Development, I wanted to build off of the concepts from his book and build my own Flask application. While looking ideas, I stumbled upon an old post on Quora where the founder of Eventbrite mentioned how it can be difficult for event organizers to find sponsors for their events. This inspired me to build, [SponsorMatch](https://sponsormatch.herokuapp.com/), a web application dedicated to solving this problem. 
+<br>
+<br>
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Using the live application: 
+- If you're using the live application and you choose to register as a sponsor, use **4242 4242 4242 4242** as the credit card number when purchasing packages as this is one of Stripe's test credit card numbers. The rest of the purchase form can be filled in with whatever numbers you wish to complete your purchase.
+<br>
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Development:
+- First you need to [register with Stripe](https://stripe.com/) and then [obtain your API keys](https://stripe.com/docs/keys) from your Stripe dashboard
+- Next you will need [download Elasticsearch](https://www.elastic.co/downloads/elasticsearch) if you don't have it installed on your computer already. I built this application using version 7.6, but I believe that any subversion of version 7 should work
+<br>
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### `npm run build`
+### Running with Docker (Preferred)
+```sh
+➜ git clone https://github.com/EricMontague/SponsorMatch.git
+➜ touch .docker-env
+➜ docker-compose up
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+`.docker-env`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```sh
+FLASK_APP=
+FLASK_CONFIG=
+MAIL_USERNAME=(optional) - Use if you want to utilize email functionality
+MAIL_PASSWORD=(optional) - Use if you want to utilize email functionality
+ADMIN_EMAIL=(optional)
+SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+DATABASE_URL= postgresql://sponsormatch:password@database:5432/sponsormatch_db
+ELASTICSEARCH_URL=http://elasticsearch:9200 (Elasticsearch defaults to listening on port 9200, but adjust this to your needs)
 
-### `npm run eject`
+```
+<br>
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### Running with the Werkzeug development server
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```sh
+➜ git clone https://github.com/EricMontague/SponsorMatch.git
+➜ touch .flask-env
+➜ [insert command to start up Elasticsearch]
+➜ flask setup-environment --fake-data (optional flag if you want to insert fake data into the database)
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+`.flask-env`
 
-## Learn More
+```sh
+FLASK_APP=
+FLASK_CONFIG=
+MAIL_USERNAME=(optional) - Use if you want to utilize email functionality
+MAIL_PASSWORD=(optional) - Use if you want to utilize email functionality
+ADMIN_EMAIL=(optional)
+SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+DATABASE_URL= (optional)
+ELASTICSEARCH_URL=
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```
+<br>
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Testing
+```sh
+➜ pytest tests
+```
+<br>
+<br>
 
-### Code Splitting
+## Core Features
+ - Users can create and join communities that are centered on specific locations and mental health topics
+ - Users can communicate with each other via private chats
+ - Users can communicate with other community members via group chats
+ - Users are sent notifications when a new message is posted in a private or group chat that they belong to
+ - Users can read their notifications ordered in reverse chronological order
+ - Admins have the ability to change users' permissions as well as ban users from the application
+ 
+<br>
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Technologies Used
+ - Flask
+ - DynamoDB
+ - Amazon S3
+ - Docker
+ - SocketIO
+ - JWT
 
-### Analyzing the Bundle Size
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
