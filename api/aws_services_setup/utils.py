@@ -4,7 +4,9 @@ for AWS services
 
 
 import os
+import time
 import boto3
+from botocore.exceptions import ClientError
 from aws_services_setup.global_secondary_indexes import GSI_LIST
 
 
@@ -14,7 +16,7 @@ BUCKET_LOCATION = os.environ.get("AWS_S3_BUCKET_LOCATION")
 dynamodb_client = boto3.client(
     "dynamodb", 
     os.environ.get("AWS_DEFAULT_REGION"),
-    endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL", "http://localhost:8000")
+    endpoint_url=os.environ.get("AWS_DYNAMODB_ENDPOINT_URL")
 )
 s3_client = boto3.client("s3", os.environ.get("AWS_DEFAULT_REGION"))
 
@@ -46,13 +48,20 @@ def create_dynamodb_table():
         },
     )
 
-    # Setup TTL
-    dynamodb_client.update_time_to_live(
-        TableName=TABLE_NAME,
-        TimeToLiveSpecification={
-            "Enabled": True, "AttributeName": "expires_on_date"
-        }
-    )
+    is_active = False
+    while not is_active:
+        time.sleep(2)
+        try:
+            # Setup TTL
+            dynamodb_client.update_time_to_live(
+                TableName=TABLE_NAME,
+                TimeToLiveSpecification={
+                    "Enabled": True, "AttributeName": "expires_on_date"
+                }
+            )
+            is_active = True
+        except ClientError:
+            continue
     return table
 
 
