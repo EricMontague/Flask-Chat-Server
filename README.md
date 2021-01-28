@@ -98,7 +98,7 @@ messages, tokens)
 - First you need to [create and AWS account](https://portal.aws.amazon.com/billing/signup#/start), create an IAM user, and get your AWS access key id
 and secret access key
 - Then you will need to create the following .env file and save it in the project's root directory
-- AWS_DYNAMODB_ENPOINT is optional and is only needed if you want to run the application with dynamodb-local
+- AWS_DYNAMODB_ENPOINT is optional and is only needed if you want to run the application with [dynamodb-local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
 - Using dynamodb-local is the default behavior when running the application using Docker
 
 `.env`
@@ -126,7 +126,8 @@ SECRET_KEY=
 ### Running with Docker
 ```sh
 ➜ git clone https://github.com/EricMontague/ChatApp.git
-➜ touch .env
+➜ cd ChatApp/api
+➜ touch .env (add environment variables to this file before running the next command)
 ➜ docker-compose up
 ```
 
@@ -137,6 +138,10 @@ SECRET_KEY=
 
 ```sh
 ➜ git clone https://github.com/EricMontague/ChatApp.git
+➜ cd ChatApp/api
+➜ python3 -m venv venv
+➜ source venv/bin/activate
+➜ pip install --upgrade pip && pip install -r requirements.txt
 ➜ touch .env
 ➜ python cli.py create-table
 ➜ python cli.py create-bucket
