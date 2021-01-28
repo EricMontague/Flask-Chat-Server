@@ -1,6 +1,6 @@
-# HeadsUp
+# Mental Health ChatApp
 
-> HeadsUp is a chat application built with Flask that connects people with others who are suffering from similar mental health issues. Users, messages and other data are stored in DynamoDB and images are stored in S3.
+> A chat application built with Flask that connects people with others who are suffering from similar mental health issues. Users, messages and other data are stored in DynamoDB and images are stored in S3.
 
 ![last-commit](https://img.shields.io/badge/last--commit-Jan%202021-blue)
 ![open-issues](https://img.shields.io/badge/open--issues-0-success)
