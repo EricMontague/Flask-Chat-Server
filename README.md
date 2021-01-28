@@ -95,7 +95,7 @@ messages, tokens)
 
 
 ## Development:
-- First you need to [create and AWS account](https://portal.aws.amazon.com/billing/signup#/start), create an IAM user, and get your AWS access key id
+- First you need to [create an AWS account](https://portal.aws.amazon.com/billing/signup#/start), create an IAM user, and get your AWS access key id
 and secret access key
 - Then you will need to create the following .env file and save it in the project's root directory
 - AWS_DYNAMODB_ENPOINT is optional and is only needed if you want to run the application with [dynamodb-local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
