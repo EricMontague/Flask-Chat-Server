@@ -7,10 +7,10 @@
 
 <br>
 
-Mental health is gaining more and more attention as a important ingredient to having a higher quality of life, especially among younger adults. However, the social stigma of suffering from a mental illness is still prevelant, and it can often be difficult for others to understand what you are going through and even harder to find others who do. HeadsUp allows users to find other people in their area who are dealing with the same mental health issues as they are and form local online communities. Users can create group chats within communities that act as small support groups and where users can help each other through their struggles.
+Despite the growing awareness around mental health issues, the social stigma of suffering from a mental illness is still prevelant, and it can often be difficult for others to understand what you are going through and even harder to find others who do. This chat application allows users to find other people in their area who are dealing with the same mental health issues as they are and form local, online communities. Users can create group chats within communities that act as small support groups where users can help each other through their mental health issues.
 
 
-I chose to use Flask to build the API since it is lightweight and unopinionated in regards to what other technologies you pair with it as well as how you structure your application. DynamoDB was chosen as the main data store because the low latency, high availability, and consistency of response times that it provides are essential for a scalable chat application. Also, as someone who has more experience with SQL databases, I had fun learning about NoSQL data modeling and how it differs from modeling data in a SQL database like PostgreSQL ([see DynamoDB table schema](https://github.com/EricMontague/ChatApp/blob/master/api/dynamo_schema.md)).
+I chose to use Flask to build the API since it is lightweight and unopinionated in regards to what other technologies you pair with it. DynamoDB was chosen as the main data store because the low latency, high availability, and consistency of response times that it provides are essential for a scalable chat application. Also, as someone who has more experience with SQL databases, I had fun learning about NoSQL data modeling and how it differs from modeling data in a SQL database like PostgreSQL ([see DynamoDB table schema](https://github.com/EricMontague/ChatApp/blob/master/api/dynamo_schema.md)).
 
 <br>
 
@@ -27,20 +27,21 @@ the underlying data storage layer. This means that the view functions and event 
 what type of database is being used so long as they are presented a means of interacting with the database
 through the repository
 - Because of this decoupling, if I decide to switch to a different database, I won't have to make changes
-to Flask API or Websockets Layer at all. I'll simply need to rewrite a new repository class that implements
+to the Flask API or Websockets Layer at all. I'll simply need to rewrite a new repository class that implements
 the same interface that the application expects
 
 ```sh
 
-Authentication Layer
+Authentication/Authorization Layer
 ---------------------
 * HTTP Basic Auth for logging a user in and revoking tokens
 * JWTs for accessing resources on the server.
+* Check user permissions
 
 
 Serialization and Validation Layer
 -----------------------------
-* Marshmallow schemas used to serialize responses and deserialize and validate incoming
+* Marshmallow schemas are used to serialize responses and deserialize and validate incoming
 data from requests
 
 
@@ -76,7 +77,7 @@ DynamoDB Item Serialization Layer
 Models
 --------
 * Objects that represent the main entities of the application
-* Decoupled from the storage layer
+* Decoupled from the data layer
 
 
 Client Layer
@@ -99,7 +100,7 @@ messages, tokens)
 and secret access key
 - Then you will need to create the following .env file and save it in the project's root directory
 - AWS_DYNAMODB_ENPOINT is optional and is only needed if you want to run the application with [dynamodb-local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
-- Using dynamodb-local is the default behavior when running the application using Docker
+- Please note that using dynamodb-local is the default behavior when running the application using Docker
 
 `.env`
 
@@ -162,7 +163,6 @@ SECRET_KEY=
  - Users can communicate with each other via private chats
  - Users can communicate with other community members via group chats
  - Users are sent notifications when a new message is posted in a private or group chat that they belong to
- - Users can read their notifications ordered in reverse chronological order
  - Users can upload images for their profile as well as images for communities they create
  - Admins have the ability to change users' permissions as well as ban users from the application
  
