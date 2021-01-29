@@ -101,6 +101,7 @@ and secret access key
 - Then you will need to create the following .env file and save it in the project's root directory
 - AWS_DYNAMODB_ENPOINT is optional and is only needed if you want to run the application with [dynamodb-local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
 - Please note that using dynamodb-local is the default behavior when running the application using Docker
+- Regardless of which way you choose to run the application, the server will be listening on port 5000
 
 `.env`
 
