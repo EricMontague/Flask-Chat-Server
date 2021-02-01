@@ -1,4 +1,4 @@
-# Flask Chat App
+# Flask Chat Server
 
 > A chat application built with Flask that connects people with others who are suffering from similar mental health issues. Users, messages and other data are stored in DynamoDB and images are stored in S3.
 
