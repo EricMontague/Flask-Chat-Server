@@ -23,8 +23,6 @@ yarn-debug.log*
 yarn-error.log*
 
 
-/src
-/public
 package.json
 package-lock.json
 __pycache__/
