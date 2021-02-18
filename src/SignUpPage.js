@@ -3,8 +3,7 @@ import Helmet from "react-helmet";
 import PropTypes from "prop-types";
 import {NavbarTransparent, NavMenu} from "./components/navigation";
 import {CenteredFlexLayout} from ".layout";
-import InputField from "./InputField";
-import {PrimaryButton} from "./button";
+import {SignUpForm} from "./components/forms";
 import {Card, CardBody} from "./card";
 import Icon from "./Icon";
 import {P, H2} from "./components/globals";
@@ -32,14 +31,7 @@ const SignUpPage = props => {
                 <H2>Create your account</H2>
                 <Card>
                     <CardBody>
-                        <form method="POST" action={`${window.location.href}/auth/register`}>
-                            <InputField type="text" placeholder="Username"/>
-                            <InputField type="text" placeholder="Name"/>
-                            <InputField type="text" placeholder="Email"/>
-                            <InputField type="password" placeholder="Password"/>
-                            {/* <LocationField /> */}
-                            <PrimaryButton type="submit">Create account</PrimaryButton>
-                        </form>
+                        <SignUpForm />
                     </CardBody>
                 </Card>
                 
