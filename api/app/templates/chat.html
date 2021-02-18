@@ -74,7 +74,7 @@
 </html>
 
 <script type="text/javascript">
-  let jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiOWI4Njg5YzlmMWQwNDE5MTg5YTgxNWQzODU3NGY0ZWMiLCJ0b2tlbl90eXBlIjoiQUNDRVNTX1RPS0VOIiwiZXhwIjoxNjExMzY0ODg1LCJpYXQiOjE2MTEzNjEyODV9.Z526wsSW_U1Re1qWqiIUH1xpbmCN35QPLVjIL5dh6b4";
+  let jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiM2U1MDIyNzUwZjRiNDk4NGI1MzBlNGViZTc3ODg0ZjQiLCJ0b2tlbl90eXBlIjoiQUNDRVNTX1RPS0VOIiwiZXhwIjoxNjExODYyMTc2LCJpYXQiOjE2MTE4NTg1NzZ9.wofy_u2phajF2wPJKrLGsIgYehLIQJ_BD_6A4N0LPYk";
 
   var socket = io({
     query: {
@@ -158,12 +158,12 @@
     console.log('Connected');
     console.log(socket.connected);
 
-    // socket.emit(
-    //   "join_private_chat",
-    //   JSON.stringify({
-    //     id: "6137d0b6809a88f4efd2935599c4316b"
-    //   })
-    // );
+    socket.emit(
+      "join_private_chat",
+      JSON.stringify({
+        id: "fc47e522efd87d9738d361aec4cddaea"
+      })
+    );
 
     // setTimeout(() => {
     //   socket.emit(
@@ -174,16 +174,16 @@
     //   );
     // }, 1500)
 
-    // setTimeout(() => {
-    //   socket.emit(
-    //     "create_private_chat_message",
-    //     JSON.stringify({
-    //       chat_id: "6137d0b6809a88f4efd2935599c4316b",
-    //       content: "Buffalo chicken dip",
-    //       message_type: "PRIVATE_CHAT"
-    //     })
-    //   )
-    // }, 1500);
+    setTimeout(() => {
+      socket.emit(
+        "create_private_chat_message",
+        JSON.stringify({
+          chat_id: "fc47e522efd87d9738d361aec4cddaea",
+          content: "Buffalo chicken dip",
+          message_type: "PRIVATE_CHAT"
+        })
+      )
+    }, 1500);
 
 
     // setTimeout(() => {
@@ -234,13 +234,13 @@
 
 
 
-    socket.emit(
-      "join_group_chat",
-      JSON.stringify({
-        id: "79d2395dc7594315a67178e8f7efcae4",
-        community_id: "4f3fa232a1404554ab8fca0f47329e3f",
-      })
-    );
+    // socket.emit(
+    //   "join_group_chat",
+    //   JSON.stringify({
+    //     id: "79d2395dc7594315a67178e8f7efcae4",
+    //     community_id: "4f3fa232a1404554ab8fca0f47329e3f",
+    //   })
+    // );
 
     // setTimeout(() => {
     //   socket.emit(
