@@ -18,10 +18,10 @@ const App = () => {
             <ThemeProvider theme= { theme }>
                 <GlobalStyle />
                 <Switch>
-                    <Route exact path="/signin" >
+                    <Route exact path="/sign-in" >
                         <SignInPage />
                     </Route>
-                    <Route exact path="/signup">
+                    <Route exact path="/sign-up">
                         <SignUpPage />
                     </Route>
                     <Route exact path="/">
