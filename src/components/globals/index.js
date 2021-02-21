@@ -1,5 +1,5 @@
 import styled, { css } from "styled-components";
-import theme from "src/theme";
+import theme from "../../theme";
 
 
 export const convertHexToRGBA = (hex, alpha) => {
@@ -159,7 +159,7 @@ class ZIndex {
 };
 
 
-export const zIndex = ZIndex();
+export const zIndex = new ZIndex();
 
 
 export const FlexRow = styled.div`
@@ -173,12 +173,12 @@ export const FlexRow = styled.div`
 export const FlexCol = styled.div`
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
+    justify-content: ${props => props.justifyContent || "flex-start"};
+    align-items: ${props => props.alignItems || "stretch"};
 `;
 
 
-export const GridCol = style.div`
+export const GridCol = styled.div`
     display: grid;
     grid-template-column: repeat(${props => props.cols});
     gap: ${props => props.gap};
