@@ -1,17 +1,30 @@
 import React from "react";
 import Helmet from "react-helmet";
+import {StyledLink} from "./components/buttons/styles";
+import styled from "styled-components";
 import PropTypes from "prop-types";
 import {NavbarTransparent, NavMenu} from "./components/navigation";
 import {CenteredFlexLayout} from ".layout";
 import {SignUpForm} from "./components/forms";
-import {Card, CardBody} from "./card";
-import Icon from "./Icon";
-import {P, H2} from "./components/globals";
+import Card from ".components/cards";
+import {P, H2, FlexRow} from "./components/globals";
 import {FlexRow} from "./components/globals";
 
 
-const Logo = "styled-component here using Icon component";
-const SmallText = "styled-component here using P component";
+const Logo = styled(StyledLink)`
+    color: ${props => props.color ? props.color : props.theme.text.default};
+    font-weight: 600;
+`;
+
+
+const FinePrint = styled(P)`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    margin: 1rem 0;
+    color: ${props => props.theme.text.default};
+`;
 
 
 const SignUpPage = props => {
@@ -23,18 +36,23 @@ const SignUpPage = props => {
             </Helmet>
             <NavbarTransparent>
                 <FlexRow>
-                    <Logo />
+                    <Logo to={"/"}>TalkChat</Logo>
                     <NavMenu />
                 </FlexRow>
             </NavbarTransparent>
             <CenteredFlexLayout>
                 <H2>Create your account</H2>
                 <Card>
-                    <CardBody>
+                    <Card.Body>
                         <SignUpForm />
-                    </CardBody>
+                    </Card.Body>
                 </Card>
-                
+                <FinePrint>
+                    Already have an account? 
+                    <StyledLink to="/sign-in">
+                        Sign In
+                    </StyledLink>
+                </FinePrint>
             </CenteredFlexLayout>
         </>
     )
