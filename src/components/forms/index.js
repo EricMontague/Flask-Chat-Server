@@ -1,5 +1,6 @@
 import React from "react";
 import {Input} from "../formElements";
+import {PrimaryButton} from "../buttons";
 
 
 export class SignUpForm extends React.Component {
