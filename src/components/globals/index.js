@@ -41,6 +41,12 @@ export const Transition = {
 
 }
 
+export const A = styled.a`
+    display: flex;
+    align-items: center;
+    flex: none;
+`;
+
 
 export const H1 = styled.h1`
     ${fontStack};
@@ -141,7 +147,7 @@ class ZIndex {
         this.card = this.base + 100; // Cards should default to one layer above base content
         this.loading = this.card + 100; // Loading should appear above cards
         this.avatar = this.card + 100; // Avatars should appear above cards
-        this.form = this.card + 100; // Form elements should appear above cards
+        this.formElement = this.card + 100; // Form elements should appear above cards
 
         this.navBar = 3000;
         this.dropDowns = this.navBar + 100; // dropdowns shouldn't appear below the navbar

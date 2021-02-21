@@ -3,12 +3,6 @@ import { Link } from "react-router-dom";
 
 // https://www.hexcolortool.com/#a5222b
 
-export const A = styled.a`
-    display: flex;
-    align-items: center;
-    flex: none;
-`;
-
 
 export const StyledLink = styled(Link)`
     display: flex;
