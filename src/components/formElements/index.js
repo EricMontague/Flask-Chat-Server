@@ -49,6 +49,6 @@ Input.propTypes = {
     value: PropTypes.string.isRequired,
     disabled: PropTypes.bool.isRequired,
     withLabel: PropTypes.bool.isRequired,
-    label: PropTypes.label,
-    onChange: PropTypes.func.isRequired
+    label: PropTypes.string,
+    handleChange: PropTypes.func.isRequired
 };
