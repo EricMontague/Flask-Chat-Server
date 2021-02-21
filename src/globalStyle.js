@@ -25,11 +25,12 @@ const GlobalStyle = createGlobalStyle`
         color: ${theme.text.default}
         line-height: 1.5;
         font-family: ${theme.font.default};
-        background-color: ${theme.bg.wash};
+        background-color: ${theme.bg.default};
     }
 
     a {
         text-decoration: none;
+        color: ${theme.text.default};
     }
 
     a:hover {
