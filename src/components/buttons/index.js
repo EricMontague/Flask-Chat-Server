@@ -5,7 +5,7 @@ import {
     StyledPrimaryButton,
     StyledWarnButton,
     StyledOutlineButton
-} from "./style";
+} from "./styles";
 import {A} from "../globals";
 
 
