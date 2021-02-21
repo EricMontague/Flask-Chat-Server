@@ -1,13 +1,14 @@
 import React from "react";
 import PropTypes from "prop-types";
+import {StyledLabel, StyledInput} from "./styles";
 
 
 export const Input = props => {
     
     if (props.withLabel) {
         return (
-            <StyledLabel {...props}>
-                {props.children}
+            <>
+                <StyledLabel {...props}>props.label</StyledLabel>
                 <StyledInput 
                     id={props.id}
                     type={props.type}
@@ -17,7 +18,8 @@ export const Input = props => {
                     disabled={props.disabled}
                     onChange={props.handleChange}
                 />
-            </StyledLabel>
+            </>
+            
         );
     }
     return (
@@ -47,5 +49,6 @@ Input.propTypes = {
     value: PropTypes.string.isRequired,
     disabled: PropTypes.bool.isRequired,
     withLabel: PropTypes.bool.isRequired,
+    label: PropTypes.label,
     onChange: PropTypes.func.isRequired
 };
