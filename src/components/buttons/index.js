@@ -1,12 +1,12 @@
 import React from "react";
 import {
-    A,
     StyledLink,
     StyledButton,
     StyledPrimaryButton,
     StyledWarnButton,
     StyledOutlineButton
 } from "./style";
+import {A} from "../globals";
 
 
 const handleLinkWrapping = (ButtonComponent, props) => {
