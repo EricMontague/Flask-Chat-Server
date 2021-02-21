@@ -6,8 +6,8 @@ import {
 } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import theme from "./theme";
-import SignInPage from "./SignInPage";
-import SignUpPage from "./SignUpPage";
+import SignInPage from "./pages/SignInPage";
+import SignUpPage from "./pages/SignUpPage";
 import GlobalStyle from "./globalStyle";
 
 
