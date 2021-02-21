@@ -27,7 +27,7 @@ export const StyledCardBody = styled(FlexCol)`
 
 
 export const StyledCardFooter = styled(FlexRow)`
-    justify-content: ${props => props.justifyStart ? "flex-start" : "flex-end"}
+    justify-content: ${props => props.justifyContent || "flex-end"}
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
 `;
