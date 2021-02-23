@@ -35,7 +35,7 @@ const theme = {
         default: "#ffffff",
         primary: "#1453f0",
         light: "#fafbfc",
-        warn: "de5f67"
+        warn: "#de5f67"
     },
     font: {
         default: `-apple-system, BlinkMacSystemFont, 'Segoe UI'," 
@@ -47,6 +47,10 @@ const theme = {
         placeholder: "#718295",
         white: "#ffffff"
     },
+    input: {
+        border: "#edeff1",
+        placeholder: "#718295",
+    }
 };
 
 export default theme;
