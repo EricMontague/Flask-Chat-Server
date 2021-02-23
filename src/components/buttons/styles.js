@@ -16,15 +16,16 @@ export const StyledButton = styled.button`
     justify-content: center;
     align-items: center;
     flex: none;
-    font-weight: 600;
+    font-size: 1rem;
     border: 0;
     color: ${props => props.theme.text.default};
     background: ${props => props.theme.bg.light};
     cursor: pointer;
-    padding: 1rem 1.2rem;
+    padding: ${props => props.padding || "0.75rem 1rem"};
     border-radius: 0.25rem;
     opacity: ${props => props.disabled ? "0.6" : "1"}
     line-height: 1.2;
+    width: ${props => props.width || "auto"};
     transition: background, color 0.3s ease-in-out;
 `;
 
