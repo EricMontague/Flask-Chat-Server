@@ -5,7 +5,6 @@ import styled, {withTheme} from "styled-components";
 import PropTypes from "prop-types";
 import {StyledNavbarTransparent, StyledNavbarMenu, StyledNavbarMenuItem} from "../components/navigation";
 import {SignUpForm} from "../components/forms";
-import Card from "../components/cards";
 import {P, H2, FlexRow, FlexCol} from "../components/globals";
 
 
@@ -50,12 +49,8 @@ const SignUpPage = props => {
                 </FlexRow>
             </StyledNavbarTransparent>
             <FlexCol justifyContent="center" alignItems="center">
-                <H2>Create your account</H2>
-                <Card>
-                    <Card.Body>
-                        <SignUpForm />
-                    </Card.Body>
-                </Card>
+                <H2>Create your account</H2>    
+                <SignUpForm />
                 <FinePrint>
                     Already have an account? 
                     <StyledLink to="/sign-in">
