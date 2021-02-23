@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {StyledLabel, StyledInput} from "./styles";
+import {StyledLabel, StyledInput, StyledInputContainer} from "./styles";
 
 
 export const Input = props => {
@@ -9,29 +9,35 @@ export const Input = props => {
         return (
             <>
                 <StyledLabel {...props}>props.label</StyledLabel>
-                <StyledInput 
-                    id={props.id}
-                    type={props.type}
-                    placeholder={props.placeholder}
-                    name={props.name}
-                    value={props.value}
-                    disabled={props.disabled}
-                    onChange={props.handleChange}
-                />
+                <StyledInputContainer>
+                    <StyledInput 
+                        id={props.id}
+                        type={props.type}
+                        placeholder={props.placeholder}
+                        name={props.name}
+                        value={props.value}
+                        disabled={props.disabled}
+                        onChange={props.handleChange}
+                        {...props}
+                    />
+                </StyledInputContainer>
             </>
             
         );
     }
     return (
-        <StyledInput 
-            id={props.id}
-            type={props.type}
-            placeholder={props.placeholder}
-            name={props.name}
-            value={props.value}
-            disabled={props.disabled}
-            onChange={props.handleChange}
-        />
+        <StyledInputContainer>
+            <StyledInput 
+                id={props.id}
+                type={props.type}
+                placeholder={props.placeholder}
+                name={props.name}
+                value={props.value}
+                disabled={props.disabled}
+                onChange={props.handleChange}
+                {...props}
+            />
+        </StyledInputContainer>
     );
 };
 
