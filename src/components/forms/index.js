@@ -1,6 +1,6 @@
 import React from "react";
 import {StyledCard, StyledCardBody} from "../cards/styles";
-import {Form} from "./styles";
+import {StyledForm} from "./styles";
 import {FlexRow} from "../globals";
 import {Input} from "../formElements";
 import {PrimaryButton} from "../buttons";
@@ -32,7 +32,7 @@ export class SignUpForm extends React.Component {
         return (
             <StyledCard maxWidth="30rem">
                 <StyledCardBody>
-                    <Form onSubmit={this.handleSubmit}>
+                    <StyledForm onSubmit={this.handleSubmit}>
                         <FlexRow>
                             <Input
                                 id="username" 
@@ -77,7 +77,7 @@ export class SignUpForm extends React.Component {
                         </FlexRow>
                         {/* <LocationField /> */}
                         <PrimaryButton width="100%" padding="1.5rem" type="submit">Create account</PrimaryButton>
-                    </Form>
+                    </StyledForm>
                 </StyledCardBody>
             </StyledCard>
         )
