@@ -1,15 +1,20 @@
 import styled from "styled-components";
-import {flexCenteredMixin} from "../globals";
+import {flexCenteredMixin, fontStack} from "../globals";
 import { Link } from "react-router-dom";
 
 // https://www.hexcolortool.com/#a5222b
 
 
 export const StyledLink = styled(Link)`
+    ${fontStack};
     display: flex;
     align-items: center;
     flex: none;
     color: ${props => props.color || props.theme.text.default};
+
+    &:focus {
+        outline: none;
+    }
 `;
 
 
@@ -30,20 +35,24 @@ export const StyledButton = styled.button`
     border: 0;
     color: ${props => props.theme.text.default};
     background: ${props => props.theme.bg.light};
-    cursor: pointer;
-    padding: ${props => props.padding || "0.75rem 1rem"};
+    cursor: ${props => props.disabled ? "default" : "pointer"};
+    padding: ${props => props.padding || "0.7rem 1rem"};
     border-radius: 0.25rem;
-    opacity: ${props => props.disabled ? "0.6" : "1"}
+    opacity: ${props => props.disabled ? "0.6" : "1"};
     line-height: 1.2;
     width: ${props => props.width || "auto"};
     transition: background, color 0.3s ease-in-out;
+
+    &:focus {
+        outline: none;
+    }
 `;
 
 
 export const StyledPrimaryButton = styled(StyledButton)`
     color: ${props => props.theme.text.white};
     background: ${props => props.theme.bg.primary};
-
+    
     &:hover {
         background:  #0a46e4;
     }
@@ -76,6 +85,7 @@ export const StyledOutlineButton = styled(StyledButton)`
 
 
 export const StyledHoverOutlineButton = styled(StyledOutlineButton)`
+    transition: all 0.3s ease-in-out;
 
     &:hover {
         color: #263543;
