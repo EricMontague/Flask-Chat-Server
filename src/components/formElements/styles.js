@@ -52,3 +52,9 @@ export const StyledInputContainer = styled(FlexRow)`
     
 `;
 
+
+export const StyledInputRow = styled(FlexRow)`
+    & > *:not(:first-child) {
+        margin-left: 1rem;
+    }
+`;

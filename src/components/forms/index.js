@@ -1,8 +1,8 @@
 import React from "react";
 import {StyledCard, StyledCardBody} from "../cards/styles";
 import {StyledForm} from "./styles";
-import {FlexRow} from "../globals";
 import {Input} from "../formElements";
+import {StyledInputRow} from "../formElements/styles";
 import {PrimaryButton} from "../buttons";
 
 
@@ -13,7 +13,8 @@ export class SignUpForm extends React.Component {
             username: "",
             name: "",
             email: "",
-            password: ""
+            password: "",
+            isFormCompleted: false
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
@@ -33,7 +34,7 @@ export class SignUpForm extends React.Component {
             <StyledCard maxWidth="30rem">
                 <StyledCardBody>
                     <StyledForm onSubmit={this.handleSubmit}>
-                        <FlexRow>
+                        <StyledInputRow>
                             <Input
                                 id="username" 
                                 type="text" 
@@ -52,8 +53,8 @@ export class SignUpForm extends React.Component {
                                 withLabel={false}
                                 handleChange={this.handleChange}
                             />
-                        </FlexRow>
-                        <FlexRow>
+                        </StyledInputRow>
+                        <StyledInputRow>
                             <Input
                                 id="email"
                                 type="text" 
@@ -63,8 +64,8 @@ export class SignUpForm extends React.Component {
                                 withLabel={false}
                                 handleChange={this.handleChange}
                             />
-                        </FlexRow>
-                        <FlexRow>
+                        </StyledInputRow>
+                        <StyledInputRow>
                             <Input
                                 id="password"
                                 type="password" 
@@ -74,9 +75,11 @@ export class SignUpForm extends React.Component {
                                 withLabel={false}
                                 handleChange={this.handleChange}
                             />
-                        </FlexRow>
+                        </StyledInputRow>
                         {/* <LocationField /> */}
-                        <PrimaryButton width="100%" padding="1.5rem" type="submit">Create account</PrimaryButton>
+                        <PrimaryButton disabled={!this.state.isFormCompleted} width="100%" padding="1.5rem" type="submit">
+                            Create account
+                        </PrimaryButton>
                     </StyledForm>
                 </StyledCardBody>
             </StyledCard>
