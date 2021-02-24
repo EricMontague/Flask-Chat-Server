@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import {flexCenteredMixin} from "../globals";
 import { Link } from "react-router-dom";
 
 // https://www.hexcolortool.com/#a5222b
@@ -8,15 +9,24 @@ export const StyledLink = styled(Link)`
     display: flex;
     align-items: center;
     flex: none;
+    color: ${props => props.color || props.theme.text.default};
+`;
+
+
+export const StyledHoverLink = styled(StyledLink)`
+    transition: opacity 0.2s ease-in-out;
+    
+    &:hover {
+        opacity: 0.85;
+    }
 `;
 
 
 export const StyledButton = styled.button`
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    ${flexCenteredMixin}
     flex: none;
     font-size: 1rem;
+    font-weight: 500;
     border: 0;
     color: ${props => props.theme.text.default};
     background: ${props => props.theme.bg.light};
