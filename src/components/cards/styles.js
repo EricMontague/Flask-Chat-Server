@@ -3,7 +3,7 @@ import {FlexCol, FlexRow, H3, zIndex} from "../globals";
 
 
 export const StyledCard = styled(FlexCol)`
-    padding: 1rem 0.75rem;
+    padding: 1.5rem;
     background: ${props => props.theme.bg.default};
     border: 1px solid #eceff1;
     border-radius: 0.25rem;
