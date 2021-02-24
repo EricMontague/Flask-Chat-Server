@@ -1,43 +1,34 @@
-import styled from "styled-components";
-import {zIndex, flexCenteredMixin} from "../globals";
+import React from "react";
+import PropTypes from "prop-types";
+import {FlexRow} from "../globals";
+import {StyledNavbarTransparent, StyledNavbarMenu, StyledNavbarMenuItem} from "./styles";
+import {HoverOutlineButton} from "../buttons";
+import {StyledHoverLink} from "../buttons/styles";
+import {WhiteLogo} from "../logo";
 
 
-const NavbarBase = styled.nav`
-    position: sticky;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4rem;
-    padding: 1rem 2rem;
-    z-index: ${zIndex.navbar};
-`;
+
+export const TopNavbarTransparent = props => {
+    return (
+        <StyledNavbarTransparent>
+            <FlexRow>
+                <WhiteLogo />
+                <StyledNavbarMenu justifyContent="flex-end">
+                    <StyledNavbarMenuItem>
+                        <StyledHoverLink to="/sign-in" color={props.linkColor}>
+                            Sign In
+                        </StyledHoverLink>
+                    </StyledNavbarMenuItem>
+                    <StyledNavbarMenuItem>
+                        <HoverOutlineButton to="/sign-up">Sign Up</HoverOutlineButton>
+                    </StyledNavbarMenuItem>
+                </StyledNavbarMenu>
+            </FlexRow>
+        </StyledNavbarTransparent>
+    );
+};
 
 
-export const StyledNavbarLight = styled(NavbarBase)`
-    color: ${props => props.theme.text.default};
-    background-color: ${ props => props.theme.bg.light}
-`;
-
-
-export const StyledNavbarTransparent = styled(NavbarBase)`
-    color: inherit;
-    background-color: transparent;
-`;
-
-
-export const StyledNavbarMenu = styled.ul`
-    display: flex;
-    align-items: center;
-    justify-content: ${props => props.justifyContent || "flex-start"};
-    flex-grow: ${props => props.flexGrow || "1"};
-    flex-shrink: ${props => props.flexShrink || "0"};
-    flex-basis: auto;
-`;
-
-
-export const StyledNavbarMenuItem = styled.li`
-    ${flexCenteredMixin};
-    margin-left: 1rem;
-`;
-
-
+TopNavbarTransparent.propTypes = {
+    linkColor: PropTypes.string.isRequired
+}
