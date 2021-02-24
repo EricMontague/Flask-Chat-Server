@@ -19,6 +19,13 @@ export const fontStack = css`
 `;
 
 
+export const flexCenteredMixin = css`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+
 export const Shadow = {
     low: "0 2px 8px",
     mid: "0 4px 12px",
@@ -119,7 +126,7 @@ export const P = styled.p`
     ${fontStack};
     color: ${theme.text.default};
     font-weight: 400;
-    font-size: 0.875rem;
+    font-size: 1rem;
     line-height: 1.4;
     margin: 0;
     padding: 0;
@@ -165,6 +172,7 @@ export const zIndex = new ZIndex();
 export const FlexRow = styled.div`
     display: flex;
     flex-direction: row;
+    justify-content: ${props => props.justifyContent || "flex-start"}
 `;
 
 
