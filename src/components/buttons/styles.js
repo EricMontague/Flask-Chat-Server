@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, {css} from "styled-components";
 import {flexCenteredMixin, fontStack} from "../globals";
 import { Link } from "react-router-dom";
 
@@ -53,13 +53,16 @@ export const StyledPrimaryButton = styled(StyledButton)`
     color: ${props => props.theme.text.white};
     background: ${props => props.theme.bg.primary};
     
-    &:hover {
-        background:  #0a46e4;
-    }
-
-    &:active {
-        background: #0039d7;
-    }
+    ${props => !props.disabled && (
+        css`&:hover {
+            background:  #0a46e4;
+        }
+    
+        &:active {
+            background: #0039d7;
+        }`
+    )};
+    
 `;
 
 
