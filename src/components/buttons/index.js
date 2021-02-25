@@ -30,12 +30,12 @@ const handleLinkWrapping = (ButtonComponent, props) => {
             >
                 {button}
             </A>
-        )
+        );
     }
 
     // Return button wrapped in styled React Router Link
     if (to) {
-        return <StyledLink to={to}>{button}</StyledLink>
+        return <StyledLink to={to}>{button}</StyledLink>;
     }
 
     // Return regular unwrapped button
