@@ -1,25 +1,31 @@
 import React from "react";
 import PropTypes from "prop-types";
+import {useField, ErrorMessage} from "formik";
 import {StyledLabel, StyledInput, StyledInputContainer} from "./styles";
 
 
-export const Input = props => {
+export const TextInput = props => {
+    // useField() returns [formik.getFieldProps(), formik.getFieldMeta()]
     
-    if (props.withLabel) {
+    const [field, meta] = useField(props);
+    if (meta.touched) {
+        console.log(meta.error);
+    }
+    if (props.label) {
         return (
             <>
-                <StyledLabel {...props}>props.label</StyledLabel>
+                <StyledLabel 
+                    htmlFor={props.id || props.name}
+                >
+                    {props.label}
+                </StyledLabel>
                 <StyledInputContainer>
-                    <StyledInput 
-                        id={props.id}
-                        type={props.type}
+                    <StyledInput
+                        {...field} 
                         placeholder={props.placeholder}
-                        name={props.name}
-                        value={props.value}
                         disabled={props.disabled}
-                        onChange={props.handleChange}
-                        {...props}
                     />
+                    <ErrorMessage name={field.name}/>
                 </StyledInputContainer>
             </>
             
@@ -27,34 +33,25 @@ export const Input = props => {
     }
     return (
         <StyledInputContainer>
-            <StyledInput 
-                id={props.id}
-                type={props.type}
+            <StyledInput
+                {...field} 
                 placeholder={props.placeholder}
-                name={props.name}
-                value={props.value}
                 disabled={props.disabled}
-                onChange={props.handleChange}
-                {...props}
             />
+            <ErrorMessage name={field.name}/>
         </StyledInputContainer>
     );
 };
 
 
-Input.defaultProps = {
+TextInput.defaultProps = {
     disabled: false
 };
 
 
-Input.propTypes = {
-    id: PropTypes.string.isRequired,
-    type: PropTypes.string.isRequired,
+TextInput.propTypes = {
     placeholder: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
-    value: PropTypes.string.isRequired,
     disabled: PropTypes.bool.isRequired,
-    withLabel: PropTypes.bool.isRequired,
-    label: PropTypes.string,
-    handleChange: PropTypes.func.isRequired
+    label: PropTypes.string
 };
