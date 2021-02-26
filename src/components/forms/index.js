@@ -1,8 +1,9 @@
 import React from "react";
-import {useFormik} from "formik";
+import {Formik} from "formik";
+import * as Yup from "yup";
 import {StyledCard, StyledCardBody} from "../cards/styles";
-import {StyledForm} from "./styles";
-import {Input} from "../formElements";
+import {StyledFormikForm} from "./styles";
+import {TextInput} from "../formElements";
 import {StyledInputRow} from "../formElements/styles";
 import {PrimaryButton} from "../buttons";
 
@@ -18,80 +19,64 @@ export const SignUpForm = props => {
         return true;
     }
 
+    const handleSubmit = (values, actions) => {
+        console.log(values.username);
+        actions.setSubmitting(false);
+    }
+
     
     return (
-        <StyledCard maxWidth="30rem">
-            <StyledCardBody>
-                <Formik
-                    initialValues={{
-                        username: "",
-                        name: "",
-                        email: "",
-                        password: ""
-                    }}
-                    onSubmit={(values, {setSubmitting}) => {
-                        console.log(values);
-                        setSubmitting(false);
-                    }}
-                >
-                    {({
-                        values,
-                        handleChange,
-                        handleSubmit,
-                        isSubmitting
-                    }) => (
-                        <StyledForm onSubmit={handleSubmit}>
+        <Formik
+            initialValues={{
+                username: "",
+                name: "",
+                email: "",
+                password: ""
+            }}
+            validationSchema={
+                Yup.object({
+                username: Yup.string().required().min(2).max(32),
+                name: Yup.string().required().min(2).max(32),
+                email: Yup.string().required().email().min(5).max(32),
+                password: Yup.string().required().min(12).max(32)
+            })}
+            onSubmit={handleSubmit}
+        >
+            {({values, isSubmitting}) => (
+                <StyledCard maxWidth="30rem">
+                    <StyledCardBody>
+                        <StyledFormikForm>
                             <StyledInputRow>
-                                <Input
-                                    id="username" 
-                                    type="text" 
+                                <TextInput
                                     placeholder="Username"
                                     name="username"
-                                    value={values.username}
-                                    withLabel={false}
-                                    handleChange={handleChange}
                                 />
-                                <Input
-                                    id="name"
-                                    type="text" 
+                                <TextInput
                                     placeholder="Name"
                                     name="name"
-                                    value={values.name}
-                                    withLabel={false}
-                                    handleChange={handleChange}
                                 />
                             </StyledInputRow>
                             <StyledInputRow>
-                                <Input
-                                    id="email"
-                                    type="text" 
+                                <TextInput
                                     placeholder="Email"
                                     name="email"
-                                    value={values.email}
-                                    withLabel={false}
-                                    handleChange={handleChange}
                                 />
                             </StyledInputRow>
                             <StyledInputRow>
-                                <Input
-                                    id="password"
-                                    type="password" 
+                                <TextInput
                                     placeholder="Choose password"
                                     name="password"
-                                    value={values.password}
-                                    withLabel={false}
-                                    handleChange={handleChange}
                                 />
                             </StyledInputRow>
                             {/* <LocationField /> */}
-                            <PrimaryButton disabled={!isFormCompleted(values)} width="100%" padding="1.5rem" type="submit">
+                            <PrimaryButton disabled={!isFormCompleted(values) || isSubmitting} width="100%" padding="1.5rem" type="submit">
                                 Create account
                             </PrimaryButton>
-                        </StyledForm>
-                    )}
-                </Formik>
-            </StyledCardBody>
-        </StyledCard>
+                        </StyledFormikForm>
+                    </StyledCardBody>
+                </StyledCard>
+            )}
+        </Formik>
     );
     
     
