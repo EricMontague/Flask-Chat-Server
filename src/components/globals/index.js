@@ -172,7 +172,8 @@ export const zIndex = new ZIndex();
 export const FlexRow = styled.div`
     display: flex;
     flex-direction: row;
-    justify-content: ${props => props.justifyContent || "flex-start"}
+    flex-wrap: wrap;
+    justify-content: ${props => props.justifyContent || "flex-start"};
     align-items: ${props => props.alignItems || "center"};
 `;
 
