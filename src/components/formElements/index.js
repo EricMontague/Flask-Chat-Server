@@ -1,7 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 import {useField, ErrorMessage} from "formik";
-import {StyledLabel, StyledInput, StyledInputContainer} from "./styles";
+import {capitalizeString} from "../../utils";
+import {StyledLabel, StyledInput, StyledInputContainer, StyledErrorMessage} from "./styles";
 
 
 export const TextInput = props => {
@@ -25,21 +26,29 @@ export const TextInput = props => {
                         placeholder={props.placeholder}
                         disabled={props.disabled}
                     />
-                    <ErrorMessage name={field.name}/>
+                    
                 </StyledInputContainer>
+                <ErrorMessage name={field.name}>
+                    {message => <StyledErrorMessage>{capitalizeString(message)}</StyledErrorMessage>}
+                </ErrorMessage>
             </>
             
         );
     }
     return (
-        <StyledInputContainer>
-            <StyledInput
-                {...field} 
-                placeholder={props.placeholder}
-                disabled={props.disabled}
-            />
-            <ErrorMessage name={field.name}/>
-        </StyledInputContainer>
+        <>
+            <StyledInputContainer>
+                <StyledInput
+                    {...field} 
+                    placeholder={props.placeholder}
+                    disabled={props.disabled}
+                />
+                
+            </StyledInputContainer>
+            <ErrorMessage name={field.name}>
+                {message => <StyledErrorMessage>{capitalizeString(message)}</StyledErrorMessage>}
+            </ErrorMessage>
+        </>
     );
 };
 

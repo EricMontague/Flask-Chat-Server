@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import {zIndex, FlexRow} from "../globals";
+import {zIndex, FlexRow, Span} from "../globals";
 
 
 export const StyledLabel = styled.label`
@@ -57,4 +57,13 @@ export const StyledInputRow = styled(FlexRow)`
     & > *:not(:first-child) {
         margin-left: 1rem;
     }
+`;
+
+
+
+export const StyledErrorMessage = styled(Span)`
+    flex: 1 0 100%;
+    color: ${props => props.theme.text.warn};
+    margin-top: -0.25rem;
+    padding-bottom: 0.75rem;
 `;
