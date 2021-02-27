@@ -43,7 +43,7 @@ export const SignUpForm = props => {
             onSubmit={handleSubmit}
         >
             {({values, isSubmitting}) => (
-                <StyledCard maxWidth="30rem">
+                <StyledCard maxWidth="28rem">
                     <StyledCardBody>
                         <StyledFormikForm>
                             <StyledInputRow>
@@ -51,6 +51,8 @@ export const SignUpForm = props => {
                                     placeholder="Username"
                                     name="username"
                                 />
+                            </StyledInputRow>
+                            <StyledInputRow>
                                 <TextInput
                                     placeholder="Name"
                                     name="name"
