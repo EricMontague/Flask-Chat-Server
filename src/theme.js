@@ -45,7 +45,8 @@ const theme = {
         default: "#050f19",
         primary: "#1453f0",
         placeholder: "#718295",
-        white: "#ffffff"
+        white: "#ffffff",
+        warn: "#de5f67"
     },
     input: {
         border: "#edeff1",
