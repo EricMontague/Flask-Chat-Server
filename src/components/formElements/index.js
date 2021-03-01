@@ -1,8 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 import {useField, ErrorMessage} from "formik";
-import {capitalizeString} from "../../utils";
 import {StyledLabel, StyledInput, StyledInputContainer, StyledErrorMessage} from "./styles";
+import {capitalizeString} from "../../utils";
 
 
 export const TextInput = props => {
@@ -28,9 +28,6 @@ export const TextInput = props => {
                     />
                     
                 </StyledInputContainer>
-                <ErrorMessage name={field.name}>
-                    {message => <StyledErrorMessage>{capitalizeString(message)}</StyledErrorMessage>}
-                </ErrorMessage>
             </>
             
         );
@@ -43,14 +40,12 @@ export const TextInput = props => {
                     placeholder={props.placeholder}
                     disabled={props.disabled}
                 />
-                
             </StyledInputContainer>
-            <ErrorMessage name={field.name}>
-                {message => <StyledErrorMessage>{capitalizeString(message)}</StyledErrorMessage>}
-            </ErrorMessage>
         </>
     );
 };
+
+
 
 
 TextInput.defaultProps = {
@@ -64,3 +59,21 @@ TextInput.propTypes = {
     disabled: PropTypes.bool.isRequired,
     label: PropTypes.string
 };
+
+
+
+export const InputError = props => {
+    return (
+        <ErrorMessage name={props.name}>
+            {message => (
+                <StyledErrorMessage>
+                    {capitalizeString(message)}
+                </StyledErrorMessage>
+            )}
+        </ErrorMessage>
+    )
+};
+
+InputError.propTypes = {
+    name: PropTypes.string.isRequired
+}
