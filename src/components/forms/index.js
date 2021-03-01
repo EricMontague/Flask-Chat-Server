@@ -1,11 +1,15 @@
 import React from "react";
+import PropTypes from "prop-types";
 import {Formik} from "formik";
 import * as Yup from "yup";
 import {StyledCard, StyledCardBody} from "../cards/styles";
 import {StyledFormikForm} from "./styles";
-import {TextInput} from "../formElements";
+import {TextInput, InputError} from "../formElements";
+import AutocompleteInput from "../formElements/AutocompleteInput";
 import {StyledInputRow} from "../formElements/styles";
 import {PrimaryButton} from "../buttons";
+import {FlexCol} from "../globals";
+
 
 
 export const SignUpForm = props => {
@@ -18,6 +22,15 @@ export const SignUpForm = props => {
         }
         return true;
     }
+
+    const hasErrors = errors => {
+        for (const field in errors) {
+            if (errors[field] !== "") {
+                return true;
+            }
+        }
+        return false;
+    };
 
     const handleSubmit = (values, actions) => {
         console.log(values.username);
@@ -42,36 +55,43 @@ export const SignUpForm = props => {
             })}
             onSubmit={handleSubmit}
         >
-            {({values, isSubmitting}) => (
-                <StyledCard maxWidth="28rem">
+            {({values, errors, isSubmitting}) => (
+                <StyledCard maxWidth="30rem">
                     <StyledCardBody>
                         <StyledFormikForm>
                             <StyledInputRow>
-                                <TextInput
-                                    placeholder="Username"
-                                    name="username"
-                                />
+                                <FlexCol>
+                                    <TextInput
+                                        placeholder="Username"
+                                        name="username"
+                                    />
+                                    <InputError name="username" />
+                                </FlexCol>
+                                <FlexCol>
+                                    <TextInput
+                                        placeholder="Name"
+                                        name="name"
+                                    />
+                                    <InputError name="name" />
+                                </FlexCol>
                             </StyledInputRow>
-                            <StyledInputRow>
-                                <TextInput
-                                    placeholder="Name"
-                                    name="name"
-                                />
-                            </StyledInputRow>
+                            
                             <StyledInputRow>
                                 <TextInput
                                     placeholder="Email"
                                     name="email"
                                 />
                             </StyledInputRow>
+                            <InputError name="email" />
                             <StyledInputRow>
                                 <TextInput
                                     placeholder="Choose password"
                                     name="password"
                                 />
                             </StyledInputRow>
-                            {/* <LocationField /> */}
-                            <PrimaryButton disabled={!isFormCompleted(values) || isSubmitting} width="100%" padding="1.5rem" type="submit">
+                            <InputError name="password" />
+                            <AutocompleteInput />
+                            <PrimaryButton disabled={hasErrors(errors) || !isFormCompleted(values) || isSubmitting} width="100%" padding="1.5rem" type="submit">
                                 Create account
                             </PrimaryButton>
                         </StyledFormikForm>
@@ -80,7 +100,5 @@ export const SignUpForm = props => {
             )}
         </Formik>
     );
-    
-    
 };
 
