@@ -9,6 +9,7 @@ import AutocompleteInput from "../formElements/AutocompleteInput";
 import {StyledInputRow} from "../formElements/styles";
 import {PrimaryButton} from "../buttons";
 import {FlexCol} from "../globals";
+import {GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS} from "../../constants";
 
 
 
@@ -32,6 +33,17 @@ export const SignUpForm = props => {
         return false;
     };
 
+    const handleAutocompleteChange = (setFieldValue, fieldName) => {
+
+        const onChange = (value, action) => {
+            console.log(value, actions);
+            setFieldValue(fieldName, value, false);
+        };
+
+        return onChange;
+        
+    };
+
     const handleSubmit = (values, actions) => {
         console.log(values.username);
         actions.setSubmitting(false);
@@ -44,7 +56,8 @@ export const SignUpForm = props => {
                 username: "",
                 name: "",
                 email: "",
-                password: ""
+                password: "",
+                location: ""
             }}
             validationSchema={
                 Yup.object({
@@ -55,7 +68,7 @@ export const SignUpForm = props => {
             })}
             onSubmit={handleSubmit}
         >
-            {({values, errors, isSubmitting}) => (
+            {({values, setFieldValue, isSubmitting, isValid}) => (
                 <StyledCard maxWidth="30rem">
                     <StyledCardBody>
                         <StyledFormikForm>
@@ -90,8 +103,16 @@ export const SignUpForm = props => {
                                 />
                             </StyledInputRow>
                             <InputError name="password" />
-                            <AutocompleteInput />
-                            <PrimaryButton disabled={hasErrors(errors) || !isFormCompleted(values) || isSubmitting} width="100%" padding="1.5rem" type="submit">
+                            <StyledInputRow>
+                                <AutocompleteInput 
+                                    handleAutocompleteChange={handleAutocompleteChange(setFieldValue, "location")}
+                                    types={GOOGLE_PLACES_API_TYPES}
+                                    fields={GOOGLE_PLACES_API_FIELDS}
+                                    name="location"
+                                    value={values.location}
+                                />
+                            </StyledInputRow>
+                            <PrimaryButton disabled={!isValid || !isFormCompleted(values) || isSubmitting} width="100%" padding="1.5rem" type="submit">
                                 Create account
                             </PrimaryButton>
                         </StyledFormikForm>
