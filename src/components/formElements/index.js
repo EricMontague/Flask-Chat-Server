@@ -9,18 +9,15 @@ export const TextInput = props => {
     // useField() returns [formik.getFieldProps(), formik.getFieldMeta()]
     
     const [field, meta] = useField(props);
-    if (meta.touched) {
-        console.log(meta.error);
-    }
     if (props.label) {
         return (
             <>
-                <StyledLabel 
-                    htmlFor={props.id || props.name}
-                >
-                    {props.label}
-                </StyledLabel>
                 <StyledInputContainer>
+                    <StyledLabel 
+                        htmlFor={props.id || props.name}
+                    >
+                        {props.label}
+                    </StyledLabel>
                     <StyledInput
                         {...field} 
                         placeholder={props.placeholder}
@@ -28,8 +25,7 @@ export const TextInput = props => {
                     />
                     
                 </StyledInputContainer>
-            </>
-            
+            </>  
         );
     }
     return (
@@ -57,7 +53,8 @@ TextInput.propTypes = {
     placeholder: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
     disabled: PropTypes.bool.isRequired,
-    label: PropTypes.string
+    label: PropTypes.string,
+    type: PropTypes.string,
 };
 
 
