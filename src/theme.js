@@ -38,8 +38,8 @@ const theme = {
         warn: "#de5f67"
     },
     font: {
-        default: `-apple-system, BlinkMacSystemFont, 'Segoe UI'," 
-        "Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';`
+        default: `-apple-system, BlinkMacSystemFont, 'Segoe UI',
+        Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';`
     },
     text: {
         default: "#050f19",
