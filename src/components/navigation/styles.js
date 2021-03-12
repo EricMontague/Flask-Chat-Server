@@ -3,7 +3,7 @@ import {zIndex, flexCenteredMixin} from "../globals";
 
 
 const NavbarBase = styled.nav`
-    position: sticky;
+    position: ${props => props.position || 'static'};
     top: 0;
     left: 0;
     right: 0;
@@ -32,6 +32,10 @@ export const StyledNavbarMenu = styled.ul`
     flex-grow: ${props => props.flexGrow || "1"};
     flex-shrink: ${props => props.flexShrink || "0"};
     flex-basis: auto;
+
+    @media (max-width: 576px) {
+        display: none;
+    }
 `;
 
 
