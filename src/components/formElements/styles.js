@@ -23,7 +23,7 @@ export const StyledInput = styled.input`
     
 
     &:hover {
-        border-color: #e0e3e5;
+        border: 1px solid #ced4da;
     }
 
     &:focus {

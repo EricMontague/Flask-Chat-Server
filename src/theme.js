@@ -50,6 +50,7 @@ const theme = {
     },
     input: {
         border: "#e0e3e5",
+        borderHover: "#ced4da",
         placeholder: "#718295",
     }
 };
