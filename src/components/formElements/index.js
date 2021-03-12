@@ -1,11 +1,10 @@
-import PropTypes from "prop-types";
-import {useField, ErrorMessage} from "formik";
-import {StyledLabel, StyledInput, StyledInputContainer, StyledErrorMessage} from "./styles";
-import {capitalizeString} from "../../utils";
+import PropTypes from 'prop-types';
+import {useField, ErrorMessage} from 'formik';
+import {StyledLabel, StyledInput, StyledInputContainer, StyledErrorMessage} from './styles';
+import {capitalizeString} from '../../utils';
 
 
 export const TextInput = props => {
-    // useField() returns [formik.getFieldProps(), formik.getFieldMeta()]
     
     const [field, meta] = useField(props);
     if (props.label) {
@@ -32,6 +31,7 @@ export const TextInput = props => {
             <StyledInputContainer>
                 <StyledInput
                     {...field} 
+                    type={props.type}
                     placeholder={props.placeholder}
                     disabled={props.disabled}
                 />
@@ -53,7 +53,7 @@ TextInput.propTypes = {
     name: PropTypes.string.isRequired,
     disabled: PropTypes.bool.isRequired,
     label: PropTypes.string,
-    type: PropTypes.string,
+    type: PropTypes.string.isRequired,
 };
 
 
