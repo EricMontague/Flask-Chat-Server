@@ -49,7 +49,7 @@ const theme = {
         warn: "#de5f67"
     },
     input: {
-        border: "#edeff1",
+        border: "#e0e3e5",
         placeholder: "#718295",
     }
 };
