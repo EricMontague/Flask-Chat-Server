@@ -23,7 +23,7 @@ export const StyledInput = styled.input`
     
 
     &:hover {
-        border: 1px solid #ced4da;
+        border: 1px solid ${props => props.theme.input.borderHover};
     }
 
     &:focus {
