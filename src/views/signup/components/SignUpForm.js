@@ -1,12 +1,12 @@
-import PropTypes from "prop-types";
-import {Formik} from "formik";
-import * as Yup from "yup";
-import {StyledCard, StyledCardBody} from "../../../components/cards/styles";
-import {StyledFormikForm} from "../../../components/forms/styles";
-import {TextInput, InputError} from "../../../components/formElements";
-import AutocompleteInput from "../../../components/formElements/AutocompleteInput";
-import {PrimaryButton} from "../../../components/buttons";
-import {GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS, GOOGLE_PLACES_API_COUNTRIES} from "../../../constants";
+import PropTypes from 'prop-types';
+import {Formik} from 'formik';
+import * as Yup from 'yup';
+import {StyledCard, StyledCardBody} from '../../../components/cards/styles';
+import {StyledFormikForm} from '../../../components/forms/styles';
+import {TextInput, InputError} from '../../../components/formElements';
+import AutocompleteInput from '../../../components/formElements/AutocompleteInput';
+import {PrimaryButton} from '../../../components/buttons';
+import {GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS, GOOGLE_PLACES_API_COUNTRIES} from '../../../constants';
 
 const validationSchema = Yup.object({
     username: Yup.string().required().min(2).max(32),
@@ -19,7 +19,7 @@ export const SignUpForm = props => {
 
     const isFormCompleted = values => {
         for (const field in values) {
-            if (values[field] === "") {
+            if (values[field] === '') {
                 return false;
             }
         }
@@ -51,46 +51,46 @@ export const SignUpForm = props => {
     return (
         <Formik
             initialValues={{
-                username: "",
-                name: "",
-                email: "",
-                password: "",
-                location: ""
+                username: '',
+                name: '',
+                email: '',
+                password: '',
+                location: ''
             }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
         >
             {({values, setFieldValue, isSubmitting, isValid}) => (
-                <StyledCard maxWidth="30rem">
+                <StyledCard maxWidth='30rem'>
                     <StyledCardBody>
                         <StyledFormikForm>
                             
-                            <TextInput placeholder="Username" name="username" type="text"/>
-                            <InputError name="username" />
+                            <TextInput placeholder='Username' name='username' type='text'/>
+                            <InputError name='username' />
                                
-                            <TextInput placeholder="Name" name="name" type="text"/>
-                            <InputError name="name" />
+                            <TextInput placeholder='Name' name='name' type='text'/>
+                            <InputError name='name' />
 
-                            <TextInput placeholder="Email" name="email" type="text"/>
-                            <InputError name="email" />
+                            <TextInput placeholder='Email' name='email' type='text'/>
+                            <InputError name='email' />
       
-                            <TextInput placeholder="Choose password" name="password" type="password"/>
-                            <InputError name="password" />
+                            <TextInput placeholder='Choose password' name='password' type='password'/>
+                            <InputError name='password' />
 
                             <AutocompleteInput 
-                                handleChange={handleAutocompleteChange(setFieldValue, "location")}
+                                handleChange={handleAutocompleteChange(setFieldValue, 'location')}
                                 types={GOOGLE_PLACES_API_TYPES}
                                 fields={GOOGLE_PLACES_API_FIELDS}
-                                name="location"
+                                name='location'
                                 value={values.location}
                                 validCountries={GOOGLE_PLACES_API_COUNTRIES}
                             />
                             
                             <PrimaryButton 
                                 disabled={!isValid || !isFormCompleted(values) || isSubmitting} 
-                                width="100%" 
-                                padding="1.5rem" 
-                                type="submit"
+                                width='100%' 
+                                padding='1.5rem' 
+                                type='submit'
                             >
                                 Create account
                             </PrimaryButton>

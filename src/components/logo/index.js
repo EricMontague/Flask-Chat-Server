@@ -1,7 +1,7 @@
-import styled from "styled-components";
-import {MessageSquare} from "react-feather";
-import {StyledLink} from "../buttons/styles";
-import {fontStack} from "../globals";
+import styled from 'styled-components';
+import {MessageSquare} from 'react-feather';
+import {StyledLink} from '../buttons/styles';
+import {fontStack} from '../globals';
 
 
 const LogoIcon = styled(MessageSquare)`
@@ -29,7 +29,7 @@ const LogoContainer = styled(StyledLink)`
 
 export const WhiteLogo = props => {
     return (
-        <LogoContainer to={"/"}>
+        <LogoContainer to={'/'}>
             <LogoIcon />
             <span>ChatterBox</span>
         </LogoContainer>

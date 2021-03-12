@@ -32,26 +32,26 @@
 
 const theme = {
     bg: {
-        default: "#ffffff",
-        primary: "#1453f0",
-        light: "#fafbfc",
-        warn: "#de5f67"
+        default: '#ffffff',
+        primary: '#1453f0',
+        light: '#fafbfc',
+        warn: '#de5f67'
     },
     font: {
         default: `-apple-system, BlinkMacSystemFont, 'Segoe UI',
         Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';`
     },
     text: {
-        default: "#050f19",
-        primary: "#1453f0",
-        placeholder: "#718295",
-        white: "#ffffff",
-        warn: "#de5f67"
+        default: '#050f19',
+        primary: '#1453f0',
+        placeholder: '#718295',
+        white: '#ffffff',
+        warn: '#de5f67'
     },
     input: {
-        border: "#e0e3e5",
-        borderHover: "#ced4da",
-        placeholder: "#718295",
+        border: '#e0e3e5',
+        borderHover: '#ced4da',
+        placeholder: '#718295',
     }
 };
 

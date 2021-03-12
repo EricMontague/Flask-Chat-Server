@@ -4,8 +4,8 @@ import {Formik} from 'formik';
 
 import * as Yup from 'yup';
 
-import {StyledCard, StyledCardBody} from "../../../components/cards/styles";
-import {StyledFormikForm} from "../../../components/forms/styles";
+import {StyledCard, StyledCardBody} from '../../../components/cards/styles';
+import {StyledFormikForm} from '../../../components/forms/styles';
 import {TextInput, InputError} from '../../../components/formElements';
 import {PrimaryButton} from '../../../components/buttons';
 
@@ -37,7 +37,7 @@ export const SignInForm = props => {
             onSubmit={handleSubmit}
         >
             {({values, errors, isValid, isSubmitting}) => (
-                <StyledCard maxWidth="25rem">
+                <StyledCard maxWidth='25rem'>
                     <StyledCardBody>
                         <StyledFormikForm>
                             <TextInput name='email' placeholder='Email' type='text'/>
@@ -48,9 +48,9 @@ export const SignInForm = props => {
 
                             <PrimaryButton 
                                 disabled={!isValid || !isFormCompleted(values) || isSubmitting}
-                                width="100%" 
-                                padding="1rem" 
-                                type="submit"
+                                width='100%' 
+                                padding='1rem' 
+                                type='submit'
                             >
                                 SignIn
                             </PrimaryButton>

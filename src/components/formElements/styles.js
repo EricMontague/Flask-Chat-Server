@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import {zIndex, FlexRow, Span} from "../globals";
+import styled from 'styled-components';
+import {zIndex, FlexRow, Span} from '../globals';
 
 
 export const StyledLabel = styled.label`

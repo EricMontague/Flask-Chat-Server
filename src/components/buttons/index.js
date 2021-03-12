@@ -5,8 +5,8 @@ import {
     StyledWarnButton,
     StyledOutlineButton,
     StyledHoverOutlineButton
-} from "./styles";
-import {A} from "../globals";
+} from './styles';
+import {A} from '../globals';
 
 
 const handleLinkWrapping = (ButtonComponent, props) => {
@@ -24,8 +24,8 @@ const handleLinkWrapping = (ButtonComponent, props) => {
         return (
             <A
                 href={href}
-                target={target || "_blank"}
-                rel={!target ? "nopener noreferrer": undefined}
+                target={target || '_blank'}
+                rel={!target ? 'nopener noreferrer': undefined}
             >
                 {button}
             </A>

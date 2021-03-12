@@ -1,7 +1,7 @@
-import PropTypes from "prop-types";
-import {StyledInputContainer} from "./styles";
-import GooglePlacesAutocomplete from "react-google-places-autocomplete";
-import theme from "../../theme";
+import PropTypes from 'prop-types';
+import {StyledInputContainer} from './styles';
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete';
+import theme from '../../theme';
 
 
 // type AutocompleteProps = {
@@ -18,27 +18,27 @@ import theme from "../../theme";
 const autoCompleteStyles = {
   input: (provided) => ({
     ...provided,
-    padding: "0.85rem 0.75rem"
+    padding: '0.85rem 0.75rem'
   }),
   placeholder: (provided) => ({
     ...provided,
-    paddingLeft: "0.75rem"
+    paddingLeft: '0.75rem'
   }),
   container: (provided) => ({
     ...provided,
-    width: "100%",
-    fontSize: "1rem",
+    width: '100%',
+    fontSize: '1rem',
     color: theme.text.default
   }),
   control: (provided) => ({
     ...provided,
     borderColor: theme.input.border,
-    boxShadow: "none",
-    "&:hover": {
-      borderColor: "#e0e3e5"
+    boxShadow: 'none',
+    '&:hover': {
+      borderColor: '#e0e3e5'
     },
-    "&:focus-within": {
-      outline: "none",
+    '&:focus-within': {
+      outline: 'none',
       borderColor: theme.bg.primary
     }
   }),
@@ -55,7 +55,7 @@ const AutocompleteInput = (props) => {
               styles: autoCompleteStyles,
               value: props.value,
               onChange: props.handleChange,
-              placeholder: "Choose location"
+              placeholder: 'Choose location'
             }}
             apiOptions={{fields: props.fields}}
             autocompletionRequest={{types: props.types, country: props.validCountries}}

@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import {FlexCol, FlexRow, H3, zIndex} from "../globals";
+import styled from 'styled-components';
+import {FlexCol, FlexRow, H3, zIndex} from '../globals';
 
 
 export const StyledCard = styled(FlexCol)`
@@ -9,8 +9,8 @@ export const StyledCard = styled(FlexCol)`
     border-radius: 0.25rem;
     box-shadow: rgb(17 51 83 / 2%) 0px 4px 12px 0px;
     z-index: ${zIndex.card};
-    width: ${props => props.width || "100%"};
-    max-width: ${props => props.maxWidth || "100%"};
+    width: ${props => props.width || '100%'};
+    max-width: ${props => props.maxWidth || '100%'};
 `;
 
 
@@ -26,7 +26,7 @@ export const StyledCardBody = styled(FlexCol)`
 
 
 export const StyledCardFooter = styled(FlexRow)`
-    justify-content: ${props => props.justifyContent || "flex-end"}
+    justify-content: ${props => props.justifyContent || 'flex-end'}
     align-items: center;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;

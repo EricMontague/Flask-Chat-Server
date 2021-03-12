@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import {zIndex, flexCenteredMixin} from "../globals";
+import styled from 'styled-components';
+import {zIndex, flexCenteredMixin} from '../globals';
 
 
 const NavbarBase = styled.nav`
@@ -28,9 +28,9 @@ export const StyledNavbarTransparent = styled(NavbarBase)`
 export const StyledNavbarMenu = styled.ul`
     display: flex;
     align-items: center;
-    justify-content: ${props => props.justifyContent || "flex-start"};
-    flex-grow: ${props => props.flexGrow || "1"};
-    flex-shrink: ${props => props.flexShrink || "0"};
+    justify-content: ${props => props.justifyContent || 'flex-start'};
+    flex-grow: ${props => props.flexGrow || '1'};
+    flex-shrink: ${props => props.flexShrink || '0'};
     flex-basis: auto;
 
     @media (max-width: 576px) {

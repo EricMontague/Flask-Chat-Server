@@ -1,5 +1,5 @@
-import styled, { css } from "styled-components";
-import theme from "../../theme";
+import styled, { css } from 'styled-components';
+import theme from '../../theme';
 
 
 export const convertHexToRGBA = (hex, alpha) => {
@@ -27,23 +27,23 @@ export const flexCenteredMixin = css`
 
 
 export const Shadow = {
-    low: "0 2px 8px",
-    mid: "0 4px 12px",
-    high: "0 8px 16px"
+    low: '0 2px 8px',
+    mid: '0 4px 12px',
+    high: '0 8px 16px'
 };
 
 
 export const Transition = {
     hover: {
-        on: "all 0.2s ease-in",
-        off: "all 0.2s ease-out"
+        on: 'all 0.2s ease-in',
+        off: 'all 0.2s ease-out'
     },
     reaction: {
-        on: "all 0.15s ease-in",
-        off: "all 0.1s ease-out"
+        on: 'all 0.15s ease-in',
+        off: 'all 0.1s ease-out'
     },
     dropdown: {
-        off: "all 0.35s ease-out"
+        off: 'all 0.35s ease-out'
     }
 
 }
@@ -172,8 +172,8 @@ export const zIndex = new ZIndex();
 export const FlexRow = styled.div`
     display: flex;
     flex-direction: row;
-    justify-content: ${props => props.justifyContent || "flex-start"};
-    align-items: ${props => props.alignItems || "center"};
+    justify-content: ${props => props.justifyContent || 'flex-start'};
+    align-items: ${props => props.alignItems || 'center'};
 `;
 
 
@@ -181,8 +181,8 @@ export const FlexCol = styled.div`
     display: flex;
     flex-direction: column;
     flex: 1;
-    justify-content: ${props => props.justifyContent || "flex-start"};
-    align-items: ${props => props.alignItems || "stretch"};
+    justify-content: ${props => props.justifyContent || 'flex-start'};
+    align-items: ${props => props.alignItems || 'stretch'};
 `;
 
 

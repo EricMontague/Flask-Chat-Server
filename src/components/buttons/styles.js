@@ -1,6 +1,6 @@
-import styled, {css} from "styled-components";
-import {flexCenteredMixin, fontStack} from "../globals";
-import { Link } from "react-router-dom";
+import styled, {css} from 'styled-components';
+import {flexCenteredMixin, fontStack} from '../globals';
+import { Link } from 'react-router-dom';
 
 // https://www.hexcolortool.com/#a5222b
 
@@ -35,12 +35,12 @@ export const StyledButton = styled.button`
     border: 0;
     color: ${props => props.theme.text.default};
     background: ${props => props.theme.bg.light};
-    cursor: ${props => props.disabled ? "default" : "pointer"};
-    padding: ${props => props.padding || "0.7rem 1rem"};
+    cursor: ${props => props.disabled ? 'default' : 'pointer'};
+    padding: ${props => props.padding || '0.7rem 1rem'};
     border-radius: 0.25rem;
-    opacity: ${props => props.disabled ? "0.6" : "1"};
+    opacity: ${props => props.disabled ? '0.6' : '1'};
     line-height: 1.2;
-    width: ${props => props.width || "auto"};
+    width: ${props => props.width || 'auto'};
     transition: background, color 0.3s ease-in-out;
 
     &:focus {
