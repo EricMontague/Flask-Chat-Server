@@ -1,4 +1,3 @@
-import React from "react";
 import PropTypes from "prop-types";
 import {FlexRow} from "../globals";
 import {StyledNavbarTransparent, StyledNavbarMenu, StyledNavbarMenuItem} from "./styles";
