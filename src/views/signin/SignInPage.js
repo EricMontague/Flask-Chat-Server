@@ -6,11 +6,13 @@ import {SignInForm} from './components/SignInForm';
 
 import {StyledHoverLink} from '../../components/buttons/styles';
 import { TopNavbarTransparent } from '../../components/navigation';
-import {fontStack, flexCenteredMixin, FlexCol} from '../../components/globals';
+import {fontStack, flexCenteredMixin} from '../../components/globals';
+import {CenteredLayout} from '../../components/layout/styles';
 
 const SignUpReminder = styled.div`
     ${fontStack};
     ${flexCenteredMixin};
+    flex-wrap: wrap;
     padding: 0.5rem;
     margin: 1.5rem 0;
     color: ${props => props.theme.text.white};
@@ -32,6 +34,8 @@ const PageTitle = styled.h1`
     margin: 2rem 0;
     color: ${props => props.theme.text.white};
     letter-spacing: 0.03rem;
+    text-align: center;
+
 `;
 
 const SignInPage = props => {
@@ -43,7 +47,7 @@ const SignInPage = props => {
     return (
         <>
             <TopNavbarTransparent linkColor={props.theme.text.white} />
-            <FlexCol justifyContent='center' alignItems='center'>
+            <CenteredLayout justifyContent='center' alignItems='center'>
                 <PageTitle>Sign in to Chatterbox</PageTitle>    
                 <SignInForm />
                 <SignUpReminder>
@@ -52,7 +56,7 @@ const SignInPage = props => {
                         Sign Up
                     </StyledHoverLink>
                 </SignUpReminder>
-            </FlexCol>
+            </CenteredLayout>
         </>
     )
 };

@@ -4,7 +4,8 @@ import styled, {withTheme} from 'styled-components';
 import {StyledHoverLink} from '../../components/buttons/styles';
 import {TopNavbarTransparent} from '../../components/navigation';
 import {SignUpForm} from './components/SignUpForm';
-import {fontStack, flexCenteredMixin, FlexCol} from '../../components/globals';
+import {fontStack, flexCenteredMixin} from '../../components/globals';
+import {CenteredLayout} from '../../components/layout/styles';
 
 const SignInReminder = styled.div`
     ${fontStack};
@@ -30,6 +31,9 @@ const PageTitle = styled.h1`
     margin: 2rem 0;
     color: ${props => props.theme.text.white};
     letter-spacing: 0.03rem;
+    text-align: center;
+
+  
 `;
 
 const SignUpPage = props => {
@@ -41,7 +45,7 @@ const SignUpPage = props => {
     return (
         <>
             <TopNavbarTransparent linkColor={props.theme.text.white}/>
-            <FlexCol justifyContent='center' alignItems='center'>
+            <CenteredLayout justifyContent='center' alignItems='center'>
                 <PageTitle>Create your account</PageTitle>    
                 <SignUpForm />
                 <SignInReminder>
@@ -50,7 +54,7 @@ const SignUpPage = props => {
                         Sign In
                     </StyledHoverLink>
                 </SignInReminder>
-            </FlexCol>
+            </CenteredLayout>
         </>
     )
 };
