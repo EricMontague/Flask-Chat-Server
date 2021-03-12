@@ -1,4 +1,3 @@
-import React from "react";
 import PropTypes from "prop-types";
 import {useField, ErrorMessage} from "formik";
 import {StyledLabel, StyledInput, StyledInputContainer, StyledErrorMessage} from "./styles";
