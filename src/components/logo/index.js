@@ -20,6 +20,10 @@ const LogoContainer = styled(StyledLink)`
     span {
         padding-bottom: 0.25rem;
     }
+
+    @media (max-width: 576px) {
+        font-size: 1.2rem;
+    }
 `;
 
 
