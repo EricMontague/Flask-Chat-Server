@@ -1,6 +1,5 @@
-import React from "react";
+import {useEffect} from "react";
 import PropTypes from "prop-types";
-import Helmet from "react-helmet";
 import styled, {withTheme} from "styled-components";
 import {StyledHoverLink} from "../components/buttons/styles";
 import {TopNavbarTransparent} from "../components/navigation";
@@ -39,16 +38,13 @@ const PageTitle = styled.h1`
 
 
 const SignUpPage = props => {
+
+    useEffect(() => {
+        document.title = "ChatterBox - Sign Up";
+        document.body.style.backgroundColor = props.theme.bg.primary;
+    }, [])
     return (
         <>
-            <Helmet>
-                <title>ChatterBox - Sign Up</title>
-                <style type="text/css">{`
-                    body {
-                        background-color: ${props.theme.bg.primary};
-                    }
-                `}</style>
-            </Helmet>
             <TopNavbarTransparent linkColor={props.theme.text.white}/>
             <FlexCol justifyContent="center" alignItems="center">
                 <PageTitle>Create your account</PageTitle>    
