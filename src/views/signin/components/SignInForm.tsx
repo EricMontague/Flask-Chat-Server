@@ -1,42 +1,41 @@
-import PropTypes from 'prop-types';
-
-import {Formik} from 'formik';
-
+import React from 'react';
+import {Formik, FormikHelpers} from 'formik';
 import * as Yup from 'yup';
-
 import {StyledCard, StyledCardBody} from '../../../components/cards/styles';
 import {StyledFormikForm} from '../../../components/forms/styles';
-import {TextInput, InputError} from '../../../components/formElements';
+import {TextInput} from '../../../components/formElements/TextInput';
+import {InputError} from '../../../components/formElements/InputError';
 import {PrimaryButton} from '../../../components/buttons';
+
+type FormValues = {
+    email: string;
+    password: string;
+};
 
 const validationSchema = Yup.object({
     email: Yup.string().required().min(2).max(32),
     password: Yup.string().required().min(8).max(32)
 })
 
-export const SignInForm = props => {
+export const SignInForm = () => {
+    const initialValues: FormValues = {email: '', password: ''};
 
-    const isFormCompleted = values => {
-        for (const field in values) {
-            if (values[field] === '') {
-                return false;
-            }
-        }
-        return true
+    const isFormCompleted = (values: FormValues): boolean => {
+        return values.email && values.password ? true : false;
     };
 
-    const handleSubmit = (values, actions) => {
+    const handleSubmit = (values: FormValues, formikHelpers: FormikHelpers<FormValues>) => {
         console.log(values);
-        console.log(actions);
+        console.log(formikHelpers);
     };
 
     return (
         <Formik
-            initialValues={{email: '', password: ''}}
+            initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
         >
-            {({values, errors, isValid, isSubmitting}) => (
+            {({values, isValid, isSubmitting}) => (
                 <StyledCard maxWidth='25rem'>
                     <StyledCardBody>
                         <StyledFormikForm>

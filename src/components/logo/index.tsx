@@ -1,14 +1,13 @@
+import React from 'react';
 import styled from 'styled-components';
 import {MessageSquare} from 'react-feather';
 import {StyledLink} from '../buttons/styles';
-import {fontStack} from '../globals';
-
+import {fontStack, media} from '../globals';
 
 const LogoIcon = styled(MessageSquare)`
     margin-right: 0.25rem;
     color= ${props => props.theme.text.default}
 `;
-
 
 const LogoContainer = styled(StyledLink)`
     ${fontStack};
@@ -21,13 +20,12 @@ const LogoContainer = styled(StyledLink)`
         padding-bottom: 0.25rem;
     }
 
-    @media (max-width: 576px) {
+    ${media.small} {
         font-size: 1.2rem;
     }
 `;
 
-
-export const WhiteLogo = props => {
+export const WhiteLogo = () => {
     return (
         <LogoContainer to={'/'}>
             <LogoIcon />

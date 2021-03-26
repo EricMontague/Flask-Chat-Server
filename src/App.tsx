@@ -10,8 +10,6 @@ import SignInPage from './views/signin/SignInPage';
 import SignUpPage from './views/signup/SignUpPage';
 import GlobalStyle from './globalStyle';
 
-
-
 const App = () => {
     return (
         <Router>
@@ -35,6 +33,5 @@ const App = () => {
         </Router>
     )
 };
-
 
 export default App;

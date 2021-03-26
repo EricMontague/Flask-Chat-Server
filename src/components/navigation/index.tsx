@@ -1,3 +1,4 @@
+import React from 'react';
 import PropTypes from 'prop-types';
 import {FlexRow} from '../globals';
 import {StyledNavbarTransparent, StyledNavbarMenu, StyledNavbarMenuItem} from './styles';
@@ -5,9 +6,11 @@ import {HoverOutlineButton} from '../buttons';
 import {StyledHoverLink} from '../buttons/styles';
 import {WhiteLogo} from '../logo';
 
+type Props = {
+    linkColor: string;
+};
 
-
-export const TopNavbarTransparent = props => {
+export const TopNavbarTransparent = (props: Props) => {
     return (
         <StyledNavbarTransparent>
             <FlexRow>
@@ -19,14 +22,13 @@ export const TopNavbarTransparent = props => {
                         </StyledHoverLink>
                     </StyledNavbarMenuItem>
                     <StyledNavbarMenuItem>
-                        <HoverOutlineButton to='/sign-up'>Sign Up</HoverOutlineButton>
+                        <HoverOutlineButton to='/sign-up' type='button'>Sign Up</HoverOutlineButton>
                     </StyledNavbarMenuItem>
                 </StyledNavbarMenu>
             </FlexRow>
         </StyledNavbarTransparent>
     );
 };
-
 
 TopNavbarTransparent.propTypes = {
     linkColor: PropTypes.string.isRequired

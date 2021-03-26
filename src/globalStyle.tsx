@@ -1,8 +1,6 @@
-import { createGlobalStyle } from 'styled-components';
-import theme from './theme'
+import { createGlobalStyle, GlobalStyleComponent, DefaultTheme } from 'styled-components';
 
-
-const GlobalStyle = createGlobalStyle`
+const GlobalStyle: GlobalStyleComponent<{}, DefaultTheme> = createGlobalStyle`
 
     * {
         box-sizing: border-box;
@@ -22,15 +20,15 @@ const GlobalStyle = createGlobalStyle`
     body {
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-y: none;
-        color: ${theme.text.default}
+        color: ${props => props.theme.text.default}
         line-height: 1.5;
-        font-family: ${theme.font.default};
-        background-color: ${theme.bg.default};
+        font-family: ${props => props.theme.font.default};
+        background-color: ${props => props.theme.bg.default};
     }
 
     a {
         text-decoration: none;
-        color: ${theme.text.default};
+        color: ${props => props.theme.text.default};
     }
 
     a:hover {
@@ -42,6 +40,5 @@ const GlobalStyle = createGlobalStyle`
     }
 
 `;
-
 
 export default GlobalStyle;

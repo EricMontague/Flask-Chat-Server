@@ -1,10 +1,17 @@
+import React from "react";
 import PropTypes from 'prop-types';
-import {useField, ErrorMessage} from 'formik';
-import {StyledLabel, StyledInput, StyledInputContainer, StyledErrorMessage} from './styles';
-import {capitalizeString} from '../../utils';
+import {useField} from 'formik';
+import {StyledLabel, StyledInput, StyledInputContainer} from './styles';
 
+type Props = {
+    placeholder: string;
+    name: string;
+    disabled: boolean;
+    label?: string;
+    type: string;
+};
 
-export const TextInput = props => {
+export const TextInput = (props: Props) => {
     
     const [field, meta] = useField(props);
     if (props.label) {
@@ -12,7 +19,7 @@ export const TextInput = props => {
             <>
                 <StyledInputContainer>
                     <StyledLabel 
-                        htmlFor={props.id || props.name}
+                        htmlFor={props.name}
                     >
                         {props.label}
                     </StyledLabel>
@@ -40,13 +47,9 @@ export const TextInput = props => {
     );
 };
 
-
-
-
 TextInput.defaultProps = {
     disabled: false
 };
-
 
 TextInput.propTypes = {
     placeholder: PropTypes.string.isRequired,
@@ -57,19 +60,3 @@ TextInput.propTypes = {
 };
 
 
-
-export const InputError = props => {
-    return (
-        <ErrorMessage name={props.name}>
-            {message => (
-                <StyledErrorMessage>
-                    {capitalizeString(message)}
-                </StyledErrorMessage>
-            )}
-        </ErrorMessage>
-    )
-};
-
-InputError.propTypes = {
-    name: PropTypes.string.isRequired
-}

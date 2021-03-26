@@ -1,8 +1,7 @@
 import styled, { css } from 'styled-components';
 import theme from '../../theme';
 
-
-export const convertHexToRGBA = (hex, alpha) => {
+export const convertHexToRGBA = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
@@ -18,20 +17,17 @@ export const fontStack = css`
     sans-serif;
 `;
 
-
 export const flexCenteredMixin = css`
     display: flex;
     justify-content: center;
     align-items: center;
 `;
 
-
 export const Shadow = {
     low: '0 2px 8px',
     mid: '0 4px 12px',
     high: '0 8px 16px'
 };
-
 
 export const Transition = {
     hover: {
@@ -54,7 +50,6 @@ export const A = styled.a`
     flex: none;
 `;
 
-
 export const H1 = styled.h1`
     ${fontStack};
     color: ${theme.text.default};
@@ -64,7 +59,6 @@ export const H1 = styled.h1`
     margin: 0;
     padding: 0;
 `;
-
 
 export const H2 = styled.h2`
     ${fontStack};
@@ -76,7 +70,6 @@ export const H2 = styled.h2`
     padding: 0;
 `;
 
-
 export const H3 = styled.h3`
     ${fontStack};
     color: ${theme.text.default};
@@ -86,7 +79,6 @@ export const H3 = styled.h3`
     margin: 0;
     padding: 0;
 `;
-
 
 export const H4 = styled.h4`
     ${fontStack};
@@ -98,7 +90,6 @@ export const H4 = styled.h4`
     padding: 0;
 `;
 
-
 export const H5 = styled.h5`
   ${fontStack};
   color: ${theme.text.default};
@@ -108,7 +99,6 @@ export const H5 = styled.h5`
   margin: 0;
   padding: 0;
 `;
-
 
 export const H6 = styled.h6`
   ${fontStack};
@@ -121,7 +111,6 @@ export const H6 = styled.h6`
   padding: 0;
 `;
 
-
 export const P = styled.p`
     ${fontStack};
     color: ${theme.text.default};
@@ -131,7 +120,6 @@ export const P = styled.p`
     margin: 0;
     padding: 0;
 `;
-
 
 export const Span = styled.span`
     ${fontStack};
@@ -143,9 +131,22 @@ export const Span = styled.span`
     padding: 0;
 `;
 
-
 // Defines a Z-index hierarchy between all elements in the app
 class ZIndex {
+
+    readonly base: number;
+    readonly background: number;
+    readonly hidden: number;
+    readonly card: number;
+    readonly loading: number;
+    readonly avatar: number;
+    readonly formElement: number;
+    readonly navbar: number;
+    readonly dropDowns: number;
+    readonly fullScreen: number;
+    readonly modal: number;
+    readonly tooltip: number;
+
     constructor() {
         this.base = 100; // Base Z-index level
         this.background = this.base - 100; // Content that should always be behind the base
@@ -156,8 +157,8 @@ class ZIndex {
         this.avatar = this.card + 100; // Avatars should appear above cards
         this.formElement = this.card + 100; // Form elements should appear above cards
 
-        this.navBar = 3000;
-        this.dropDowns = this.navBar + 100; // dropdowns shouldn't appear below the navbar
+        this.navbar = 3000;
+        this.dropDowns = this.navbar + 100; // dropdowns shouldn't appear below the navbar
         this.fullScreen = 4000; // For fullscreen elements should cover all content except for modals and tooltips
         this.modal = 5000; // modals should show about fullscreen elements
         this.tooltip = 6000; // tooltips should always be on top of every element
@@ -165,19 +166,45 @@ class ZIndex {
 
 };
 
-
 export const zIndex = new ZIndex();
 
+const SMALL_BREAKPOINT = 576;
+const MEDIUM_BREAKPOINT = 768;
+const LARGE_BREAKPOINT = 992;
+const EXTRA_LARGE_BREAKPOINT = 1200;
+const EXTRA_EXTRA_LARGE_BREAKPOINT = 1400;
 
-export const FlexRow = styled.div`
+const customMediaQuery = (maxWidth: number) => {
+    return `@media (max-width: ${maxWidth}px)`;
+};
+
+export const media = {
+custom: customMediaQuery,
+    small: customMediaQuery(SMALL_BREAKPOINT),
+    medium: customMediaQuery(MEDIUM_BREAKPOINT),
+    large: customMediaQuery(LARGE_BREAKPOINT),
+    extra_large: customMediaQuery(EXTRA_LARGE_BREAKPOINT),
+    extra_extra_large: customMediaQuery(EXTRA_EXTRA_LARGE_BREAKPOINT)
+}
+
+type FlexProps = {
+    justifyContent?: string;
+    alignItems?: string;
+};
+
+type GridProps = {
+    cols: string;
+    gap: string;
+};
+
+export const FlexRow = styled.div<FlexProps>`
     display: flex;
     flex-direction: row;
     justify-content: ${props => props.justifyContent || 'flex-start'};
     align-items: ${props => props.alignItems || 'center'};
 `;
 
-
-export const FlexCol = styled.div`
+export const FlexCol = styled.div<FlexProps>`
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -185,8 +212,7 @@ export const FlexCol = styled.div`
     align-items: ${props => props.alignItems || 'stretch'};
 `;
 
-
-export const GridCol = styled.div`
+export const GridCol = styled.div<GridProps>`
     display: grid;
     grid-template-column: repeat(${props => props.cols});
     gap: ${props => props.gap};

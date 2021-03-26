@@ -1,11 +1,15 @@
-import {useEffect} from 'react';
+import React, {useEffect} from 'react';
 import PropTypes from 'prop-types';
-import styled, {withTheme} from 'styled-components';
+import styled, {withTheme, DefaultTheme} from 'styled-components';
 import {StyledHoverLink} from '../../components/buttons/styles';
 import {TopNavbarTransparent} from '../../components/navigation';
 import {SignUpForm} from './components/SignUpForm';
 import {fontStack, flexCenteredMixin} from '../../components/globals';
-import {CenteredLayout} from '../../components/layout/styles';
+import {StyledCenteredLayout} from '../../components/layout/styles';
+
+type Props = {
+    theme: DefaultTheme;
+};
 
 const SignInReminder = styled.div`
     ${fontStack};
@@ -32,11 +36,9 @@ const PageTitle = styled.h1`
     color: ${props => props.theme.text.white};
     letter-spacing: 0.03rem;
     text-align: center;
-
-  
 `;
 
-const SignUpPage = props => {
+const SignUpPage = (props: Props) => {
 
     useEffect(() => {
         document.title = 'ChatterBox - Sign Up';
@@ -45,7 +47,7 @@ const SignUpPage = props => {
     return (
         <>
             <TopNavbarTransparent linkColor={props.theme.text.white}/>
-            <CenteredLayout justifyContent='center' alignItems='center'>
+            <StyledCenteredLayout justifyContent='center' alignItems='center'>
                 <PageTitle>Create your account</PageTitle>    
                 <SignUpForm />
                 <SignInReminder>
@@ -54,9 +56,13 @@ const SignUpPage = props => {
                         Sign In
                     </StyledHoverLink>
                 </SignInReminder>
-            </CenteredLayout>
+            </StyledCenteredLayout>
         </>
     )
 };
+
+SignUpPage.propTypes = {
+    theme: PropTypes.objectOf(PropTypes.objectOf(PropTypes.string.isRequired).isRequired).isRequired
+}
 
 export default withTheme(SignUpPage);

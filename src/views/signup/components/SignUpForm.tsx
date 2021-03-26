@@ -1,12 +1,26 @@
-import PropTypes from 'prop-types';
-import {Formik} from 'formik';
+import React from 'react';
+import {Formik, FormikHelpers} from 'formik';
 import * as Yup from 'yup';
+import { OptionTypeBase, ActionMeta } from 'react-select';
 import {StyledCard, StyledCardBody} from '../../../components/cards/styles';
 import {StyledFormikForm} from '../../../components/forms/styles';
-import {TextInput, InputError} from '../../../components/formElements';
+import {TextInput} from '../../../components/formElements/TextInput';
+import {InputError} from '../../../components/formElements/InputError';
 import AutocompleteInput from '../../../components/formElements/AutocompleteInput';
 import {PrimaryButton} from '../../../components/buttons';
 import {GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS, GOOGLE_PLACES_API_COUNTRIES} from '../../../constants';
+
+type FormValues = {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+    location: any;
+};
+
+type setFieldValueFunc = (field: string, value: any, shouldValidate?: boolean) => void;
+
+type onChangeFunc = (value: OptionTypeBase | null, action: ActionMeta<OptionTypeBase>) => void;
 
 const validationSchema = Yup.object({
     username: Yup.string().required().min(2).max(32),
@@ -15,20 +29,19 @@ const validationSchema = Yup.object({
     password: Yup.string().required().min(8).max(32)
 });
 
-export const SignUpForm = props => {
+export const SignUpForm = () => {
 
-    const isFormCompleted = values => {
-        for (const field in values) {
-            if (values[field] === '') {
-                return false;
-            }
-        }
-        return true;
+    const initialValues: FormValues = {username: '', name: '', email: '', password: '', location: ''};
+
+    const isFormCompleted = (values: FormValues): boolean => {
+        return values.username && values.name && values.email && values.password ? true: false;
     }
 
-    const handleAutocompleteChange = (setFieldValue, fieldName) => {
+    const handleAutocompleteChange = (setFieldValue: setFieldValueFunc, fieldName: string): onChangeFunc => {
 
-        const onChange = (value, action) => {
+        const onChange = (value: OptionTypeBase | null, action: ActionMeta<OptionTypeBase>) => {
+            console.log(value);
+            console.log(action);
             setFieldValue(fieldName, value, false);
         };
 
@@ -36,27 +49,21 @@ export const SignUpForm = props => {
         
     };
 
-    const handleSubmit = (values, actions) => {
+    const handleSubmit = (values: FormValues, formikHelpers: FormikHelpers<FormValues>): void => {
         console.log(values);
-        console.log(actions);
+        console.log(formikHelpers);
         const formValues = {
             ...values,
             location: values.location.label
         }
-        actions.setSubmitting(false);
+        formikHelpers.setSubmitting(false);
         // actions.resetForm();
     }
 
     
     return (
         <Formik
-            initialValues={{
-                username: '',
-                name: '',
-                email: '',
-                password: '',
-                location: ''
-            }}
+            initialValues={initialValues}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
         >
