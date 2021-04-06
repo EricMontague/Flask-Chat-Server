@@ -1,11 +1,11 @@
 import React, {useEffect} from 'react';
 import PropTypes from 'prop-types';
 import styled, {withTheme, DefaultTheme} from 'styled-components';
-import {SignInForm} from './components/SignInForm';
-import {StyledHoverLink} from '../../components/buttons/styles';
-import { TopNavbarTransparent } from '../../components/navigation';
-import {fontStack, flexCenteredMixin} from '../../components/globals';
-import {StyledCenteredLayout} from '../../components/layout/styles';
+import {SignInForm} from './SignInForm';
+import {StyledHoverLink} from '../../common/styles/buttons/styles';
+import { TopNavbarTransparent } from '../../common/styles/navigation';
+import {fontStack, flexCenteredMixin} from '../../common/styles/globals';
+import {StyledCenteredLayout} from '../../common/styles/layout/styles';
 
 type Props = {
     theme: DefaultTheme;

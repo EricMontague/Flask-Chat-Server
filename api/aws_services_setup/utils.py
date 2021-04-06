@@ -43,8 +43,8 @@ def create_dynamodb_table():
         ],
         GlobalSecondaryIndexes=GSI_LIST,
         ProvisionedThroughput={
-            "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_RCU", 25),
-            "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_WCU", 25),
+            "ReadCapacityUnits": os.environ.get("AWS_DYNAMODB_RCU", 2),
+            "WriteCapacityUnits": os.environ.get("AWS_DYNAMODB_WCU", 2),
         },
     )
 

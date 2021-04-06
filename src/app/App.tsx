@@ -5,10 +5,10 @@ import {
     Route
 } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
-import theme from './theme';
-import SignInPage from './views/signin/SignInPage';
-import SignUpPage from './views/signup/SignUpPage';
-import GlobalStyle from './globalStyle';
+import theme from '../common/theme';
+import SignInController from '../features/signin/SignInController';
+import SignUpController from '../features/signup/SignUpController';
+import GlobalStyle from '../globalStyle';
 
 const App = () => {
     return (
@@ -17,10 +17,10 @@ const App = () => {
                 <GlobalStyle />
                 <Switch>
                     <Route exact path='/sign-in' >
-                        <SignInPage />
+                        <SignInController />
                     </Route>
                     <Route exact path='/sign-up'>
-                        <SignUpPage />
+                        <SignUpController />
                     </Route>
                     <Route exact path='/'>
                         <h1>Hello, World!</h1>
