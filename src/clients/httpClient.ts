@@ -1,5 +1,5 @@
 import { authClient } from './authClient';
-import { RegistrationInfo } from '../features/users/usersSlice';
+import { RegistrationInfo, Tokens, User } from '../features/users/usersSlice';
 import { ServerError, FetchOptions, ClientResponse } from './types';
 
 export class ClientError extends Error implements ServerError {
@@ -24,11 +24,12 @@ export class ClientError extends Error implements ServerError {
 class HTTPClient {
 
     baseUrl: string;
+    apiVersion: string;
     logToConsole: boolean;
 
-    constructor(authClient, baseUrl: string) {
-        this.authClient = authClient;
+    constructor(baseUrl: string, apiVersion: string) {
         this.baseUrl = baseUrl;
+        this.apiVersion = apiVersion;
         this.logToConsole = process.env.REACT_APP_LOG_TO_CONSOLE === 'true';
 
     }
@@ -39,7 +40,7 @@ class HTTPClient {
     };
 
     doFetchWithResponse = async <T>(url: string, options: FetchOptions): Promise<ClientResponse<T>> => {
-        const response = await fetch(url, this.getOptions(options));
+        const response = await fetch(url, this.addHeaders(options));
 
         let data;
         try {
@@ -78,18 +79,49 @@ class HTTPClient {
         return this.baseUrl;
     }
 
-    getOptions(options: FetchOptions) {
-        
+    getAPIVersion() {
+        return this.apiVersion;
     }
 
-    login(email: string, password: string) {
-
+    getBaseRoute() {
+        return `${this.getBaseUrl()}/${this.getAPIVersion()}`;
     }
 
-    registration(registrationInfo: RegistrationInfo) {
+    getAuthRoute() {
+        return `${this.getBaseRoute()}/auth`;
+    }
 
+    addHeaders(options: FetchOptions) {
+        const newOptions = {...options};
+        const headers: {[x: string]: string} = {};
+        // headers['Authorization'] = `Bearer ${this.token}`;
+        headers['Content-Type'] = 'application/json';
+        headers['Accept'] = 'application/json';
+        newOptions['headers'] = headers
+        return newOptions;
+    }
+
+    async login(email: string, password: string) {
+        const options = {
+            method: 'POST',
+            body: JSON.stringify({email, password})
+        };
+        return await this.doFetch<Tokens>(`${this.getAuthRoute()}/login`, options);
+    }
+
+    async register(registrationInfo: RegistrationInfo) {
+        const options = {
+            method: 'POST',
+            body: JSON.stringify(registrationInfo)
+        };
+        return await this.doFetch<User>(`${this.getAuthRoute()}/register`, options);
+    }
+
+    async logout() {
+        const options = {method: 'DELETE'};
+        const { response } = await this.doFetchWithResponse<any>(`${this.getAuthRoute()}/revoke_tokens`, options);
+        return response;
     }
 }
 
-
-export const httpClient = HttpClient(authClient)
+export const httpClient = new HTTPClient(process.env.REACT_APP_API_BASE_URL!, process.env.REACT_APP_API_VERSION!);
