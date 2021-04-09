@@ -8,13 +8,13 @@ export interface ServerError {
 export interface FetchOptions {
     headers?: {[x: string]: string};
     method?: string;
-    url: string;
+    url?: string;
     credentials?: 'omit' | 'same-origin' | 'include';
     body?: any;
 };
 
 export interface ClientResponse<T> {
     response: Response;
-    headers: Map<string, string>;
+    headers: Headers;
     data: T;
 };
