@@ -14,12 +14,12 @@ interface Image {
     height: number;
 };
 
-interface Tokens {
+export interface Tokens {
     access: string; 
     refresh: string; 
 };
 
-interface User {
+export interface User {
     id: string;
     username: string;
     name: string;
@@ -80,31 +80,29 @@ const initialState: UsersState = usersAdapter.getInitialState({
 export const login = createAsyncThunk(
     'users/login',
     async (loginInfo: LoginInfo, thunkAPI) => {
-        const response = await httpClient.login(loginInfo.email, loginInfo.password);
-        return response.tokens;
+        return await httpClient.login(loginInfo.email, loginInfo.password);
     };
 );
 
 export const register = createAsyncThunk(
     'users/register',
     async (registrationInfo: RegistrationInfo, thunkAPI) => {
-        const response = await httpClient.register(registrationInfo);
-        return response.user;
+        return await httpClient.register(registrationInfo);
     };
 );
 
 export const usersSlice = createSlice({
     name: 'users',
     initialState,
-    reducers: {
-        login(state, action: PayloadAction<Tokens>) {
+    reducers: {},
+    extraReducers: (builder) => {
+        builder.addCase(login.fulfilled, (state, action) => {
             state.tokens = action.payload;
-        },
-        register(state, action: PayloadAction<User>) {
+        }).addCase(register.fulfilled, (state, action) => {
             state.currentUserId = action.payload.id;
             state.entities[action.payload.id] = action.payload;
             state.ids.push(action.payload.id);
-        }
+        })
     }
 });
 
