@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     BrowserRouter as Router,
     Switch,
@@ -6,21 +6,30 @@ import {
 } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import theme from '../common/theme';
-import SignInController from '../features/signin/SignInController';
-import SignUpController from '../features/signup/SignUpController';
+import SignInPage from '../features/users/SignInPage';
+import SignUpPage from '../features/users/SignUpPage';
 import GlobalStyle from '../globalStyle';
+import { loadUser } from '../features/usersSlice';
+import { useAppDispatch } from './hooks';
 
 const App = () => {
+
+    const dispatch = useAppDispatch();
+    
+    useEffect(() => {
+        dispatch(loadUser());
+    }, [])
+    
     return (
         <Router>
             <ThemeProvider theme= { theme }>
                 <GlobalStyle />
                 <Switch>
                     <Route exact path='/sign-in' >
-                        <SignInController />
+                        <SignInPage />
                     </Route>
                     <Route exact path='/sign-up'>
-                        <SignUpController />
+                        <SignUpPage />
                     </Route>
                     <Route exact path='/'>
                         <h1>Hello, World!</h1>
