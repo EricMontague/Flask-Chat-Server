@@ -15,8 +15,10 @@ export class ClientError extends Error implements ServerError {
         this.url = data.url;
         this.server_error_id = data.server_error_id;
         this.status_code = data.status_code;
-
-        Object.defineProperty(this, 'message', {enumerable: true});
+        
+        // Ensure message is treated as a property of this class when object spreading. Without this,
+        // copying the object by using `{...error}` would not include the message.
+        Object.defineProperty(this, 'message', { enumerable: true });
     }
 
 };
