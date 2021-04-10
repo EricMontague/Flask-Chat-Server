@@ -1,11 +1,11 @@
 import React from 'react';
-import {Formik, FormikHelpers} from 'formik';
+import { Formik, FormikHelpers } from 'formik';
 import * as Yup from 'yup';
-import {StyledCard, StyledCardBody} from '../../common/styles/cards/styles';
-import {StyledFormikForm} from '../../common/styles/forms/styles';
-import {TextInput} from '../../common/styles/formElements/TextInput';
-import {InputError} from '../../common/styles/formElements/InputError';
-import {PrimaryButton} from '../../common/styles/buttons';
+import { StyledCard, StyledCardBody } from '../../common/styles/cards/styles';
+import { StyledFormikForm } from '../../common/styles/forms/styles';
+import { TextInput } from '../../common/styles/formElements/TextInput';
+import { InputError } from '../../common/styles/formElements/InputError';
+import { PrimaryButton } from '../../common/styles/buttons';
 
 type FormValues = {
     email: string;

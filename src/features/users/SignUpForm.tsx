@@ -1,14 +1,14 @@
 import React from 'react';
-import {Formik, FormikHelpers} from 'formik';
+import { Formik, FormikHelpers } from 'formik';
 import * as Yup from 'yup';
 import { OptionTypeBase, ActionMeta } from 'react-select';
-import {StyledCard, StyledCardBody} from '../../common/styles/cards/styles';
-import {StyledFormikForm} from '../../common/styles/forms/styles';
-import {TextInput} from '../../common/styles/formElements/TextInput';
-import {InputError} from '../../common/styles/formElements/InputError';
+import { StyledCard, StyledCardBody } from '../../common/styles/cards/styles';
+import { StyledFormikForm } from '../../common/styles/forms/styles';
+import { TextInput } from '../../common/styles/formElements/TextInput';
+import { InputError } from '../../common/styles/formElements/InputError';
 import AutocompleteInput from '../../common/styles/formElements/AutocompleteInput';
-import {PrimaryButton} from '../../common/styles/buttons';
-import {GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS, GOOGLE_PLACES_API_COUNTRIES} from '../../constants';
+import { PrimaryButton } from '../../common/styles/buttons';
+import { GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS, GOOGLE_PLACES_API_COUNTRIES } from '../../constants';
 
 type FormValues = {
     username: string;
