@@ -81,14 +81,21 @@ export const login = createAsyncThunk(
     'users/login',
     async (loginInfo: LoginInfo, thunkAPI) => {
         return await httpClient.login(loginInfo.email, loginInfo.password);
-    };
+    }
 );
 
 export const register = createAsyncThunk(
     'users/register',
     async (registrationInfo: RegistrationInfo, thunkAPI) => {
         return await httpClient.register(registrationInfo);
-    };
+    }
+);
+
+export const loadUser = createAsyncThunk(
+    'users/load_user',
+    async (userId: string, thunkAPI) => {
+        return await httpClient.loadUser(userId);
+    }
 );
 
 export const usersSlice = createSlice({
