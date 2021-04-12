@@ -6,6 +6,8 @@ import { StyledFormikForm } from '../../common/styles/forms/styles';
 import { TextInput } from '../../common/styles/formElements/TextInput';
 import { InputError } from '../../common/styles/formElements/InputError';
 import { PrimaryButton } from '../../common/styles/buttons';
+import { useAppDispatch } from '../../app/hooks';
+import{ login } from './usersSlice';
 
 type FormValues = {
     email: string;
@@ -18,6 +20,9 @@ const validationSchema = Yup.object({
 })
 
 export const SignInForm = () => {
+
+    const dispatch = useAppDispatch();
+
     const initialValues: FormValues = {email: '', password: ''};
 
     const isFormCompleted = (values: FormValues): boolean => {
@@ -27,6 +32,7 @@ export const SignInForm = () => {
     const handleSubmit = (values: FormValues, formikHelpers: FormikHelpers<FormValues>) => {
         console.log(values);
         console.log(formikHelpers);
+        dispatch(login({...values}));
     };
 
     return (

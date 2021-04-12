@@ -9,6 +9,8 @@ import { InputError } from '../../common/styles/formElements/InputError';
 import AutocompleteInput from '../../common/styles/formElements/AutocompleteInput';
 import { PrimaryButton } from '../../common/styles/buttons';
 import { GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS, GOOGLE_PLACES_API_COUNTRIES } from '../../constants';
+import { register } from './usersSlice';
+import { useAppDispatch } from '../../app/hooks';
 
 type FormValues = {
     username: string;
@@ -30,6 +32,8 @@ const validationSchema = Yup.object({
 });
 
 export const SignUpForm = () => {
+
+    const dispatch = useAppDispatch();
 
     const initialValues: FormValues = {username: '', name: '', email: '', password: '', location: ''};
 
@@ -56,6 +60,7 @@ export const SignUpForm = () => {
             ...values,
             location: values.location.label
         }
+        dispatch(register(formValues));
         formikHelpers.setSubmitting(false);
         // actions.resetForm();
     }
