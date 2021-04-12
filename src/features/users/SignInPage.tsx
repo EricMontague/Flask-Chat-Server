@@ -1,17 +1,20 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
-import styled, {withTheme, DefaultTheme} from 'styled-components';
-import {SignInForm} from './SignInForm';
-import {StyledHoverLink} from '../../common/styles/buttons/styles';
+import { useHistory } from 'react-router-dom';
+import styled, { withTheme, DefaultTheme } from 'styled-components';
+import { SignInForm } from './SignInForm';
+import { StyledHoverLink } from '../../common/styles/buttons/styles';
 import { TopNavbarTransparent } from '../../common/styles/navigation';
-import {fontStack, flexCenteredMixin} from '../../common/styles/globals';
-import {StyledCenteredLayout} from '../../common/styles/layout/styles';
+import { fontStack, flexCenteredMixin } from '../../common/styles/globals';
+import { StyledCenteredLayout } from '../../common/styles/layout/styles';
+import { getCurrentUser, getUserTokens } from './usersSlice';
+import { useAppSelector } from '../../app/hooks';
 
 type Props = {
     theme: DefaultTheme;
 }
 
-const SignUpReminder = styled.div`
+const SignInReminder = styled.div`
     ${fontStack};
     ${flexCenteredMixin};
     flex-wrap: wrap;
@@ -42,22 +45,35 @@ const PageTitle = styled.h1`
 
 const SignInPage = (props: Props) => {
 
+    const history = useHistory();
+
+    const tokens = useAppSelector(getUserTokens);
+    if (tokens.access !== '' && tokens.refresh !== '') {
+        history.push('/');
+    }
+    const currentUser = useAppSelector(getCurrentUser);
+
+    if (currentUser) {
+        history.push('/');
+    };
+
     useEffect(() => {
         document.body.title = 'Chatterbox - SignIn'
         document.body.style.backgroundColor = props.theme.bg.primary;
     }, [])
+    
     return (
         <>
             <TopNavbarTransparent linkColor={props.theme.text.white} />
             <StyledCenteredLayout justifyContent='center' alignItems='center'>
                 <PageTitle>Sign in to Chatterbox</PageTitle>    
                 <SignInForm />
-                <SignUpReminder>
+                <SignInReminder>
                     <p>Don't have an account yet?</p>
                     <StyledHoverLink to='/sign-up' color={props.theme.text.white}>
                         Sign Up
                     </StyledHoverLink>
-                </SignUpReminder>
+                </SignInReminder>
             </StyledCenteredLayout>
         </>
     )
