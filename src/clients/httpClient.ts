@@ -28,11 +28,13 @@ class HTTPClient {
     baseUrl: string;
     apiVersion: string;
     logToConsole: boolean;
+    tokens: Tokens;
 
     constructor(baseUrl: string, apiVersion: string) {
         this.baseUrl = baseUrl;
         this.apiVersion = apiVersion;
         this.logToConsole = process.env.REACT_APP_LOG_TO_CONSOLE === 'true';
+        this.tokens = {access: '', refresh: ''};
 
     }
 
@@ -93,6 +95,10 @@ class HTTPClient {
         return `${this.getBaseRoute()}/auth`;
     }
 
+    getUserRoute() {
+        return `${this.getBaseRoute()}/users`;
+    }
+
     addHeaders(options: FetchOptions) {
         const newOptions = {...options};
         const headers: {[x: string]: string} = {};
@@ -101,6 +107,14 @@ class HTTPClient {
         headers['Accept'] = 'application/json';
         newOptions['headers'] = headers
         return newOptions;
+    }
+
+    getTokens() {
+        return this.tokens;
+    }
+
+    setTokens(tokens: Tokens) {
+        this.tokens = tokens;
     }
 
     async login(email: string, password: string) {
@@ -123,6 +137,14 @@ class HTTPClient {
         const options = {method: 'DELETE'};
         const { response } = await this.doFetchWithResponse<any>(`${this.getAuthRoute()}/revoke_tokens`, options);
         return response;
+    }
+
+    async getUserById(userId: string) {
+        return await this.doFetch<User>(`${this.getUserRoute()}/${userId}`, {})
+    }
+
+    async getUserByUsername(username: string) {
+        return await this.doFetch<User>(`${this.getUserRoute()}/username/${username}`, {});
     }
 }
 
