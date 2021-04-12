@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createEntityAdapter, EntityState, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '../../app/store';
 import { httpClient } from '../../clients/httpClient';
+import { stringTypeAnnotation } from '@babel/types';
 
 interface Location {
     city: string;
@@ -93,8 +94,16 @@ export const register = createAsyncThunk(
 
 export const loadUser = createAsyncThunk(
     'users/load_user',
-    async (userId: string, thunkAPI) => {
-        return await httpClient.loadUser(userId);
+    async (thunkAPI) => {
+        const access = localStorage.getItem('access_token') || '';
+        const refresh = localStorage.getItem('refresh_token') || '';
+        const userId = localStorage.getItem('user_id') || '';
+        httpClient.setTokens({access, refresh});
+        const currentUser = await httpClient.getUserById(userId);
+        return {
+            currentUser,
+            tokens: httpClient.getTokens()
+        }
     }
 );
 
@@ -103,13 +112,22 @@ export const usersSlice = createSlice({
     initialState,
     reducers: {},
     extraReducers: (builder) => {
-        builder.addCase(login.fulfilled, (state, action) => {
-            state.tokens = action.payload;
-        }).addCase(register.fulfilled, (state, action) => {
-            state.currentUserId = action.payload.id;
-            state.entities[action.payload.id] = action.payload;
-            state.ids.push(action.payload.id);
-        })
+        builder
+            .addCase(login.fulfilled, (state, action) => {
+                state.tokens = action.payload;
+            })
+            .addCase(register.fulfilled, (state, action) => {
+                state.currentUserId = action.payload.id;
+                state.entities[action.payload.id] = action.payload;
+                state.ids.push(action.payload.id);
+            })
+            .addCase(loadUser.fulfilled, (state, action) => {
+                const { currentUser, tokens } = action.payload;
+                state.tokens = tokens;
+                state.currentUserId = currentUser.id;
+                state.entities[currentUser.id] = currentUser;
+                state.ids.push(currentUser.id);
+            })
     }
 });
 
@@ -125,5 +143,7 @@ export const getCurrentUser = (state: RootState) => {
     }
     return null;
 };
+
+export const getUserTokens = (state: RootState) => state.users.tokens;
 
 export default usersSlice.reducer;
