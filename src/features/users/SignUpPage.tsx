@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useHistory } from 'react-router-dom';
 import styled, { withTheme, DefaultTheme } from 'styled-components';
-import { StyledHoverLink } from '../../common/styles/buttons/styles';
-import { TopNavbarTransparent } from '../../common/styles/navigation';
+import { StyledHoverLink } from '../../common/components/buttons/styles';
+import { TopNavbarTransparent } from '../../common/components/navigation';
 import { SignUpForm } from './SignUpForm';
-import { fontStack, flexCenteredMixin } from '../../common/styles/globals';
-import { StyledCenteredLayout } from '../../common/styles/layout/styles';
+import { fontStack, flexCenteredMixin } from '../../common/components/globals';
+import { StyledCenteredLayout } from '../../common/components/layout/styles';
 import { getCurrentUser } from './usersSlice';
 import { useAppSelector } from '../../app/hooks';
 
@@ -46,9 +46,10 @@ const SignUpPage = (props: Props) => {
     const history = useHistory();
 
     const currentUser = useAppSelector(getCurrentUser);
-    if (currentUser) {
-        history.push('/');
-    };
+    
+    // if (currentUser) {
+    //     history.push('/');
+    // };
 
     useEffect(() => {
         document.title = 'ChatterBox - Sign Up';

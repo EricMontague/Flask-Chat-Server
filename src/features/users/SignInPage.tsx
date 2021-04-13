@@ -3,10 +3,10 @@ import PropTypes from 'prop-types';
 import { useHistory } from 'react-router-dom';
 import styled, { withTheme, DefaultTheme } from 'styled-components';
 import { SignInForm } from './SignInForm';
-import { StyledHoverLink } from '../../common/styles/buttons/styles';
-import { TopNavbarTransparent } from '../../common/styles/navigation';
-import { fontStack, flexCenteredMixin } from '../../common/styles/globals';
-import { StyledCenteredLayout } from '../../common/styles/layout/styles';
+import { StyledHoverLink } from '../../common/components/buttons/styles';
+import { TopNavbarTransparent } from '../../common/components/navigation';
+import { fontStack, flexCenteredMixin } from '../../common/components/globals';
+import { StyledCenteredLayout } from '../../common/components/layout/styles';
 import { getCurrentUser, getUserTokens } from './usersSlice';
 import { useAppSelector } from '../../app/hooks';
 
