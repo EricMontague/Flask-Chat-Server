@@ -1,10 +1,9 @@
-import { authClient } from './authClient';
+// import { authClient } from './authClient';
 import { RegistrationInfo, Tokens, User } from '../features/users/usersSlice';
 import { ServerError, FetchOptions, ClientResponse } from './types';
 
 export class ClientError extends Error implements ServerError {
     url?: string;
-    server_error_id?: string;
     status_code?: number;
     message: string;
 
@@ -13,7 +12,6 @@ export class ClientError extends Error implements ServerError {
 
         this.message = data.message;
         this.url = data.url;
-        this.server_error_id = data.server_error_id;
         this.status_code = data.status_code;
         
         // Ensure message is treated as a property of this class when object spreading. Without this,
@@ -74,7 +72,6 @@ class HTTPClient {
         throw new ClientError(this.getBaseUrl(), {
             message,
             url,
-            server_error_id: data.error_id,
             status_code: data.status_code
         })
     };

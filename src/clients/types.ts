@@ -1,5 +1,4 @@
 export interface ServerError {
-    server_error_id?: string;
     message: string;
     status_code?: number;
     url?: string
