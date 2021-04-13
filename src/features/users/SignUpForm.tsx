@@ -2,12 +2,12 @@ import React from 'react';
 import { Formik, FormikHelpers } from 'formik';
 import * as Yup from 'yup';
 import { OptionTypeBase, ActionMeta } from 'react-select';
-import { StyledCard, StyledCardBody } from '../../common/styles/cards/styles';
-import { StyledFormikForm } from '../../common/styles/forms/styles';
-import { TextInput } from '../../common/styles/formElements/TextInput';
-import { InputError } from '../../common/styles/formElements/InputError';
-import AutocompleteInput from '../../common/styles/formElements/AutocompleteInput';
-import { PrimaryButton } from '../../common/styles/buttons';
+import { StyledCard, StyledCardBody } from '../../common/components/cards/styles';
+import { StyledFormikForm } from '../../common/components/forms/styles';
+import { TextInput } from '../../common/components/formElements/TextInput';
+import { InputError } from '../../common/components/formElements/InputError';
+import AutocompleteInput from '../../common/components/formElements/AutocompleteInput';
+import { PrimaryButton } from '../../common/components/buttons';
 import { GOOGLE_PLACES_API_TYPES, GOOGLE_PLACES_API_FIELDS, GOOGLE_PLACES_API_COUNTRIES } from '../../constants';
 import { register } from './usersSlice';
 import { useAppDispatch } from '../../app/hooks';
@@ -17,7 +17,7 @@ type FormValues = {
     name: string;
     email: string;
     password: string;
-    location: any;
+    location: {label: string, value: any};
 };
 
 type setFieldValueFunc = (field: string, value: any, shouldValidate?: boolean) => void;
@@ -35,7 +35,13 @@ export const SignUpForm = () => {
 
     const dispatch = useAppDispatch();
 
-    const initialValues: FormValues = {username: '', name: '', email: '', password: '', location: ''};
+    const initialValues: FormValues = {
+        username: '', 
+        name: '', 
+        email: '', 
+        password: '', 
+        location: {label: 'Jersey City, NJ, USA', value:{} }
+    };
 
     const isFormCompleted = (values: FormValues): boolean => {
         return values.username && values.name && values.email && values.password ? true: false;
@@ -56,9 +62,10 @@ export const SignUpForm = () => {
     const handleSubmit = (values: FormValues, formikHelpers: FormikHelpers<FormValues>): void => {
         console.log(values);
         console.log(formikHelpers);
+        const [city, state, country] = values.location.label.split(',');
         const formValues = {
             ...values,
-            location: values.location.label
+            location: {city, state, country}
         }
         dispatch(register(formValues));
         formikHelpers.setSubmitting(false);
