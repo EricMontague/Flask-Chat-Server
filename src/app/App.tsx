@@ -9,16 +9,16 @@ import theme from '../common/theme';
 import SignInPage from '../features/users/SignInPage';
 import SignUpPage from '../features/users/SignUpPage';
 import GlobalStyle from '../globalStyle';
-import { loadUser } from '../features/usersSlice';
+import { loadUser } from '../features/users/usersSlice';
 import { useAppDispatch } from './hooks';
 
 const App = () => {
 
     const dispatch = useAppDispatch();
     
-    useEffect(() => {
-        dispatch(loadUser());
-    }, [])
+    // useEffect(() => {
+    //     dispatch(loadUser());
+    // }, [])
     
     return (
         <Router>
