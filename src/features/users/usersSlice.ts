@@ -1,7 +1,11 @@
-import { createSlice, PayloadAction, createEntityAdapter, EntityState, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createEntityAdapter, EntityState, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '../../app/store';
 import { httpClient } from '../../clients/httpClient';
-import { stringTypeAnnotation } from '@babel/types';
+
+export const USER_REQUEST_IDLE = 'idle';
+export const USER_REQUEST_LOADING = 'loading';
+export const USER_REQUEST_SUCCEEDED = 'succeeded';
+export const USER_REQUEST_FAILED = 'failed';
 
 interface Location {
     city: string;
@@ -38,6 +42,8 @@ export interface User {
 interface UsersState extends EntityState<User> {
     currentUserId: string;
     tokens: Tokens;
+    status: 'idle' | 'loading' | 'succeeded' | 'failed';
+    error?: string;
 };
 
 interface LoginInfo {
@@ -58,6 +64,8 @@ const usersAdapter = createEntityAdapter<User>();
 const initialState: UsersState = usersAdapter.getInitialState({
     currentUserId: 'user_id1',
     tokens: {access: "access_token", refresh: "refresh_token"},
+    status: 'idle',
+    error: undefined,
     ids: ['user_id1'],
     entities: {
         user_id1: {
@@ -113,13 +121,32 @@ export const usersSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
+            .addCase(login.pending, (state) => {
+                state.status = USER_REQUEST_LOADING;
+            })
             .addCase(login.fulfilled, (state, action) => {
                 state.tokens = action.payload;
+                state.status = USER_REQUEST_SUCCEEDED;
+            })
+            .addCase(login.rejected, (state, action) => {
+                state.status = USER_REQUEST_FAILED;
+                state.error = action.error.message;
+            })
+            .addCase(register.pending, (state) => {
+                state.status = USER_REQUEST_LOADING;
             })
             .addCase(register.fulfilled, (state, action) => {
                 state.currentUserId = action.payload.id;
                 state.entities[action.payload.id] = action.payload;
                 state.ids.push(action.payload.id);
+                state.status = USER_REQUEST_SUCCEEDED;
+            })
+            .addCase(register.rejected, (state, action) => {
+                state.status = USER_REQUEST_FAILED;
+                state.error = action.error.message;
+            })
+            .addCase(loadUser.pending, (state) => {
+                state.status = USER_REQUEST_LOADING;;
             })
             .addCase(loadUser.fulfilled, (state, action) => {
                 const { currentUser, tokens } = action.payload;
@@ -127,8 +154,13 @@ export const usersSlice = createSlice({
                 state.currentUserId = currentUser.id;
                 state.entities[currentUser.id] = currentUser;
                 state.ids.push(currentUser.id);
+                state.status = USER_REQUEST_SUCCEEDED;
             })
-    }
+            .addCase(loadUser.rejected, (state, action) => {
+                state.status = USER_REQUEST_FAILED;
+                state.error = action.error.message;
+            })
+    }   
 });
 
 export const {
