@@ -78,7 +78,10 @@ AutocompleteInput.propTypes = {
   types: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
   fields: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
   name: PropTypes.string.isRequired,
-  value: PropTypes.object.isRequired,
+  value: PropTypes.shape({
+    label: PropTypes.string.isRequired,
+    value: PropTypes.object.isRequired
+  })
 };
 
 export default AutocompleteInput;
