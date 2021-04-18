@@ -10,12 +10,12 @@ import { useAppDispatch } from '../../app/hooks';
 import{ login } from './usersSlice';
 
 type FormValues = {
-    email: string;
+    username: string;
     password: string;
 };
 
 const validationSchema = Yup.object({
-    email: Yup.string().required().min(2).max(32),
+    username: Yup.string().required().min(2).max(32),
     password: Yup.string().required().min(8).max(32)
 })
 
@@ -23,10 +23,10 @@ export const SignInForm = () => {
 
     const dispatch = useAppDispatch();
 
-    const initialValues: FormValues = {email: '', password: ''};
+    const initialValues: FormValues = {username: '', password: ''};
 
     const isFormCompleted = (values: FormValues): boolean => {
-        return values.email && values.password ? true : false;
+        return values.username && values.password ? true : false;
     };
 
     const handleSubmit = (values: FormValues, formikHelpers: FormikHelpers<FormValues>) => {
@@ -45,8 +45,8 @@ export const SignInForm = () => {
                 <StyledCard maxWidth='25rem'>
                     <StyledCardBody>
                         <StyledFormikForm>
-                            <TextInput name='email' placeholder='Email' type='text'/>
-                            <InputError name='email'/>
+                            <TextInput name='username' placeholder='Username' type='text'/>
+                            <InputError name='username'/>
 
                             <TextInput name='password' placeholder='Password' type='password'/>
                             <InputError name='password'/>
