@@ -1,6 +1,9 @@
 // import { authClient } from './authClient';
 import { RegistrationInfo, Tokens, User } from '../features/users/usersSlice';
-import { ServerError, FetchOptions, ClientResponse } from './types';
+import { ServerError, FetchOptions, ClientResponse, AuthCredentials } from './types';
+
+const HTTP_BASIC_AUTH = 'http_basic_auth';
+const JWT = 'jwt';
 
 export class ClientError extends Error implements ServerError {
     url?: string;
@@ -36,13 +39,14 @@ class HTTPClient {
 
     }
 
-    doFetch = async <T>(url: string, options: FetchOptions): Promise<T> => {
-        const {data} = await this.doFetchWithResponse<T>(url, options);
+    doFetch = async <T>(url: string, options: FetchOptions, authCredentials?: AuthCredentials): Promise<T> => {
+        const {data} = await this.doFetchWithResponse<T>(url, options, authCredentials);
         return data;
     };
-
-    doFetchWithResponse = async <T>(url: string, options: FetchOptions): Promise<ClientResponse<T>> => {
-        const response = await fetch(url, this.addHeaders(options));
+    
+    doFetchWithResponse = async <T>(url: string, options: FetchOptions, authCredentials?: AuthCredentials): Promise<ClientResponse<T>> => {
+        const newOptions: FetchOptions = this.addExtraOptions(options, authCredentials);
+        const response = await fetch(url, newOptions);
 
         let data;
         try {
@@ -63,7 +67,7 @@ class HTTPClient {
             }
         }
 
-        const message = data.message || '';
+        const message = data.error || data.errors || '';
 
         if (this.logToConsole) {
             console.error(message); // eslint-disable-line no-console
@@ -72,7 +76,7 @@ class HTTPClient {
         throw new ClientError(this.getBaseUrl(), {
             message,
             url,
-            status_code: data.status_code
+            status_code: response.status
         })
     };
 
@@ -96,13 +100,18 @@ class HTTPClient {
         return `${this.getBaseRoute()}/users`;
     }
 
-    addHeaders(options: FetchOptions) {
+    addExtraOptions(options: FetchOptions, authCredentials?: AuthCredentials) {
         const newOptions = {...options};
         const headers: {[x: string]: string} = {};
-        // headers['Authorization'] = `Bearer ${this.token}`;
+        if (authCredentials && authCredentials.type === JWT) {
+            headers['Authorization'] = `Bearer ${authCredentials.credentials}`;
+        } else if (authCredentials && authCredentials.type === HTTP_BASIC_AUTH) {
+            headers['Authorization'] = `Basic ${authCredentials.credentials}`;
+        }
+        
         headers['Content-Type'] = 'application/json';
         headers['Accept'] = 'application/json';
-        newOptions['headers'] = headers
+        newOptions['headers'] = headers;
         return newOptions;
     }
 
@@ -114,12 +123,13 @@ class HTTPClient {
         this.tokens = tokens;
     }
 
-    async login(email: string, password: string) {
+    async login(username: string, password: string) {
         const options = {
             method: 'POST',
-            body: JSON.stringify({email, password})
+            body: JSON.stringify({username, password})
         };
-        return await this.doFetch<Tokens>(`${this.getAuthRoute()}/login`, options);
+        const authCredentials: AuthCredentials = {type: HTTP_BASIC_AUTH, credentials: username + ':' + password};
+        return await this.doFetch<Tokens>(`${this.getAuthRoute()}/login`, options, authCredentials);
     }
 
     async register(registrationInfo: RegistrationInfo) {
@@ -132,16 +142,19 @@ class HTTPClient {
 
     async logout() {
         const options = {method: 'DELETE'};
-        const { response } = await this.doFetchWithResponse<any>(`${this.getAuthRoute()}/revoke_tokens`, options);
+        const authCredentials: AuthCredentials = {type: JWT, credentials: this.getTokens().access};
+        const { response } = await this.doFetchWithResponse<any>(`${this.getAuthRoute()}/revoke_tokens`, options, authCredentials);
         return response;
     }
 
     async getUserById(userId: string) {
-        return await this.doFetch<User>(`${this.getUserRoute()}/${userId}`, {})
+        const authCredentials: AuthCredentials = {type: JWT, credentials: this.getTokens().access};
+        return await this.doFetch<User>(`${this.getUserRoute()}/${userId}`, {}, authCredentials)
     }
 
     async getUserByUsername(username: string) {
-        return await this.doFetch<User>(`${this.getUserRoute()}/username/${username}`, {});
+        const authCredentials: AuthCredentials = {type: JWT, credentials: this.getTokens().access};
+        return await this.doFetch<User>(`${this.getUserRoute()}/username/${username}`, {}, authCredentials);
     }
 }
 
