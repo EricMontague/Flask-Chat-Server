@@ -62,28 +62,12 @@ export interface RegistrationInfo {
 const usersAdapter = createEntityAdapter<User>();
 
 const initialState: UsersState = usersAdapter.getInitialState({
-    currentUserId: 'user_id1',
-    tokens: {access: "access_token", refresh: "refresh_token"},
+    currentUserId: '',
+    tokens: {access: "", refresh: ""},
     status: 'idle',
     error: undefined,
-    ids: ['user_id1'],
-    entities: {
-        user_id1: {
-            id: 'user_id1',
-            name: 'Brad',
-            username: 'Brad345',
-            email: 'brad@gmail.com',
-            joined_on: '2021-04-07T18:42:56.645783',
-            last_seen_at: '2021-04-07T18:42:56.645783',
-            password: 'password',
-            bio: 'I am groot!',
-            resource_type: 'User',
-            location: {city: 'New York', state: 'New York', country: 'United States'},
-            avatar: {url: 'https://www.example.com', width: 400, height: 400},
-            cover_photo: {url: 'https://www.example.com', width: 400, height: 400}
-        }
-    }
-    
+    ids: [],
+    entities: {}
 });
 
 export const login = createAsyncThunk(
@@ -179,3 +163,26 @@ export const getCurrentUser = (state: RootState) => {
 export const getUserTokens = (state: RootState) => state.users.tokens;
 
 export default usersSlice.reducer;
+
+
+// currentUserId: 'user_id1',
+//     tokens: {access: "access_token", refresh: "refresh_token"},
+//     status: 'idle',
+//     error: undefined,
+//     ids: ['user_id1'],
+//     entities: {
+//         user_id1: {
+//             id: 'user_id1',
+//             name: 'Brad',
+//             username: 'Brad345',
+//             email: 'brad@gmail.com',
+//             joined_on: '2021-04-07T18:42:56.645783',
+//             last_seen_at: '2021-04-07T18:42:56.645783',
+//             password: 'password',
+//             bio: 'I am groot!',
+//             resource_type: 'User',
+//             location: {city: 'New York', state: 'New York', country: 'United States'},
+//             avatar: {url: 'https://www.example.com', width: 400, height: 400},
+//             cover_photo: {url: 'https://www.example.com', width: 400, height: 400}
+//         }
+//     }
