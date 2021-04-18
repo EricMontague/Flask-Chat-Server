@@ -17,7 +17,7 @@ type FormValues = {
     name: string;
     email: string;
     password: string;
-    location: {label: string, value: any};
+    location: {label: string, value: {} | google.maps.places.AutocompletePrediction};
 };
 
 type setFieldValueFunc = (field: string, value: any, shouldValidate?: boolean) => void;
