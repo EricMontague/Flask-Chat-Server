@@ -23,3 +23,9 @@ export interface AuthCredentials {
     type: 'http_basic_auth' | 'jwt';
     credentials: string;
 };
+
+export interface AuthInfo {
+    access: string;
+    refresh: string;
+    username: string;
+};
