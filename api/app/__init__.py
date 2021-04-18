@@ -4,6 +4,7 @@ functions responsible for instantiating the application.
 
 
 from flask import Flask
+from flask_cors import CORS
 from app.extensions import bcrypt, ma, socketio
 from app.api import api as api_blueprint
 from app.auth import auth as auth_blueprint
@@ -31,6 +32,8 @@ def register_extensions(app):
 
 def register_blueprints(app):
     """Register blueprints with the Flask app."""
+    CORS(api_blueprint, resources={r"/api/v1/*": {"origins": "http://localhost:3000"}})
+    CORS(auth_blueprint, resources={r"/api/v1/auth*": {"origins": "http://localhost:3000"}})
     app.register_blueprint(api_blueprint, url_prefix="/api/v1")
-    app.register_blueprint(auth_blueprint, url_prefix="/auth")
+    app.register_blueprint(auth_blueprint, url_prefix="/api/v1/auth")
     app.register_blueprint(sockets_blueprint)
