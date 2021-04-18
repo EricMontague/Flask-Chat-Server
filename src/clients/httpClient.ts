@@ -1,9 +1,6 @@
-// import { authClient } from './authClient';
 import { RegistrationInfo, Tokens, User } from '../features/users/usersSlice';
 import { ServerError, FetchOptions, ClientResponse, AuthCredentials } from './types';
-
-const HTTP_BASIC_AUTH = 'http_basic_auth';
-const JWT = 'jwt';
+import { JWT, HTTP_BASIC_AUTH } from '../constants';
 
 export class ClientError extends Error implements ServerError {
     url?: string;
@@ -128,8 +125,12 @@ class HTTPClient {
             method: 'POST',
             body: JSON.stringify({username, password})
         };
-        const authCredentials: AuthCredentials = {type: HTTP_BASIC_AUTH, credentials: username + ':' + password};
-        return await this.doFetch<Tokens>(`${this.getAuthRoute()}/login`, options, authCredentials);
+        const authCredentials: AuthCredentials = {
+            type: HTTP_BASIC_AUTH, credentials: btoa(username + ':' + password)
+        };
+        const tokens = await this.doFetch<Tokens>(`${this.getAuthRoute()}/login`, options, authCredentials);
+        this.setTokens(tokens);
+        return tokens;
     }
 
     async register(registrationInfo: RegistrationInfo) {
