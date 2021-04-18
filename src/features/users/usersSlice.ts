@@ -1,6 +1,8 @@
 import { createSlice, createEntityAdapter, EntityState, createAsyncThunk } from '@reduxjs/toolkit';
 import { RootState } from '../../app/store';
 import { httpClient } from '../../clients/httpClient';
+import { localStorageClient } from '../../clients/storageClient';
+import { ACCESS_TOKEN, REFRESH_TOKEN } from '../../constants';
 
 export const USER_REQUEST_IDLE = 'idle';
 export const USER_REQUEST_LOADING = 'loading';
@@ -47,7 +49,7 @@ interface UsersState extends EntityState<User> {
 };
 
 interface LoginInfo {
-    email: string;
+    username: string;
     password: string;
 };
 
@@ -70,10 +72,19 @@ const initialState: UsersState = usersAdapter.getInitialState({
     entities: {}
 });
 
+// TODO - Optimize so that a call to get the user by username is only made if the currentUserId
+// is not already set in the Redux state
 export const login = createAsyncThunk(
     'users/login',
     async (loginInfo: LoginInfo, thunkAPI) => {
-        return await httpClient.login(loginInfo.email, loginInfo.password);
+        const tokens = await httpClient.login(loginInfo.username, loginInfo.password);
+        const currentUser = await httpClient.getUserByUsername(loginInfo.username);
+        localStorageClient.setUserCredentials({
+            [ACCESS_TOKEN]: tokens.access,
+            [REFRESH_TOKEN]: tokens.refresh,
+            'username': loginInfo.username
+        });
+        return {tokens, currentUser};
     }
 );
 
@@ -87,14 +98,14 @@ export const register = createAsyncThunk(
 export const loadUser = createAsyncThunk(
     'users/load_user',
     async (thunkAPI) => {
-        const access = localStorage.getItem('access_token') || '';
-        const refresh = localStorage.getItem('refresh_token') || '';
-        const userId = localStorage.getItem('user_id') || '';
+        const [ access, refresh, username ] = localStorageClient.getUserCredentials([
+            ACCESS_TOKEN, REFRESH_TOKEN, 'username'
+        ]);
         httpClient.setTokens({access, refresh});
-        const currentUser = await httpClient.getUserById(userId);
+        const currentUser = await httpClient.getUserByUsername(username);
         return {
             currentUser,
-            tokens: httpClient.getTokens()
+            tokens: {access, refresh}
         }
     }
 );
@@ -109,7 +120,11 @@ export const usersSlice = createSlice({
                 state.status = USER_REQUEST_LOADING;
             })
             .addCase(login.fulfilled, (state, action) => {
-                state.tokens = action.payload;
+                const { tokens, currentUser } = action.payload;
+                state.tokens = tokens;
+                state.currentUserId = currentUser.id;
+                state.ids.push(currentUser.id);
+                state.entities[currentUser.id] = currentUser;
                 state.status = USER_REQUEST_SUCCEEDED;
             })
             .addCase(login.rejected, (state, action) => {
