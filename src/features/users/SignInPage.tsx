@@ -48,18 +48,15 @@ const SignInPage = (props: Props) => {
     const history = useHistory();
 
     const tokens = useAppSelector(getUserTokens);
-    if (tokens.access !== '' && tokens.refresh !== '') {
-        history.push('/');
-    }
     const currentUser = useAppSelector(getCurrentUser);
-
-    if (currentUser) {
-        history.push('/');
-    };
+    
 
     useEffect(() => {
         document.body.title = 'Chatterbox - SignIn'
         document.body.style.backgroundColor = props.theme.bg.primary;
+        if (tokens.access !== '' && tokens.refresh !== '' && currentUser) {
+            history.push('/');
+        };
     }, [])
     
     return (

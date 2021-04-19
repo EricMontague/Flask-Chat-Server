@@ -47,13 +47,13 @@ const SignUpPage = (props: Props) => {
 
     const currentUser = useAppSelector(getCurrentUser);
     
-    // if (currentUser) {
-    //     history.push('/');
-    // };
-
     useEffect(() => {
         document.title = 'ChatterBox - Sign Up';
         document.body.style.backgroundColor = props.theme.bg.primary;
+        if (currentUser) {
+            console.log('CurrentUser stored in Redux state');
+            history.push('/');
+        };
     }, [])
 
        
