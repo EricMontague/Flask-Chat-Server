@@ -1,4 +1,5 @@
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 import { Formik, FormikHelpers } from 'formik';
 import * as Yup from 'yup';
 import { OptionTypeBase, ActionMeta } from 'react-select';
@@ -34,6 +35,7 @@ const validationSchema = Yup.object({
 export const SignUpForm = () => {
 
     const dispatch = useAppDispatch();
+    const history = useHistory();
 
     const initialValues: FormValues = {
         username: '', 
@@ -50,8 +52,6 @@ export const SignUpForm = () => {
     const handleAutocompleteChange = (setFieldValue: setFieldValueFunc, fieldName: string): onChangeFunc => {
 
         const onChange = (value: OptionTypeBase | null, action: ActionMeta<OptionTypeBase>) => {
-            console.log(value);
-            console.log(action);
             setFieldValue(fieldName, value, false);
         };
 
@@ -60,16 +60,16 @@ export const SignUpForm = () => {
     };
 
     const handleSubmit = (values: FormValues, formikHelpers: FormikHelpers<FormValues>): void => {
-        console.log(values);
-        console.log(formikHelpers);
         const [city, state, country] = values.location.label.split(',');
         const formValues = {
             ...values,
             location: {city, state, country}
         }
-        dispatch(register(formValues));
-        formikHelpers.setSubmitting(false);
-        // actions.resetForm();
+        dispatch(register(formValues)).then(() => {
+            formikHelpers.setSubmitting(false);
+            history.push('/sign-in');
+            // actions.resetForm();
+        });
     }
 
     

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useHistory } from 'react-router-dom';
 import { Formik, FormikHelpers } from 'formik';
 import * as Yup from 'yup';
 import { StyledCard, StyledCardBody } from '../../common/components/cards/styles';
@@ -22,6 +23,7 @@ const validationSchema = Yup.object({
 export const SignInForm = () => {
 
     const dispatch = useAppDispatch();
+    const history = useHistory();
 
     const initialValues: FormValues = {username: '', password: ''};
 
@@ -30,9 +32,10 @@ export const SignInForm = () => {
     };
 
     const handleSubmit = (values: FormValues, formikHelpers: FormikHelpers<FormValues>) => {
-        console.log(values);
-        console.log(formikHelpers);
-        dispatch(login({...values}));
+        dispatch(login({...values})).then(() => {
+            history.push('/');
+        });
+        
     };
 
     return (
